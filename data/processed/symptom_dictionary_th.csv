@@ -1,0 +1,133 @@
+﻿symptom_en,symptom_th,symptom_th_alt,body_system,ui_label,is_user_facing
+itching,คัน,"คันยุบยิบ, เกาผิว",ผิวหนัง,คัน (itching),True
+skin_rash,ผื่นที่ผิวหนัง,"ผื่นแดง, ผด",ผิวหนัง,ผื่น (skin rash),True
+nodal_skin_eruptions,ผื่นเป็นปุ่ม,"ตุ่มแข็งใต้ผิว, ปม",ผิวหนัง,ผื่นเป็นปุ่ม (nodal eruption),True
+continuous_sneezing,จามต่อเนื่อง,จามไม่หยุด,หู คอ จมูก,จามต่อเนื่อง (sneezing),True
+shivering,ตัวสั่น,ไหวสั่น,ทั่วไป,ตัวสั่น (shivering),True
+chills,หนาวสั่น,หนาวๆ ร้อนๆ,ทั่วไป,หนาวสั่น (chills),True
+joint_pain,ปวดข้อ,"ข้อปวด, ข้อเมื่อย",กล้ามเนื้อและข้อ,ปวดข้อ (joint pain),True
+stomach_pain,ปวดท้อง (กระเพาะ),"ปวดกระเพาะ, จุก",ทางเดินอาหาร,ปวดท้อง (stomach pain),True
+acidity,แสบกลางอก / กรดไหลย้อน,"เรอเปรี้ยว, แสบหน้าอก, รู้สึกกรดดันขึ้นมา",ทางเดินอาหาร,แสบกลางอก (acidity),True
+ulcers_on_tongue,แผลในลิ้น,"ลิ้นเป็นแผล, แผลร้อนใน",ทางเดินอาหาร,แผลในลิ้น (tongue ulcers),True
+muscle_wasting,กล้ามเนื้อลีบ,กล้ามเนื้อหายไป,กล้ามเนื้อและข้อ,กล้ามเนื้อลีบ (muscle wasting),True
+vomiting,อาเจียน,"อ้วก, คลื่นไส้อาเจียน",ทางเดินอาหาร,อาเจียน (vomiting),True
+burning_micturition,แสบเวลาปัสสาวะ,"แสบฉี่, ปวดแสบฉี่",ทางเดินปัสสาวะ,แสบฉี่ (burning urination),True
+spotting_ urination,ปัสสาวะมีเลือดปน,"ฉี่มีเลือด, เลือดปนในปัสสาวะ",ทางเดินปัสสาวะ,ฉี่มีเลือดปน (spotting urination),True
+fatigue,อ่อนเพลีย,"เหนื่อยล้า, หมดแรง",ทั่วไป,อ่อนเพลีย (fatigue),True
+weight_gain,น้ำหนักขึ้น,"อ้วนขึ้น, ตัวบวม",ทั่วไป,น้ำหนักขึ้น (weight gain),True
+anxiety,วิตกกังวล,"เครียด, กังวล",จิตใจและพฤติกรรม,วิตกกังวล (anxiety),True
+cold_hands_and_feets,มือเท้าเย็น,ปลายมือปลายเท้าเย็น,หัวใจและหลอดเลือด,มือเท้าเย็น (cold extremities),True
+mood_swings,อารมณ์แปรปรวน,อารมณ์ขึ้นๆ ลงๆ,จิตใจและพฤติกรรม,อารมณ์แปรปรวน (mood swings),True
+weight_loss,น้ำหนักลด,"ผอมลง, ลดน้ำหนักผิดปกติ",ทั่วไป,น้ำหนักลด (weight loss),True
+restlessness,กระสับกระส่าย,"นิ่งไม่ได้, อยู่ไม่นิ่ง",จิตใจและพฤติกรรม,กระสับกระส่าย (restlessness),True
+lethargy,เซื่องซึม,"เฉื่อยชา, เนือย",ทั่วไป,เซื่องซึม (lethargy),True
+patches_in_throat,คอเป็นปื้น,"คอเป็นจุดขาว, ฝ้าในคอ",หู คอ จมูก,คอเป็นปื้น (throat patches),True
+irregular_sugar_level,ระดับน้ำตาลผิดปกติ,น้ำตาลในเลือดเปลี่ยนแปลง,ต่อมไร้ท่อ/เมตาบอลิก,น้ำตาลผิดปกติ (irregular sugar),False
+cough,ไอ,"ไอแห้ง, ไอมีเสมหะ",ทางเดินหายใจ,ไอ (cough),True
+high_fever,ไข้สูง,"ตัวร้อนจัด, ไข้ > 38.5°C",ทั่วไป,ไข้สูง (>38.5°C),True
+sunken_eyes,ตาโบ๋,"ตาลึก, ตาตอบ",ทั่วไป,ตาโบ๋ (sunken eyes),True
+breathlessness,หายใจไม่ออก,"หอบ, หายใจติดขัด",ทางเดินหายใจ,หายใจไม่ออก (breathlessness),True
+sweating,เหงื่อออก,"เหงื่อท่วม, เหงื่อแตก",ทั่วไป,เหงื่อออก (sweating),True
+dehydration,ขาดน้ำ,"คอแห้ง, ปากแห้งมาก",ทั่วไป,ขาดน้ำ (dehydration),True
+indigestion,อาหารไม่ย่อย,"ท้องอืด, จุกเสียด",ทางเดินอาหาร,อาหารไม่ย่อย (indigestion),True
+headache,ปวดหัว,ปวดศีรษะ,หัวและสมอง,ปวดหัว (headache),True
+yellowish_skin,ผิวเหลือง (ดีซ่าน),ตัวเหลือง,ผิวหนัง,ผิวเหลือง (jaundice),True
+dark_urine,ปัสสาวะสีเข้ม,"ฉี่สีดำ, ฉี่สีโคล่า",ทางเดินปัสสาวะ,ฉี่สีเข้ม (dark urine),True
+nausea,คลื่นไส้,"พะอืดพะอม, มวนท้อง",ทางเดินอาหาร,คลื่นไส้ (nausea),True
+loss_of_appetite,เบื่ออาหาร,"ไม่อยากกิน, กินไม่ลง",ทางเดินอาหาร,เบื่ออาหาร (loss of appetite),True
+pain_behind_the_eyes,ปวดหลังตา,"ปวดเบ้าตา, ปวดในตา",ตา,ปวดหลังตา (pain behind eyes),True
+back_pain,ปวดหลัง,"ปวดบั้นเอว, เมื่อยหลัง",กล้ามเนื้อและข้อ,ปวดหลัง (back pain),True
+constipation,ท้องผูก,ถ่ายไม่ออก,ทางเดินอาหาร,ท้องผูก (constipation),True
+abdominal_pain,ปวดช่องท้อง,"ปวดท้อง, จุกใต้ลิ้นปี่",ทางเดินอาหาร,ปวดช่องท้อง (abdominal pain),True
+diarrhoea,ท้องเสีย,"ท้องร่วง, ถ่ายเหลว",ทางเดินอาหาร,ท้องเสีย (diarrhoea),True
+mild_fever,ไข้ต่ำ,"ตัวอุ่น, ไข้รุมๆ",ทั่วไป,ไข้ต่ำ (mild fever),True
+yellow_urine,ปัสสาวะสีเหลืองเข้ม,ฉี่เหลืองจัด,ทางเดินปัสสาวะ,ฉี่เหลืองเข้ม (yellow urine),True
+yellowing_of_eyes,ตาเหลือง,ตาขาวเหลือง,ตา,ตาเหลือง (icterus),True
+acute_liver_failure,ตับวายเฉียบพลัน,ตับล้มเหลว,ทางเดินอาหาร,ตับวายเฉียบพลัน (acute liver failure),False
+fluid_overload,น้ำเกินในร่างกาย,"บวมน้ำ, สะสมน้ำ",หัวใจและหลอดเลือด,น้ำเกิน (fluid overload),False
+swelling_of_stomach,ท้องบวม,"ท้องโต, อืดท้อง",ทางเดินอาหาร,ท้องบวม (abdominal swelling),True
+swelled_lymph_nodes,ต่อมน้ำเหลืองโต,เม็ดที่คอ/รักแร้/ขาหนีบโต,ทั่วไป,ต่อมน้ำเหลืองโต (swollen lymph nodes),True
+malaise,รู้สึกไม่สบาย,ครั่นเนื้อครั่นตัว,ทั่วไป,ครั่นเนื้อครั่นตัว (malaise),True
+blurred_and_distorted_vision,ตามัวและบิดเบี้ยว,"มองไม่ชัด, เห็นภาพซ้อน",ตา,ตามัว (blurred vision),True
+phlegm,เสมหะ,"เสลด, เมือกในคอ",ทางเดินหายใจ,เสมหะ (phlegm),True
+throat_irritation,คอระคายเคือง,"คอแสบ, เจ็บคอ",หู คอ จมูก,คอระคายเคือง (throat irritation),True
+redness_of_eyes,ตาแดง,ตาแดงก่ำ,ตา,ตาแดง (red eyes),True
+sinus_pressure,ปวดแน่นไซนัส,"ปวดโพรงจมูก, ปวดหน้าผาก/แก้ม",หู คอ จมูก,ปวดไซนัส (sinus pressure),True
+runny_nose,น้ำมูกไหล,น้ำมูก,หู คอ จมูก,น้ำมูกไหล (runny nose),True
+congestion,คัดจมูก,"จมูกตัน, แน่นจมูก",หู คอ จมูก,คัดจมูก (congestion),True
+chest_pain,เจ็บหน้าอก,"แน่นหน้าอก, ปวดอก",หัวใจและหลอดเลือด,เจ็บหน้าอก (chest pain),True
+weakness_in_limbs,แขนขาอ่อนแรง,"แขนขาเดี้ยง, ยกแขนขาไม่ได้",ระบบประสาท,แขนขาอ่อนแรง (limb weakness),True
+fast_heart_rate,หัวใจเต้นเร็ว,หัวใจเต้นแรง,หัวใจและหลอดเลือด,หัวใจเต้นเร็ว (tachycardia),True
+pain_during_bowel_movements,ปวดเวลาถ่าย,เจ็บตอนถ่าย,ทางเดินอาหาร,ปวดเวลาถ่าย (pain during BM),True
+pain_in_anal_region,ปวดบริเวณทวารหนัก,"ปวดก้น, ปวดทวาร",ทางเดินอาหาร,ปวดทวาร (anal pain),True
+bloody_stool,ถ่ายเป็นเลือด,"อุจจาระมีเลือด, ถ่ายดำ",ทางเดินอาหาร,ถ่ายเป็นเลือด (bloody stool),True
+irritation_in_anus,ระคายเคืองทวาร,"คันทวาร, แสบรอบทวาร",ทางเดินอาหาร,คันทวาร (anal irritation),True
+neck_pain,ปวดคอ,"เมื่อยคอ, คอแข็ง",กล้ามเนื้อและข้อ,ปวดคอ (neck pain),True
+dizziness,เวียนหัว,"วิงเวียน, มึนหัว",หัวและสมอง,เวียนหัว (dizziness),True
+cramps,ตะคริว,"เป็นตะคริว, กล้ามเนื้อหดเกร็ง",กล้ามเนื้อและข้อ,ตะคริว (cramps),True
+bruising,จ้ำเลือด,"เป็นจ้ำเขียว, ฟกช้ำง่าย",ผิวหนัง,จ้ำเลือด (bruising),True
+obesity,อ้วน,"น้ำหนักเกิน, BMI สูง",ทั่วไป,อ้วน (obesity),True
+swollen_legs,ขาบวม,"ขาเป็นน้ำ, ขาโต",หัวใจและหลอดเลือด,ขาบวม (swollen legs),True
+swollen_blood_vessels,เส้นเลือดโป่งพอง,เส้นเลือดขอด,หัวใจและหลอดเลือด,เส้นเลือดโป่งพอง (swollen vessels),True
+puffy_face_and_eyes,หน้าและตาบวม,"หน้าโต, ตาโป่ง",ทั่วไป,หน้า/ตาบวม (puffy face),True
+enlarged_thyroid,ต่อมไทรอยด์โต,"คอเป็นก้อน, คอพอก",ต่อมไร้ท่อ/เมตาบอลิก,ไทรอยด์โต (enlarged thyroid),True
+brittle_nails,เล็บเปราะ,"เล็บแตกง่าย, เล็บฉีก",ผม/เล็บ,เล็บเปราะ (brittle nails),True
+swollen_extremeties,ปลายมือปลายเท้าบวม,นิ้วบวม,หัวใจและหลอดเลือด,ปลายแขน-ขาบวม (swollen extremities),True
+excessive_hunger,หิวมากผิดปกติ,"หิวบ่อย, กินเยอะแต่ไม่อิ่ม",ต่อมไร้ท่อ/เมตาบอลิก,หิวมาก (excessive hunger),True
+extra_marital_contacts,มีคู่นอนหลายคน / เพศสัมพันธ์เสี่ยง,"เพศสัมพันธ์ไม่ป้องกัน, เปลี่ยนคู่นอนบ่อย",ประวัติ/ปัจจัยเสี่ยง,เพศสัมพันธ์เสี่ยง (risky sex),False
+drying_and_tingling_lips,ริมฝีปากแห้งและชา,"ปากแห้ง, ชารอบปาก",ผิวหนัง,ปากแห้ง-ชา (dry tingling lips),True
+slurred_speech,พูดไม่ชัด,"พูดอ้อแอ้, ลิ้นแข็ง",ระบบประสาท,พูดไม่ชัด (slurred speech),True
+knee_pain,ปวดเข่า,"เจ็บเข่า, ข้อเข่าเจ็บ",กล้ามเนื้อและข้อ,ปวดเข่า (knee pain),True
+hip_joint_pain,ปวดข้อสะโพก,ปวดสะโพก,กล้ามเนื้อและข้อ,ปวดสะโพก (hip pain),True
+muscle_weakness,กล้ามเนื้ออ่อนแรง,"กำลังลดลง, ยกของไม่ไหว",กล้ามเนื้อและข้อ,กล้ามเนื้ออ่อนแรง (muscle weakness),True
+stiff_neck,คอแข็ง,คอแข็งทื่อ,กล้ามเนื้อและข้อ,คอแข็ง (stiff neck),True
+swelling_joints,ข้อบวม,"ข้อโต, ข้อพอง",กล้ามเนื้อและข้อ,ข้อบวม (swelling joints),True
+movement_stiffness,ขยับลำบาก,"ตัวแข็ง, เคลื่อนไหวฝืด",กล้ามเนื้อและข้อ,ขยับลำบาก (movement stiffness),True
+spinning_movements,บ้านหมุน,"โลกหมุน, รู้สึกหมุน",หัวและสมอง,บ้านหมุน (vertigo),True
+loss_of_balance,ทรงตัวไม่ได้,"เซ, ทรงตัวลำบาก",ระบบประสาท,ทรงตัวไม่ได้ (loss of balance),True
+unsteadiness,เดินเซ,"ตัวโคลง, ทรงไม่นิ่ง",ระบบประสาท,เดินเซ (unsteadiness),True
+weakness_of_one_body_side,อ่อนแรงครึ่งซีก,อัมพาตครึ่งซีก,ระบบประสาท,อ่อนแรงครึ่งซีก (hemiparesis),True
+loss_of_smell,จมูกไม่ได้กลิ่น,ดมไม่รู้กลิ่น,หู คอ จมูก,จมูกไม่ได้กลิ่น (anosmia),True
+bladder_discomfort,ระคายกระเพาะปัสสาวะ,ปวดเบาๆ ที่ท้องน้อย,ทางเดินปัสสาวะ,ระคายกระเพาะปัสสาวะ (bladder discomfort),True
+foul_smell_of urine,ปัสสาวะเหม็น,ฉี่กลิ่นแรง,ทางเดินปัสสาวะ,ฉี่เหม็น (foul-smelling urine),True
+continuous_feel_of_urine,ปวดปัสสาวะตลอด,"ปวดฉี่บ่อย, ฉี่ไม่สุด",ทางเดินปัสสาวะ,ปวดฉี่ตลอด (urge incontinence),True
+passage_of_gases,ผายลมบ่อย,"ตด, ลมในท้องเยอะ",ทางเดินอาหาร,ผายลมบ่อย (excess gas),True
+internal_itching,คันใน,"คันลึก, คันในเนื้อ",ผิวหนัง,คันใน (internal itching),True
+toxic_look_(typhos),หน้าซีดเซียว ดูป่วยหนัก,"สีหน้าโทรม, ดูซึม-อ่อนล้ามาก",ทั่วไป,ดูป่วยหนัก (toxic appearance),True
+depression,ซึมเศร้า,"เศร้า, อารมณ์ตก",จิตใจและพฤติกรรม,ซึมเศร้า (depression),True
+irritability,หงุดหงิดง่าย,"หัวเสีย, ฉุนเฉียว",จิตใจและพฤติกรรม,หงุดหงิด (irritability),True
+muscle_pain,ปวดกล้ามเนื้อ,เมื่อยกล้ามเนื้อ,กล้ามเนื้อและข้อ,ปวดกล้ามเนื้อ (muscle pain),True
+altered_sensorium,ระดับสติเปลี่ยนแปลง,"งง, สับสน, ไม่ค่อยรู้ตัว",ระบบประสาท,สติเปลี่ยน (altered sensorium),False
+red_spots_over_body,จุดแดงทั่วตัว,"ผื่นแดงเป็นจุด, จุดเลือดออก",ผิวหนัง,จุดแดงทั่วตัว (red spots),True
+belly_pain,ปวดท้องน้อย,ปวดช่องท้องน้อย,ทางเดินอาหาร,ปวดท้องน้อย (belly pain),True
+abnormal_menstruation,ประจำเดือนผิดปกติ,เมนส์ผิดปกติ,ระบบสืบพันธุ์,ประจำเดือนผิดปกติ (abnormal menses),True
+dischromic _patches,ปื้นด่างขาว/คล้ำ,"ผิวด่าง, สีผิวไม่สม่ำเสมอ",ผิวหนัง,ผิวด่าง (dischromic patches),True
+watering_from_eyes,น้ำตาไหล,"ตาแฉะ, น้ำตาคลอ",ตา,น้ำตาไหล (watering eyes),True
+increased_appetite,กินจุ,"หิวบ่อย, กินเยอะ",ต่อมไร้ท่อ/เมตาบอลิก,กินจุ (increased appetite),True
+polyuria,ปัสสาวะบ่อย,"ฉี่บ่อย, ฉี่หลายครั้ง",ทางเดินปัสสาวะ,ฉี่บ่อย (polyuria),True
+family_history,ประวัติคนในครอบครัวเคยเป็นโรคนี้,พ่อ/แม่/พี่/น้องเคยเป็น,ประวัติ/ปัจจัยเสี่ยง,ประวัติครอบครัว (family history),False
+mucoid_sputum,เสมหะเหนียวขาว,"เสลดขาว, เสมหะใส",ทางเดินหายใจ,เสมหะใส (mucoid sputum),True
+rusty_sputum,เสมหะสีสนิม,เสลดสีน้ำตาล,ทางเดินหายใจ,เสมหะสีสนิม (rusty sputum),True
+lack_of_concentration,สมาธิสั้น,"ใจลอย, จดจ่อไม่ได้",จิตใจและพฤติกรรม,สมาธิสั้น (lack of concentration),True
+visual_disturbances,การมองเห็นผิดปกติ,"ตามัว, เห็นภาพแปลก",ตา,การมองเห็นผิดปกติ (visual disturbance),True
+receiving_blood_transfusion,เคยรับการให้เลือด,ประวัติให้เลือด,ประวัติ/ปัจจัยเสี่ยง,ประวัติให้เลือด (transfusion history),False
+receiving_unsterile_injections,เคยฉีดยาด้วยเข็มไม่สะอาด,ประวัติฉีดยาเสี่ยง,ประวัติ/ปัจจัยเสี่ยง,ฉีดยาเข็มไม่สะอาด (unsterile injection),False
+coma,หมดสติ,"ไม่รู้สึกตัว, สลบ",ระบบประสาท,หมดสติ (coma),False
+stomach_bleeding,เลือดออกในกระเพาะ,"อาเจียนเป็นเลือด, ถ่ายดำ",ทางเดินอาหาร,เลือดออกในกระเพาะ (GI bleeding),True
+distention_of_abdomen,ท้องโป่ง,"ท้องอืดมาก, ท้องตึง",ทางเดินอาหาร,ท้องโป่ง (abdominal distension),True
+history_of_alcohol_consumption,ดื่มสุราเป็นประจำ,ประวัติดื่มเหล้า,ประวัติ/ปัจจัยเสี่ยง,ประวัติดื่มสุรา (alcohol history),False
+fluid_overload.1,น้ำเกินในร่างกาย (col ซ้ำ),บวมน้ำ — ใน itachi เป็น duplicate column,หัวใจและหลอดเลือด,น้ำเกิน [duplicate],False
+blood_in_sputum,ไอเป็นเลือด,"เสลดมีเลือด, ไอออกเลือด",ทางเดินหายใจ,ไอเป็นเลือด (hemoptysis),True
+prominent_veins_on_calf,เส้นเลือดน่องชัด,เส้นเลือดโผล่ที่น่อง,หัวใจและหลอดเลือด,เส้นเลือดน่องโผล่ (prominent calf veins),True
+palpitations,ใจสั่น,"หัวใจเต้นแรง, รู้สึกหัวใจเต้น",หัวใจและหลอดเลือด,ใจสั่น (palpitations),True
+painful_walking,เดินเจ็บ,"เดินไม่ไหว, เดินแล้วเจ็บ",กล้ามเนื้อและข้อ,เดินเจ็บ (painful walking),True
+pus_filled_pimples,สิวมีหนอง,สิวอักเสบ,ผิวหนัง,สิวมีหนอง (pus-filled pimples),True
+blackheads,สิวหัวดำ,สิวอุดตัน,ผิวหนัง,สิวหัวดำ (blackheads),True
+scurring,แผลเป็นสะเก็ด,"ผิวเป็นแผลเป็นแข็ง, สะเก็ดหนา",ผิวหนัง,แผลเป็นสะเก็ด (scarring),True
+skin_peeling,ผิวลอก,ลอกเป็นแผ่น,ผิวหนัง,ผิวลอก (skin peeling),True
+silver_like_dusting,สะเก็ดสีเงินบนผื่น,เป็นเกล็ดสีเงินที่ผิวหนัง (ลักษณะสะเก็ดเงิน),ผิวหนัง,สะเก็ดเงินบนผื่น (silver scales),True
+small_dents_in_nails,เล็บเป็นรอยบุ๋ม,เล็บมีจุดเล็กๆ,ผม/เล็บ,เล็บบุ๋ม (nail pitting),True
+inflammatory_nails,เล็บอักเสบ,"เนื้อรอบเล็บแดง, เล็บบวม",ผม/เล็บ,เล็บอักเสบ (inflammatory nails),True
+blister,ตุ่มน้ำพอง,"ตุ่มพุพอง, ตุ่มน้ำใส",ผิวหนัง,ตุ่มน้ำพอง (blister),True
+red_sore_around_nose,แผลแดงรอบจมูก,แผลที่จมูก,ผิวหนัง,แผลรอบจมูก (red sore near nose),True
+yellow_crust_ooze,สะเก็ดสีเหลืองมีน้ำเหลือง,แผลมีน้ำเหลืองสีเหลือง,ผิวหนัง,สะเก็ดเหลือง (yellow crust),True

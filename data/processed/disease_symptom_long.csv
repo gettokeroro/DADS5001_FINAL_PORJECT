@@ -1,0 +1,322 @@
+disease,symptom,freq
+(vertigo) Paroymsal  Positional Vertigo,vomiting,0.95
+(vertigo) Paroymsal  Positional Vertigo,headache,0.95
+(vertigo) Paroymsal  Positional Vertigo,nausea,0.95
+(vertigo) Paroymsal  Positional Vertigo,loss_of_balance,0.95
+(vertigo) Paroymsal  Positional Vertigo,unsteadiness,0.95
+(vertigo) Paroymsal  Positional Vertigo,spinning_movements,0.9
+AIDS,high_fever,0.95
+AIDS,muscle_wasting,0.9
+AIDS,patches_in_throat,0.9
+AIDS,extra_marital_contacts,0.9
+Acne,skin_rash,0.95
+Acne,pus_filled_pimples,0.9
+Acne,blackheads,0.9
+Acne,scurring,0.9
+Alcoholic hepatitis,vomiting,0.95
+Alcoholic hepatitis,yellowish_skin,0.95
+Alcoholic hepatitis,abdominal_pain,0.95
+Alcoholic hepatitis,swelling_of_stomach,0.95
+Alcoholic hepatitis,distention_of_abdomen,0.95
+Alcoholic hepatitis,history_of_alcohol_consumption,0.95
+Alcoholic hepatitis,fluid_overload.1,0.95
+Allergy,continuous_sneezing,0.9
+Allergy,shivering,0.9
+Allergy,chills,0.9
+Allergy,watering_from_eyes,0.9
+Arthritis,muscle_weakness,0.95
+Arthritis,stiff_neck,0.95
+Arthritis,swelling_joints,0.95
+Arthritis,movement_stiffness,0.95
+Arthritis,painful_walking,0.95
+Bronchial Asthma,high_fever,0.95
+Bronchial Asthma,breathlessness,0.95
+Bronchial Asthma,family_history,0.95
+Bronchial Asthma,mucoid_sputum,0.95
+Bronchial Asthma,fatigue,0.9
+Bronchial Asthma,cough,0.9
+Cervical spondylosis,neck_pain,0.95
+Cervical spondylosis,dizziness,0.95
+Cervical spondylosis,loss_of_balance,0.95
+Cervical spondylosis,back_pain,0.9
+Cervical spondylosis,weakness_in_limbs,0.9
+Chicken pox,malaise,1.0
+Chicken pox,red_spots_over_body,1.0
+Chicken pox,itching,0.95
+Chicken pox,skin_rash,0.95
+Chicken pox,fatigue,0.95
+Chicken pox,lethargy,0.95
+Chicken pox,high_fever,0.95
+Chicken pox,headache,0.95
+Chicken pox,loss_of_appetite,0.95
+Chicken pox,mild_fever,0.95
+Chicken pox,swelled_lymph_nodes,0.95
+Chronic cholestasis,itching,0.95
+Chronic cholestasis,vomiting,0.95
+Chronic cholestasis,yellowish_skin,0.95
+Chronic cholestasis,nausea,0.95
+Chronic cholestasis,loss_of_appetite,0.95
+Chronic cholestasis,abdominal_pain,0.95
+Chronic cholestasis,yellowing_of_eyes,0.95
+Common Cold,phlegm,1.0
+Common Cold,throat_irritation,1.0
+Common Cold,redness_of_eyes,1.0
+Common Cold,sinus_pressure,1.0
+Common Cold,runny_nose,1.0
+Common Cold,congestion,1.0
+Common Cold,chest_pain,1.0
+Common Cold,loss_of_smell,1.0
+Common Cold,muscle_pain,1.0
+Common Cold,continuous_sneezing,0.95
+Common Cold,chills,0.95
+Common Cold,fatigue,0.95
+Common Cold,cough,0.95
+Common Cold,high_fever,0.95
+Common Cold,headache,0.95
+Common Cold,swelled_lymph_nodes,0.95
+Common Cold,malaise,0.95
+Dengue,headache,1.0
+Dengue,nausea,1.0
+Dengue,loss_of_appetite,1.0
+Dengue,pain_behind_the_eyes,1.0
+Dengue,back_pain,1.0
+Dengue,skin_rash,0.95
+Dengue,chills,0.95
+Dengue,joint_pain,0.95
+Dengue,vomiting,0.95
+Dengue,fatigue,0.95
+Dengue,high_fever,0.95
+Dengue,malaise,0.95
+Dengue,muscle_pain,0.95
+Dengue,red_spots_over_body,0.95
+Diabetes ,increased_appetite,1.0
+Diabetes ,polyuria,1.0
+Diabetes ,fatigue,0.95
+Diabetes ,weight_loss,0.95
+Diabetes ,restlessness,0.95
+Diabetes ,lethargy,0.95
+Diabetes ,irregular_sugar_level,0.95
+Diabetes ,blurred_and_distorted_vision,0.95
+Diabetes ,obesity,0.95
+Diabetes ,excessive_hunger,0.95
+Dimorphic hemmorhoids(piles),constipation,0.95
+Dimorphic hemmorhoids(piles),pain_during_bowel_movements,0.95
+Dimorphic hemmorhoids(piles),pain_in_anal_region,0.95
+Dimorphic hemmorhoids(piles),bloody_stool,0.95
+Dimorphic hemmorhoids(piles),irritation_in_anus,0.95
+Drug Reaction,itching,0.95
+Drug Reaction,skin_rash,0.9
+Drug Reaction,stomach_pain,0.9
+Drug Reaction,burning_micturition,0.9
+Drug Reaction,spotting_ urination,0.9
+Fungal infection,itching,0.9
+Fungal infection,skin_rash,0.9
+Fungal infection,nodal_skin_eruptions,0.9
+Fungal infection,dischromic _patches,0.9
+GERD,stomach_pain,0.95
+GERD,cough,0.95
+GERD,chest_pain,0.95
+GERD,acidity,0.9
+GERD,ulcers_on_tongue,0.9
+GERD,vomiting,0.9
+Gastroenteritis,diarrhoea,0.95
+Gastroenteritis,vomiting,0.9
+Gastroenteritis,sunken_eyes,0.9
+Gastroenteritis,dehydration,0.9
+Heart attack,chest_pain,0.95
+Heart attack,vomiting,0.9
+Heart attack,breathlessness,0.9
+Heart attack,sweating,0.9
+Hepatitis B,yellowing_of_eyes,1.0
+Hepatitis B,malaise,1.0
+Hepatitis B,receiving_blood_transfusion,1.0
+Hepatitis B,receiving_unsterile_injections,1.0
+Hepatitis B,itching,0.95
+Hepatitis B,fatigue,0.95
+Hepatitis B,lethargy,0.95
+Hepatitis B,yellowish_skin,0.95
+Hepatitis B,dark_urine,0.95
+Hepatitis B,loss_of_appetite,0.95
+Hepatitis B,abdominal_pain,0.95
+Hepatitis B,yellow_urine,0.95
+Hepatitis C,fatigue,0.95
+Hepatitis C,yellowish_skin,0.95
+Hepatitis C,nausea,0.95
+Hepatitis C,loss_of_appetite,0.95
+Hepatitis C,family_history,0.95
+Hepatitis C,yellowing_of_eyes,0.9
+Hepatitis D,joint_pain,0.95
+Hepatitis D,vomiting,0.95
+Hepatitis D,fatigue,0.95
+Hepatitis D,yellowish_skin,0.95
+Hepatitis D,dark_urine,0.95
+Hepatitis D,nausea,0.95
+Hepatitis D,loss_of_appetite,0.95
+Hepatitis D,abdominal_pain,0.95
+Hepatitis D,yellowing_of_eyes,0.95
+Hepatitis E,loss_of_appetite,1.0
+Hepatitis E,abdominal_pain,1.0
+Hepatitis E,yellowing_of_eyes,1.0
+Hepatitis E,coma,1.0
+Hepatitis E,stomach_bleeding,1.0
+Hepatitis E,joint_pain,0.95
+Hepatitis E,vomiting,0.95
+Hepatitis E,fatigue,0.95
+Hepatitis E,high_fever,0.95
+Hepatitis E,yellowish_skin,0.95
+Hepatitis E,dark_urine,0.95
+Hepatitis E,nausea,0.95
+Hepatitis E,acute_liver_failure,0.95
+Hypertension ,loss_of_balance,0.95
+Hypertension ,lack_of_concentration,0.95
+Hypertension ,headache,0.9
+Hypertension ,chest_pain,0.9
+Hypertension ,dizziness,0.9
+Hyperthyroidism,muscle_weakness,1.0
+Hyperthyroidism,irritability,1.0
+Hyperthyroidism,abnormal_menstruation,1.0
+Hyperthyroidism,fatigue,0.95
+Hyperthyroidism,mood_swings,0.95
+Hyperthyroidism,weight_loss,0.95
+Hyperthyroidism,restlessness,0.95
+Hyperthyroidism,sweating,0.95
+Hyperthyroidism,diarrhoea,0.95
+Hyperthyroidism,fast_heart_rate,0.95
+Hyperthyroidism,excessive_hunger,0.95
+Hypoglycemia,excessive_hunger,1.0
+Hypoglycemia,slurred_speech,1.0
+Hypoglycemia,irritability,1.0
+Hypoglycemia,palpitations,1.0
+Hypoglycemia,vomiting,0.95
+Hypoglycemia,fatigue,0.95
+Hypoglycemia,anxiety,0.95
+Hypoglycemia,sweating,0.95
+Hypoglycemia,headache,0.95
+Hypoglycemia,nausea,0.95
+Hypoglycemia,blurred_and_distorted_vision,0.95
+Hypoglycemia,drying_and_tingling_lips,0.95
+Hypothyroidism,enlarged_thyroid,1.0
+Hypothyroidism,brittle_nails,1.0
+Hypothyroidism,swollen_extremeties,1.0
+Hypothyroidism,depression,1.0
+Hypothyroidism,irritability,1.0
+Hypothyroidism,abnormal_menstruation,1.0
+Hypothyroidism,weight_gain,0.95
+Hypothyroidism,cold_hands_and_feets,0.95
+Hypothyroidism,mood_swings,0.95
+Hypothyroidism,lethargy,0.95
+Hypothyroidism,dizziness,0.95
+Hypothyroidism,puffy_face_and_eyes,0.95
+Hypothyroidism,fatigue,0.9
+Impetigo,skin_rash,0.95
+Impetigo,blister,0.95
+Impetigo,red_sore_around_nose,0.95
+Impetigo,yellow_crust_ooze,0.95
+Impetigo,high_fever,0.85
+Jaundice,itching,0.95
+Jaundice,vomiting,0.95
+Jaundice,fatigue,0.95
+Jaundice,weight_loss,0.95
+Jaundice,high_fever,0.95
+Jaundice,yellowish_skin,0.95
+Jaundice,dark_urine,0.95
+Jaundice,abdominal_pain,0.95
+Malaria,muscle_pain,1.0
+Malaria,chills,0.95
+Malaria,vomiting,0.95
+Malaria,high_fever,0.95
+Malaria,sweating,0.95
+Malaria,headache,0.95
+Malaria,nausea,0.95
+Malaria,diarrhoea,0.9
+Migraine,acidity,0.95
+Migraine,indigestion,0.95
+Migraine,headache,0.95
+Migraine,blurred_and_distorted_vision,0.95
+Migraine,excessive_hunger,0.95
+Migraine,stiff_neck,0.95
+Migraine,depression,0.95
+Migraine,irritability,0.95
+Migraine,visual_disturbances,0.95
+Osteoarthristis,joint_pain,0.95
+Osteoarthristis,neck_pain,0.95
+Osteoarthristis,knee_pain,0.95
+Osteoarthristis,hip_joint_pain,0.95
+Osteoarthristis,swelling_joints,0.95
+Osteoarthristis,painful_walking,0.95
+Paralysis (brain hemorrhage),altered_sensorium,0.95
+Paralysis (brain hemorrhage),vomiting,0.9
+Paralysis (brain hemorrhage),headache,0.9
+Paralysis (brain hemorrhage),weakness_of_one_body_side,0.9
+Peptic ulcer diseae,vomiting,0.95
+Peptic ulcer diseae,abdominal_pain,0.95
+Peptic ulcer diseae,passage_of_gases,0.95
+Peptic ulcer diseae,internal_itching,0.95
+Peptic ulcer diseae,indigestion,0.9
+Peptic ulcer diseae,loss_of_appetite,0.9
+Pneumonia,chest_pain,1.0
+Pneumonia,fast_heart_rate,1.0
+Pneumonia,rusty_sputum,1.0
+Pneumonia,chills,0.95
+Pneumonia,fatigue,0.95
+Pneumonia,cough,0.95
+Pneumonia,high_fever,0.95
+Pneumonia,breathlessness,0.95
+Pneumonia,sweating,0.95
+Pneumonia,malaise,0.95
+Pneumonia,phlegm,0.95
+Psoriasis,skin_rash,0.95
+Psoriasis,joint_pain,0.95
+Psoriasis,skin_peeling,0.95
+Psoriasis,silver_like_dusting,0.95
+Psoriasis,small_dents_in_nails,0.95
+Psoriasis,inflammatory_nails,0.95
+Tuberculosis,loss_of_appetite,1.0
+Tuberculosis,mild_fever,1.0
+Tuberculosis,yellowing_of_eyes,1.0
+Tuberculosis,swelled_lymph_nodes,1.0
+Tuberculosis,malaise,1.0
+Tuberculosis,phlegm,1.0
+Tuberculosis,chest_pain,1.0
+Tuberculosis,blood_in_sputum,1.0
+Tuberculosis,chills,0.95
+Tuberculosis,vomiting,0.95
+Tuberculosis,fatigue,0.95
+Tuberculosis,weight_loss,0.95
+Tuberculosis,cough,0.95
+Tuberculosis,high_fever,0.95
+Tuberculosis,breathlessness,0.95
+Tuberculosis,sweating,0.95
+Typhoid,chills,1.0
+Typhoid,fatigue,1.0
+Typhoid,high_fever,1.0
+Typhoid,vomiting,0.95
+Typhoid,headache,0.95
+Typhoid,nausea,0.95
+Typhoid,constipation,0.95
+Typhoid,abdominal_pain,0.95
+Typhoid,diarrhoea,0.95
+Typhoid,toxic_look_(typhos),0.95
+Typhoid,belly_pain,0.95
+Urinary tract infection,bladder_discomfort,0.95
+Urinary tract infection,continuous_feel_of_urine,0.95
+Urinary tract infection,burning_micturition,0.9
+Urinary tract infection,foul_smell_of urine,0.85
+Varicose veins,fatigue,0.95
+Varicose veins,cramps,0.95
+Varicose veins,bruising,0.95
+Varicose veins,obesity,0.95
+Varicose veins,swollen_legs,0.95
+Varicose veins,prominent_veins_on_calf,0.95
+Varicose veins,swollen_blood_vessels,0.9
+hepatitis A,mild_fever,1.0
+hepatitis A,yellowing_of_eyes,1.0
+hepatitis A,muscle_pain,1.0
+hepatitis A,joint_pain,0.95
+hepatitis A,vomiting,0.95
+hepatitis A,yellowish_skin,0.95
+hepatitis A,dark_urine,0.95
+hepatitis A,nausea,0.95
+hepatitis A,loss_of_appetite,0.95
+hepatitis A,abdominal_pain,0.95
+hepatitis A,diarrhoea,0.95

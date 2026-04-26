@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadmap — DADS5001 Final · Symptom-to-Specialty Triage</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --bg:#fafaf7; --card:#ffffff; --ink:#1a1a1a; --muted:#6b7280;
+    --line:#e5e7eb; --accent:#2563eb;
+    --p1:#fb923c; --p2:#3b82f6; --p3:#22c55e; --p4:#a855f7;
+    --p5:#ef4444; --p6:#eab308; --p7:#06b6d4;
+    --warn-bg:#fef3c7; --warn-border:#f59e0b; --warn-text:#78350f;
+    --info-bg:#dbeafe; --info-border:#3b82f6; --info-text:#1e3a8a;
+    --done-bg:#dcfce7; --done-border:#22c55e; --done-text:#14532d;
+  }
+  body{
+    font-family:'Sukhumvit Set','Noto Sans Thai',ui-sans-serif,system-ui,-apple-system,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.55;
+    padding:32px 20px; max-width:1100px; margin:0 auto;
+  }
+  header{ margin-bottom:14px; }
+  h1{ font-size:24px; font-weight:700; letter-spacing:-0.01em; }
+  .sub{ color:var(--muted); font-size:14px; margin-top:6px; }
+  .meta-row{
+    display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--muted);
+    margin-top:8px;
+  }
+  .meta-row span b{ color:var(--ink); font-weight:600; }
+
+  .callout{
+    border-left:3px solid; padding:10px 14px; margin:14px 0;
+    border-radius:6px; font-size:13px; line-height:1.6;
+  }
+  .callout.warn{ background:var(--warn-bg); border-color:var(--warn-border); color:var(--warn-text); }
+  .callout.info{ background:var(--info-bg); border-color:var(--info-border); color:var(--info-text); }
+  .callout.done{ background:var(--done-bg); border-color:var(--done-border); color:var(--done-text); }
+  .callout b{ font-weight:700; }
+
+  .toolbar{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    background:var(--card); padding:12px 14px; border:1px solid var(--line);
+    border-radius:12px; margin:18px 0;
+  }
+  .toolbar input[type="search"]{
+    flex:1; min-width:220px; padding:8px 12px; border:1px solid var(--line);
+    border-radius:8px; font-size:14px; outline:none; font-family:inherit;
+  }
+  .toolbar input[type="search"]:focus{ border-color:var(--accent); }
+  .toolbar button{
+    padding:8px 14px; border:1px solid var(--line); background:#fff;
+    border-radius:8px; cursor:pointer; font-size:13px; font-family:inherit;
+  }
+  .toolbar button:hover{ background:#f3f4f6; }
+  .toolbar .progress{
+    display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted);
+  }
+  .progress-bar{
+    width:140px; height:6px; background:var(--line); border-radius:99px; overflow:hidden;
+  }
+  .progress-fill{
+    height:100%; background:linear-gradient(90deg,#22c55e,#3b82f6); width:0%;
+    transition:width 0.4s ease;
+  }
+
+  .phase{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    margin-bottom:14px; overflow:hidden; transition:box-shadow 0.2s;
+  }
+  .phase:hover{ box-shadow:0 2px 12px rgba(0,0,0,0.04); }
+  .phase-header{
+    display:flex; align-items:center; gap:14px; padding:18px 20px;
+    cursor:pointer; user-select:none;
+  }
+  .phase-num{
+    width:42px; height:42px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; color:#fff; font-size:14px;
+  }
+  .phase-title{ flex:1; }
+  .phase-title h2{ font-size:17px; font-weight:600; }
+  .phase-title .desc{ font-size:13px; color:var(--muted); margin-top:2px; }
+  .phase-meta{
+    display:flex; align-items:center; gap:12px; font-size:12px; color:var(--muted);
+  }
+  .phase-count{
+    background:#f3f4f6; padding:3px 10px; border-radius:99px; font-weight:500;
+  }
+  .chev{
+    transition:transform 0.25s; color:var(--muted);
+    width:18px; height:18px;
+  }
+  .phase.open .chev{ transform:rotate(180deg); }
+
+  .phase-body{
+    max-height:0; overflow:hidden; transition:max-height 0.4s ease;
+    padding:0 20px;
+  }
+  .phase.open .phase-body{ max-height:5000px; padding:0 20px 18px 20px; }
+
+  .group{ margin-top:14px; }
+  .group h3{
+    font-size:13px; font-weight:600; color:var(--muted);
+    text-transform:uppercase; letter-spacing:0.04em;
+    margin-bottom:8px; padding-bottom:6px; border-bottom:1px dashed var(--line);
+  }
+  .item{
+    display:flex; align-items:flex-start; gap:10px; padding:6px 0;
+    font-size:14px;
+  }
+  .item input[type="checkbox"]{
+    margin-top:4px; width:16px; height:16px; cursor:pointer; accent-color:var(--accent);
+    flex-shrink:0;
+  }
+  .item label{ cursor:pointer; flex:1; }
+  .item .hint{
+    display:block; font-size:12px; color:var(--muted); margin-top:1px;
+  }
+  .item .hint a{ color:var(--accent); }
+  .item.done label{ text-decoration:line-through; color:var(--muted); }
+  .pill{
+    display:inline-block; font-size:10px; padding:1px 7px; border-radius:99px;
+    font-weight:600; vertical-align:middle; margin-left:6px;
+  }
+  .pill.must{ background:#fee2e2; color:#991b1b; }
+  .pill.locked{ background:#dcfce7; color:#14532d; }
+  .pill.team{ background:#e0e7ff; color:#3730a3; }
+
+  .p1 .phase-num{ background:var(--p1); }
+  .p2 .phase-num{ background:var(--p2); }
+  .p3 .phase-num{ background:var(--p3); }
+  .p4 .phase-num{ background:var(--p4); }
+  .p5 .phase-num{ background:var(--p5); }
+  .p6 .phase-num{ background:var(--p6); }
+  .p7 .phase-num{ background:var(--p7); }
+
+  .hidden{ display:none !important; }
+
+  footer{
+    margin-top:30px; padding-top:18px; border-top:1px solid var(--line);
+    color:var(--muted); font-size:12px; text-align:center;
+  }
+
+  @media print{
+    body{ padding:0; max-width:none; }
+    .toolbar{ display:none; }
+    .phase{ break-inside:avoid; box-shadow:none; }
+    .phase-body{ max-height:none !important; padding:0 20px 18px 20px !important; }
+    .chev{ display:none; }
+  }
+  @media (max-width:600px){
+    h1{ font-size:20px; }
+    .phase-num{ width:36px; height:36px; font-size:13px; }
+    .phase-title h2{ font-size:15px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Roadmap: Symptom-to-Specialty Triage + Cost-lite</h1>
+  <div class="sub">DADS5001 Final Project · Streamlit + DuckDB + AI/Non-AI 2-mode comparison</div>
+  <div class="meta-row">
+    <span>📚 <b>Course:</b> DADS5001 (30 คะแนน)</span>
+    <span>👥 <b>Team:</b> 3–5 คน (มีทีมแล้ว)</span>
+    <span>🎤 <b>Present:</b> 15 นาที</span>
+    <span>📦 <b>Submit:</b> GitHub</span>
+    <span>🤖 <b>LLM:</b> เลือกได้ (ไม่บังคับ Gemma)</span>
+  </div>
+</header>
+
+<div class="callout warn">
+  ⚠ <b>Medical disclaimer ต้องแสดงบนทุกหน้าของแอป:</b> "ข้อมูลนี้เป็นการศึกษา (DADS5001) ไม่ใช่คำวินิจฉัยทางการแพทย์ · กรุณาปรึกษาแพทย์จริง" — เป็นข้อต้องระวังที่อาจารย์น่าจะถามแน่
+</div>
+
+<div class="callout info">
+  💡 <b>Concept หลัก:</b> User สงสัยอาการตัวเอง → เลือก / พิมพ์อาการ → ระบบแนะนำ <b>แผนก/ประเภทแพทย์</b> ที่ควรไป + <b>ระดับความเร่งด่วน</b> + <b>ค่ารักษาประมาณการ</b> · เน้น "แนะนำแผนก" ไม่ "วินิจฉัยโรค" เพื่อลดความเสี่ยง medical advice
+</div>
+
+<div class="toolbar">
+  <input type="search" id="search" placeholder="ค้นหา keyword ใน roadmap...">
+  <div class="progress">
+    <span id="progress-text">0/0</span>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+  <button onclick="expandAll(true)">เปิดทั้งหมด</button>
+  <button onclick="expandAll(false)">ปิดทั้งหมด</button>
+  <button onclick="window.print()">พิมพ์ / PDF</button>
+  <button onclick="resetAll()">รีเซ็ต</button>
+</div>
+
+<!-- ============================================================ -->
+<div class="phase p1" data-phase="1">
+  <div class="phase-header" onclick="togglePhase(this)">
+    <div class="phase-num">1</div>
+    <div class="phase-title">
+      <h2>Discovery &amp; Problem Framing <span class="pill locked">ส่วนใหญ่ตกลงแล้ว</span></h2>
+      <div class="desc">ปัญหา · persona · scope · success — สิ่งที่คุยตกลงกันแล้วในแชต</div>
+    </div>
+    <div class="phase-meta">
+      <span class="phase-count" data-count></span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  </div>
+  <div class="phase-body">
+
+    <div class="group">
+      <h3>Problem statement (✓ lock แล้ว)</h3>
+      <div class="item"><input type="checkbox" id="p1-1" checked><label for="p1-1">ปัญหา: คนไทยกูเกิ้ลอาการตัวเอง → เจอข้อมูลมั่ว/ขายของ → ตื่นตระหนกหรือรักษาผิด<span class="hint">เชื่อ internet มากเกินไป → ทำให้รักษาไม่ถูกต้อง</span></label></div>
+      <div class="item"><input type="checkbox" id="p1-2" checked><label for="p1-2">Persona: "คนกังวลอาการตัวเอง ก่อนตัดสินใจไป รพ."<span class="hint">ยังไม่ป่วยหนัก · มีเวลาคิด · อยากรู้ว่าควรไปหาหมอแบบไหน</span></label></div>
+      <div class="item"><input type="checkbox" id="p1-3" checked><label for="p1-3">Job-to-be-done: "ช่วยตัดสินใจว่าควรไป รพ.ไหน · แผนกอะไร · เร่งด่วนแค่ไหน"</label></div>
+    </div>
+
+    <div class="group">
+      <h3>Scope (✓ lock แล้ว)</h3>
+      <div class="item"><input type="checkbox" id="p1-4" checked><label for="p1-4">In-scope: A · Symptom→Specialty Triage (หลัก)<span class="hint">รับอาการ → แนะนำแผนก + ระดับเร่งด่วน 1-5 (อิง ED Triage MOPH)</span></label></div>
+      <div class="item"><input type="checkbox" id="p1-5" checked><label for="p1-5">In-scope: B · Cost transparency (เสริม)<span class="hint">ค่ารักษาประมาณการ + เปรียบเทียบ รพ.รัฐ/เอกชน — แค่ขอบเขตเล็ก</span></label></div>
+      <div class="item"><input type="checkbox" id="p1-6" checked><label for="p1-6"><b>Out-of-scope ห้ามทำ:</b> วินิจฉัยโรคแน่นอน · แนะนำยา · ทดแทนแพทย์<span class="hint">เสี่ยง medical advice · เกินขอบเขต project เรียน</span></label></div>
+    </div>
+
+    <div class="group">
+      <h3>Success metric (สำหรับการ present)</h3>
+      <div class="item"><input type="checkbox" id="p1-7"><label for="p1-7">เกณฑ์ตัวชี้วัด accuracy ของ specialty recommendation<span class="hint">เช่น Top-3 specialty hit rate ≥ 80% บน eval set</span></label></div>
+      <div class="item"><input type="checkbox" id="p1-8"><label for="p1-8">Visualization ที่ทำให้กรรมการเข้าใจ "Non-AI vs AI" ใน 30 วินาที</label></div>
+      <div class="item"><input type="checkbox" id="p1-9"><label for="p1-9">App ใช้งานได้จริงสมบูรณ์ ไม่พังตอน demo<span class="hint">ลองใน 3 device ก่อน present</span></label></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="phase p2" data-phase="2">
+  <div class="phase-header" onclick="togglePhase(this)">
+    <div class="phase-num">2</div>
+    <div class="phase-title">
+      <h2>Data Strategy <span class="pill locked">data sources ครบแล้ว</span></h2>
+      <div class="desc">4-layer architecture · Thai sources + symptom dataset + standards</div>
+    </div>
+    <div class="phase-meta">
+      <span class="phase-count" data-count></span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  </div>
+  <div class="phase-body">
+
+    <div class="group">
+      <h3>Layer 1 · Symptom → Disease (เลือก 1 เป็นแกน)</h3>
+      <div class="item"><input type="checkbox" id="p2-1"><label for="p2-1">⭐ DDXPlus (Hugging Face) — แนะนำ<span class="hint">1.3M synthetic patients · 49 pathology · มี differential diagnosis · CC-BY · <a href="https://huggingface.co/datasets/aai530-group6/ddxplus" target="_blank">ลิงก์</a></span></label></div>
+      <div class="item"><input type="checkbox" id="p2-2" checked><label for="p2-2">หรือ itachi9604 (Kaggle) — ทางง่าย <span class="pill locked">เลือกเป็น backbone</span><span class="hint">4,920 records · 41 disease × 132 symptom · โหลดแล้วใน data/raw/ · <a href="https://www.kaggle.com/datasets/itachi9604/disease-symptom-description-dataset" target="_blank">ลิงก์</a></span></label></div>
+      <div class="item"><input type="checkbox" id="p2-3"><label for="p2-3">เสริม: Symptom2Disease (free-text) สำหรับ test AI mode<span class="hint">1,200 records · ข้อความเล่าอาการ → 24 disease · <a href="https://www.kaggle.com/datasets/niyarrbarman/symptom2disease" target="_blank">ลิงก์</a></span></label></div>
+    </div>
+
+    <div class="group">
+      <h3>Layer 2 · Disease → Specialty (สร้างเอง)</h3>
+      <div class="item"><input type="checkbox" id="p2-4" checked><label for="p2-4">ร่าง Disease → ICD-10 → Specialty mapping <span class="pill locked">เสร็จแล้ว</span><span class="hint">41 โรค × 10 cols · บันทึก data/processed/disease_specialty_mapping.csv · join กับ itachi 41/41</span></label></div>
+      <div class="item"><input type="checkbox" id="p2-5"><label for="p2-5">โหลด ICD-10-TM Ontology (กรมการแพทย์ MOPH)<span class="hint">309,985 concepts · เป็น bridge ระหว่าง dataset อังกฤษ ↔ สถิติไทย · <a href="https://pubmed.ncbi.nlm.nih.gov/22935742/" target="_blank">paper</a></span></label></div>
+      <div class="item"><input type="checkbox" id="p2-6"><label for="p2-6">ดึง ED Triage MOPH 5-level rules จาก PDF<span class="hint">ใช้เป็น Non-AI rule engine · 30-40 rules · <a href="https://www.dms.go.th/backend//Content/Content_File/Population_Health/Attach/25621021104459AM_44.pdf?contentId=18326" target="_blank">PDF</a></span></label></div>
+    </div>
+
+    <div class="group">
+      <h3>Layer 3 · Disease → Thai Reality (data.go.th)</h3>
+      <div class="item"><input type="checkbox" id="p2-7"><label for="p2-7">Top 20 IPD 298 กลุ่มโรค 2559-2566 ⭐ <span class="pill must">core</span><span class="hint">time series 8 ปี · พระเอกของหน้า Disease Landscape · <a href="https://www.data.go.th/th/dataset/st10-298" target="_blank">ลิงก์</a></span></label></div>
+      <div class="item"><input type="checkbox" id="p2-8"><label for="p2-8">Top OPD 2564 + Top IPD 2564 <span class="pill must">core</span><span class="hint">ranking โรคที่พบบ่อย · <a href="https://www.data.go.th/th/dataset/64-65001" target="_blank">OPD</a> · <a href="https://www.data.go.th/th/dataset/64-65002" target="_blank">IPD</a></span></label></div>
+      <div class="item"><input type="checkbox" id="p2-9"><label for="p2-9">การเข้ารับบริการ OPD 2566 <span class="pill must">core</span><span class="hint">volume context · <a href="https://www.data.go.th/th/dataset/dataset-p_22_02" target="_blank">ลิงก์</a></span></label></div>
+      <div class="item"><input type="checkbox" id="p2-10"><label for="p2-10">โรคติดต่อ/เฝ้าระวัง 2567 (recent alert)<span class="hint">"ตอนนี้จังหวัดคุณมีอะไรระบาด" · <a href="https://www.data.go.th/th/dataset/dataset_20_025" target="_blank">ลิงก์</a></span></label></div>
+      <div class="item"><input type="checkbox" id="p2-11"><label for="p2-11">ประชากรตามอายุ 2565 (สำหรับ normalize per-capita)<span class="hint">ป้องกัน bias เข้าหา กทม./นครราชสีมา · <a href="https://www.data.go.th/th/dataset/dataset-rg_11_13" target="_blank">ลิงก์</a></span></label></div>
+      <div class="item"><input type="checkbox" id="p2-12"><label for="p2-12">เลือก OPD 21 กลุ่มโรค 1 ตัว (mask vs himawari overlap กัน)</label></div>
+    </div>
+
+    <div class="group">
+      <h3>Layer 4 · Specialty → Hospital → Cost</h3>
+      <div class="item"><input type="checkbox" id="p2-13"><label for="p2-13">โรงพยาบาล 2566 master table<span class="hint">เช็คให้มี: จังหวัด/เขตสุขภาพ/ประเภท(รัฐ-เอกชน)/แผนก · <a href="https://www.data.go.th/th/dataset/hospital" target="_blank">ลิงก์</a></span></label></div>
+      <div class="item"><input type="checkbox" id="p2-14"><label for="p2-14"><b>หาเพิ่ม:</b> ค่ารักษามาตรฐาน (สำหรับ B)<span class="hint">DRG weight MOPH · ราคากลาง สปสช. · HITAP · ราคาที่ รพ.ประกาศตาม พ.ร.บ.</span></label></div>
+      <div class="item"><input type="checkbox" id="p2-15" checked><label for="p2-15"><b>สร้างเอง:</b> Thai-English symptom dictionary 132 รายการ <span class="pill locked">เสร็จแล้ว</span><span class="hint">data/processed/symptom_dictionary_th.csv · 6 cols · is_user_facing = 121 visible / 11 hidden · join 132/132</span></label></div>
+    </div>
+
+    <div class="group">
+      <h3>Quality &amp; governance</h3>
+      <div class="item"><input type="checkbox" id="p2-16"><label for="p2-16">เช็ค encoding (utf-8-sig vs cp874) ของ CSV ทุกตัวจาก data.go.th<span class="hint">บ่อยครั้งภาษาไทยเพี้ยน — ลองอ่านก่อน join</span></label></div>
+      <div class="item"><input type="checkbox" id="p2-17"><label for="p2-17">ประกาศ snapshot year ของแต่ละ dataset ใน slide<span class="hint">มีตั้งแต่ 2563-2567 · บอกชัดเจนป้องกันอาจารย์ถาม</span></label></div>
+      <div class="item"><input type="checkbox" id="p2-18"><label for="p2-18">ไม่เก็บ PII ของ user (no signup ใน MVP)<span class="hint">privacy-by-design · ไม่ต้องจัดการ PDPA</span></label></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="phase p3" data-phase="3">
+  <div class="phase-header" onclick="togglePhase(this)">
+    <div class="phase-num">3</div>
+    <div class="phase-title">
+      <h2>Architecture &amp; Tech Stack <span class="pill must">Streamlit + DuckDB บังคับ</span></h2>
+      <div class="desc">stack ตามข้อบังคับโจทย์ + เลือก external DB และ LLM provider</div>
+    </div>
+    <div class="phase-meta">
+      <span class="phase-count" data-count></span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  </div>
+  <div class="phase-body">
+
+    <div class="group">
+      <h3>Stack หลัก (บังคับโดยโจทย์)</h3>
+      <div class="item"><input type="checkbox" id="p3-1" checked><label for="p3-1">Frontend: Streamlit (multi-pages) <span class="pill must">บังคับ</span></label></div>
+      <div class="item"><input type="checkbox" id="p3-2" checked><label for="p3-2">Analytics: DuckDB + pandas <span class="pill must">บังคับ</span><span class="hint">DuckDB อ่าน CSV ตรง · join ข้าม dataset เร็ว · in-process ไม่ต้อง spin server</span></label></div>
+      <div class="item"><input type="checkbox" id="p3-3" checked><label for="p3-3">External database (อย่างน้อย 1) <span class="pill must">บังคับ</span><span class="hint">เลือก: Supabase Postgres (ฟรี + remote), MotherDuck (DuckDB cloud), หรือ Firebase</span></label></div>
+      <div class="item"><input type="checkbox" id="p3-4" checked><label for="p3-4">Streamlit cache: cache_data + cache_resource + session_state <span class="pill must">บังคับ</span><span class="hint">cache_data → CSV/DataFrame · cache_resource → DB connection/LLM client · session_state → user state ระหว่าง page</span></label></div>
+    </div>
+
+    <div class="group">
+      <h3>Decision: External DB จะเก็บอะไร</h3>
+      <div class="item"><input type="checkbox" id="p3-5"><label for="p3-5">เลือก: Supabase (Recommended) / MotherDuck / Firebase / SQLite-on-disk<span class="hint">Supabase ดี: free tier เพียงพอ · ใช้ Postgres · มี SQL editor</span></label></div>
+      <div class="item"><input type="checkbox" id="p3-6"><label for="p3-6">Schema: เก็บ user query log (anonymized)<span class="hint">ใช้ทำ visualization "อาการที่คนถามเยอะที่สุด" — feature ของ project</span></label></div>
+      <div class="item"><input type="checkbox" id="p3-7"><label for="p3-7">Schema: feedback (rating ของ user หลังใช้งาน)<span class="hint">ใช้คำนวณ accuracy + เป็นตัวเปรียบเทียบ Non-AI vs AI</span></label></div>
+    </div>
+
+    <div class="group">
+      <h3>AI provider</h3>
+      <div class="item"><input type="checkbox" id="p3-8"><label for="p3-8">เลือก LLM: Gemini Flash (free tier ใหญ่) / Claude Haiku / OpenAI mini / Gemma local<span class="hint">Gemini Flash แนะนำเพราะ free tier เหลือเฟือสำหรับ project เรียน</span></label></div>
+      <div class="item"><input type="checkbox" id="p3-9"><label for="p3-9">เก็บ API key ใน Streamlit secrets (ไม่ commit ไป GitHub)<span class="hint">.streamlit/secrets.toml ในเครื่อง · Streamlit Cloud มี UI ใส่ key</span></label></div>
+    </div>
+
+    <div class="group">
+      <h3>Hosting + GitHub</h3>
+      <div class="item"><input type="checkbox" id="p3-10"><label for="p3-10">Hosting: Streamlit Community Cloud (ฟรี + auto-deploy จาก GitHub)<span class="hint">ทางเลือก: Hugging Face Spaces · Render</span></label></div>
+      <div class="item"><input type="checkbox" id="p3-11"><label for="p3-11">GitHub repo structure (root-level): app.py + pages/ + data/ + utils/ + requirements.txt + README.md</label></div>
+      <div class="item"><input type="checkbox" id="p3-12"><label for="p3-12">วาด architecture diagram (boxes &amp; arrows)<span class="hint">ใส่ใน slide + README — กรรมการชอบ</span></label></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="phase p4" data-phase="4">
+  <div class="phase-header" onclick="togglePhase(this)">
+    <div class="phase-num">4</div>
+    <div class="phase-title">
+      <h2>Non-AI vs AI Mode Design</h2>
+      <div class="desc">2 modes ที่เปรียบเทียบกันได้ชัด · top-up หรือ parallel</div>
+    </div>
+    <div class="phase-meta">
+      <span class="phase-count" data-count></span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  </div>
+  <div class="phase-body">
+
+    <div class="group">
+      <h3>Decision: รูปแบบการเปรียบเทียบ 2 modes</h3>
+      <div class="item"><input type="checkbox" id="p4-1"><label for="p4-1">เลือก: Parallel (แนะนำ — แยกหน้า แล้ว reconcile)<span class="hint">โชว์ความต่างชัดที่สุด · กรรมการเห็น "AI ทำอะไรเพิ่ม" จากการเปรียบเทียบ</span></label></div>
+      <div class="item"><input type="checkbox" id="p4-2"><label for="p4-2">หรือ: Top-up (Non-AI วิเคราะห์ → AI สรุป/อธิบาย)<span class="hint">ง่ายกว่า แต่จุดแยกของ 2 modes ไม่ชัด</span></label></div>
+    </div>
+
+    <div class="group">
+      <h3>Non-AI mode design (rule-based + DuckDB)</h3>
+      <div class="item"><input type="checkbox" id="p4-3"><label for="p4-3">UI: checkbox รายการอาการ ~150 ตัว (มี search/filter)<span class="hint">user ติ๊กอาการที่ตัวเองมี → กดวิเคราะห์</span></label></div>
+      <div class="item"><input type="checkbox" id="p4-4"><label for="p4-4">Engine: DuckDB SQL JOIN<br>symptom × disease matrix → score → top-3 disease<span class="hint">score = ผลรวม weight ของ symptom matched / total symptom ของ disease</span></label></div>
+      <div class="item"><input type="checkbox" id="p4-5"><label for="p4-5">Disease → Specialty lookup (Layer 2 mapping)</label></div>
+      <div class="item"><input type="checkbox" id="p4-6"><label for="p4-6">ED Triage rule → คำนวณระดับเร่งด่วน 1-5</label></div>
+      <div class="item"><input type="checkbox" id="p4-7"><label for="p4-7">Output: top-3 specialty + ระดับเร่งด่วน + ค่ารักษาโดยประมาณ + รพ.แนะนำ</label></div>
+    </div>
+
+    <div class="group">
+      <h3>AI mode design (LLM + RAG)</h3>
+      <div class="item"><input type="checkbox" id="p4-8"><label for="p4-8">UI: textarea ให้พิมพ์อาการเป็นภาษาธรรมชาติ<span class="hint">"3 วันมานี้ ไอแห้งๆ ตอนกลางคืน เจ็บคอตอนเช้า..."</span></label></div>
+      <div class="item"><input type="checkbox" id="p4-9"><label for="p4-9">Pipeline: Thai input → LLM extract symptoms → match dataset → LLM narrate output<span class="hint">2 LLM call: extract + narrate · ใช้ structured output (JSON schema)</span></label></div>
+      <div class="item"><input type="checkbox" id="p4-10"><label for="p4-10">RAG: ground reasoning ด้วย disease description (จาก itachi/DDXPlus + ICD-10-TM)<span class="hint">ลด hallucination · LLM ตอบจาก context ที่เราใส่ ไม่ใช่ pretrain</span></label></div>
+      <div class="item"><input type="checkbox" id="p4-11"><label for="p4-11">System prompt + few-shot example (เก็บใน prompts/)<span class="hint">version control ใน git · เปลี่ยนแล้วต้อง re-run eval</span></label></div>
+    </div>
+
+    <div class="group">
+      <h3>Safety · cost · fallback</h3>
+      <div class="item"><input type="checkbox" id="p4-12"><label for="p4-12">Medical disclaimer แสดงทุก output<span class="hint">"ไม่ใช่คำวินิจฉัย · กรุณาปรึกษาแพทย์จริง"</span></label></div>
+      <div class="item"><input type="checkbox" id="p4-13"><label for="p4-13">Output JSON schema validation (Pydantic)<span class="hint">บังคับให้ AI ตอบเป็น schema · ป้องกัน UI พังถ้า output แปลก</span></label></div>
+      <div class="item"><input type="checkbox" id="p4-14"><label for="p4-14">Rate limit per session (เช่น 20 query/วัน)<span class="hint">กัน abuse · กัน free tier หมด</span></label></div>
+      <div class="item"><input type="checkbox" id="p4-15"><label for="p4-15">Fallback: ถ้า LLM down → switch ไป Non-AI mode + แจ้ง user</label></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="phase p5" data-phase="5">
+  <div class="phase-header" onclick="togglePhase(this)">
+    <div class="phase-num">5</div>
+    <div class="phase-title">
+      <h2>UX/UI Flow (Streamlit Multi-page)</h2>
+      <div class="desc">page structure · navigation · visualization · disclaimer</div>
+    </div>
+    <div class="phase-meta">
+      <span class="phase-count" data-count></span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  </div>
+  <div class="phase-body">
+
+    <div class="group">
+      <h3>Streamlit pages structure (6 pages)</h3>
+      <div class="item"><input type="checkbox" id="p5-1"><label for="p5-1">app.py — Home + medical disclaimer + how-it-works<span class="hint">disclaimer แสดงทุกหน้าผ่าน sidebar/banner</span></label></div>
+      <div class="item"><input type="checkbox" id="p5-2"><label for="p5-2">pages/1_🩺_Non_AI_Mode.py — checkbox symptom → ranked specialty</label></div>
+      <div class="item"><input type="checkbox" id="p5-3"><label for="p5-3">pages/2_🤖_AI_Mode.py — chat-style symptom input → ranked + reasoning</label></div>
+      <div class="item"><input type="checkbox" id="p5-4"><label for="p5-4">pages/3_⚖️_Compare.py — side-by-side ผลของ 2 modes ในอาการเดียวกัน <span class="pill must">key page</span><span class="hint">หน้านี้คือพระเอก · กรรมการต้องเห็นจุดต่างของ Non-AI vs AI ได้ชัด</span></label></div>
+      <div class="item"><input type="checkbox" id="p5-5"><label for="p5-5">pages/4_📊_Disease_Landscape.py — Thai stats visualization (Plotly)<span class="hint">trend 8 ปี · per-capita map · top diseases</span></label></div>
+      <div class="item"><input type="checkbox" id="p5-6"><label for="p5-6">pages/5_💰_Cost_Estimator.py — Feature B (lite)</label></div>
+      <div class="item"><input type="checkbox" id="p5-7"><label for="p5-7">pages/6_ℹ️_About.py — data sources · methodology · team · GitHub link</label></div>
+    </div>
+
+    <div class="group">
+      <h3>Visualization (Plotly + Streamlit native)</h3>
+      <div class="item"><input type="checkbox" id="p5-8"><label for="p5-8">Choropleth map ไทย (โรคแยกตามจังหวัด/เขตสุขภาพ)<span class="hint">Plotly + GeoJSON ของไทย</span></label></div>
+      <div class="item"><input type="checkbox" id="p5-9"><label for="p5-9">Time series 8 ปี — top 20 IPD trend</label></div>
+      <div class="item"><input type="checkbox" id="p5-10"><label for="p5-10">Bar/treemap — top diseases ตาม specialty</label></div>
+      <div class="item"><input type="checkbox" id="p5-11"><label for="p5-11">Comparison bar — Non-AI vs AI accuracy on eval set</label></div>
+    </div>
+
+    <div class="group">
+      <h3>State ที่มักลืม</h3>
+      <div class="item"><input type="checkbox" id="p5-12"><label for="p5-12">Empty state ทุกหน้า (ก่อน user input)<span class="hint">ใส่ตัวอย่าง + คำแนะนำการใช้งาน</span></label></div>
+      <div class="item"><input type="checkbox" id="p5-13"><label for="p5-13">Loading + spinner ตอน LLM call<span class="hint">st.spinner(...) ห่อ async call</span></label></div>
+      <div class="item"><input type="checkbox" id="p5-14"><label for="p5-14">Error: API down / quota exceeded</label></div>
+      <div class="item"><input type="checkbox" id="p5-15"><label for="p5-15">Disclaimer banner คงที่ทุกหน้า (st.warning ใน sidebar)</label></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="phase p6" data-phase="6">
+  <div class="phase-header" onclick="togglePhase(this)">
+    <div class="phase-num">6</div>
+    <div class="phase-title">
+      <h2>Build &amp; Iterate <span class="pill team">team task</span></h2>
+      <div class="desc">แบ่งงาน 3-5 คน · vertical slice · eval AI · rehearsal</div>
+    </div>
+    <div class="phase-meta">
+      <span class="phase-count" data-count></span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  </div>
+  <div class="phase-body">
+
+    <div class="group">
+      <h3>Team task (เสนอแบ่ง 4 บทบาท · ปรับตามจำนวนสมาชิก)</h3>
+      <div class="item"><input type="checkbox" id="p6-1"><label for="p6-1"><b>Data Engineer:</b> โหลด+clean 12 datasets · build DuckDB schema · ETL script</label></div>
+      <div class="item"><input type="checkbox" id="p6-2"><label for="p6-2"><b>Non-AI Engineer:</b> rule engine · symptom-disease matching · ED triage logic</label></div>
+      <div class="item"><input type="checkbox" id="p6-3"><label for="p6-3"><b>AI Engineer:</b> LLM pipeline · prompt · RAG · eval set</label></div>
+      <div class="item"><input type="checkbox" id="p6-4"><label for="p6-4"><b>UI/Visualization:</b> Streamlit pages · Plotly · UX polishing</label></div>
+      <div class="item"><input type="checkbox" id="p6-5"><label for="p6-5"><b>คนที่ 5 (ถ้ามี):</b> PM/QA — manage milestone · เขียน slide · ทำ demo script</label></div>
+    </div>
+
+    <div class="group">
+      <h3>Milestone roadmap (เติม deadline ของทีมเอง)</h3>
+      <div class="item"><input type="checkbox" id="p6-6"><label for="p6-6">Week 1: Data ingestion + schema design + first DuckDB query work</label></div>
+      <div class="item"><input type="checkbox" id="p6-7"><label for="p6-7">Week 2: Non-AI mode prototype (UI + rule engine ทำงานได้)</label></div>
+      <div class="item"><input type="checkbox" id="p6-8"><label for="p6-8">Week 3: AI mode + RAG + Compare page</label></div>
+      <div class="item"><input type="checkbox" id="p6-9"><label for="p6-9">Week 4: Visualization + cost feature + UX polish</label></div>
+      <div class="item"><input type="checkbox" id="p6-10"><label for="p6-10">Week 5: Eval + slide + rehearsal</label></div>
+    </div>
+
+    <div class="group">
+      <h3>Eval &amp; QA</h3>
+      <div class="item"><input type="checkbox" id="p6-11"><label for="p6-11">สร้าง eval set 30-50 cases (อาการ → expected specialty)<span class="hint">จาก Symptom2Disease + แต่งเองจากชีวิตจริง · ใช้วัด Non-AI vs AI</span></label></div>
+      <div class="item"><input type="checkbox" id="p6-12"><label for="p6-12">วัด Top-1 + Top-3 hit rate ทั้ง 2 modes</label></div>
+      <div class="item"><input type="checkbox" id="p6-13"><label for="p6-13">Test กรณี edge: อาการขัดแย้ง · อาการหายาก · ภาษาวิบัติ</label></div>
+      <div class="item"><input type="checkbox" id="p6-14"><label for="p6-14">User test กับ 3-5 คนนอกทีม (เพื่อน/ครอบครัว)<span class="hint">ดูว่า disclaimer ชัดพอไหม · UX สับสนตรงไหน</span></label></div>
+    </div>
+
+    <div class="group">
+      <h3>Engineering hygiene</h3>
+      <div class="item"><input type="checkbox" id="p6-15"><label for="p6-15">requirements.txt + version pinning (กัน Streamlit Cloud พัง)</label></div>
+      <div class="item"><input type="checkbox" id="p6-16"><label for="p6-16">.gitignore (.env, secrets.toml, *.duckdb, __pycache__)</label></div>
+      <div class="item"><input type="checkbox" id="p6-17"><label for="p6-17">Branch strategy ทีม (main + feature branch)</label></div>
+      <div class="item"><input type="checkbox" id="p6-18"><label for="p6-18">Deploy ตั้งแต่ commit แรก (Streamlit Cloud auto-deploy)</label></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="phase p7" data-phase="7">
+  <div class="phase-header" onclick="togglePhase(this)">
+    <div class="phase-num">7</div>
+    <div class="phase-title">
+      <h2>Submit &amp; Present</h2>
+      <div class="desc">GitHub README + slide 15 นาที + rehearsal + การส่งงาน</div>
+    </div>
+    <div class="phase-meta">
+      <span class="phase-count" data-count></span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  </div>
+  <div class="phase-body">
+
+    <div class="group">
+      <h3>GitHub deliverable</h3>
+      <div class="item"><input type="checkbox" id="p7-1"><label for="p7-1">README.md ครบ: project name · problem · solution · how-to-run · architecture diagram · data sources · team</label></div>
+      <div class="item"><input type="checkbox" id="p7-2"><label for="p7-2">Live demo URL (Streamlit Cloud) ใส่บน README</label></div>
+      <div class="item"><input type="checkbox" id="p7-3"><label for="p7-3">License + DISCLAIMER.md (medical disclaimer ละเอียด)</label></div>
+      <div class="item"><input type="checkbox" id="p7-4"><label for="p7-4">Screenshot 4-6 รูปใส่ใน README</label></div>
+      <div class="item"><input type="checkbox" id="p7-5"><label for="p7-5">data/ folder + script ดาวน์โหลด/preprocess</label></div>
+      <div class="item"><input type="checkbox" id="p7-6"><label for="p7-6">notebooks/ folder — EDA + eval (ให้กรรมการดูที่มา)</label></div>
+    </div>
+
+    <div class="group">
+      <h3>Slide deck 15 นาที (ตาม outline ในโจทย์)</h3>
+      <div class="item"><input type="checkbox" id="p7-7"><label for="p7-7">1. Title (1 นาที)</label></div>
+      <div class="item"><input type="checkbox" id="p7-8"><label for="p7-8">2. Issues &amp; Motivation (2 นาที) — ปัญหาคนเชื่อ internet</label></div>
+      <div class="item"><input type="checkbox" id="p7-9"><label for="p7-9">3. Objective + Persona (1 นาที)</label></div>
+      <div class="item"><input type="checkbox" id="p7-10"><label for="p7-10">4. Solution: Non-AI methodology (3 นาที) — DuckDB rule engine</label></div>
+      <div class="item"><input type="checkbox" id="p7-11"><label for="p7-11">5. Solution: AI integration (3 นาที) — LLM + RAG + guardrail</label></div>
+      <div class="item"><input type="checkbox" id="p7-12"><label for="p7-12">6. Visualization showcase (2 นาที)</label></div>
+      <div class="item"><input type="checkbox" id="p7-13"><label for="p7-13">7. Live demo (2 นาที) — เน้น Compare page</label></div>
+      <div class="item"><input type="checkbox" id="p7-14"><label for="p7-14">8. Limitations + future work (1 นาที) — รวม disclaimer</label></div>
+    </div>
+
+    <div class="group">
+      <h3>Rehearsal &amp; backup plan</h3>
+      <div class="item"><input type="checkbox" id="p7-15"><label for="p7-15">Rehearsal เต็มรูปแบบอย่างน้อย 2 ครั้ง (จับเวลา)</label></div>
+      <div class="item"><input type="checkbox" id="p7-16"><label for="p7-16">เตรียม screen recording ของ demo ไว้สำรอง<span class="hint">เผื่อ internet/Streamlit Cloud พังตอน present</span></label></div>
+      <div class="item"><input type="checkbox" id="p7-17"><label for="p7-17">เตรียมตอบคำถามที่อาจารย์น่าจะถาม:<br>· "ทำไมไม่ทำนายโรค?" — เพราะ medical advice<br>· "AI accuracy เทียบ Non-AI?" — show eval result<br>· "ถ้า LLM ตอบมั่ว?" — guardrail + RAG + disclaimer<br>· "ทำไม Streamlit cache 3 ชนิด?" — แสดงให้ดูแต่ละ use case</label></div>
+      <div class="item"><input type="checkbox" id="p7-18"><label for="p7-18">ทดสอบบน device/browser หลายๆ ตัวก่อน present</label></div>
+    </div>
+
+    <div class="group">
+      <h3>Final submission checklist</h3>
+      <div class="item"><input type="checkbox" id="p7-19"><label for="p7-19">GitHub repo public · เพิ่มอาจารย์เป็น collaborator (ถ้าต้อง)</label></div>
+      <div class="item"><input type="checkbox" id="p7-20"><label for="p7-20">Live demo URL ทดสอบครั้งสุดท้าย ก่อนส่ง</label></div>
+      <div class="item"><input type="checkbox" id="p7-21"><label for="p7-21">Slide PDF + แหล่งอ้างอิง · upload ไป repo ด้วย</label></div>
+      <div class="item"><input type="checkbox" id="p7-22"><label for="p7-22">รายชื่อสมาชิก + บทบาท + % contribution (ถ้าต้อง)</label></div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  Roadmap DADS5001 Final · Symptom-to-Specialty Triage + Cost-lite · Streamlit + DuckDB + 2-mode comparison<br>
+  ความคืบหน้าถูกบันทึกในเครื่องอัตโนมัติ · เปิด/ปิด phase ตามต้องการ · พิมพ์/PDF ได้
+</footer>
+
+<script>
+  const STORAGE_KEY = 'dads5001_roadmap_v2';
+
+  // loadState merges localStorage on top of HTML defaults — items not in saved state retain their HTML default
+  function loadState(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return; // no saved state → keep HTML defaults
+    try{
+      const saved = JSON.parse(raw);
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+        if(cb.id in saved){
+          cb.checked = !!saved[cb.id];
+        }
+        // else: keep HTML default
+        cb.closest('.item').classList.toggle('done', cb.checked);
+      });
+    }catch(e){}
+  }
+  // saveState saves all states (true and false) so user can override HTML defaults persistently
+  function saveState(){
+    const state = {};
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      state[cb.id] = cb.checked;
+    });
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+
+  function togglePhase(headerEl){
+    headerEl.parentElement.classList.toggle('open');
+  }
+  function expandAll(open){
+    document.querySelectorAll('.phase').forEach(p=>{
+      p.classList.toggle('open', open);
+    });
+  }
+
+  function resetAll(){
+    if(!confirm('รีเซ็ตทุกความคืบหน้า? (รวมข้อที่ติ๊กไว้ default)')) return;
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      cb.checked = false;
+      cb.closest('.item').classList.remove('done');
+    });
+    saveState();
+    updateProgress();
+  }
+
+  function updateProgress(){
+    const all = document.querySelectorAll('input[type="checkbox"]');
+    const done = document.querySelectorAll('input[type="checkbox"]:checked');
+    const pct = all.length ? Math.round(done.length/all.length*100) : 0;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-text').textContent = done.length + '/' + all.length + ' (' + pct + '%)';
+
+    document.querySelectorAll('.phase').forEach(phase=>{
+      const total = phase.querySelectorAll('input[type="checkbox"]').length;
+      const ck = phase.querySelectorAll('input[type="checkbox"]:checked').length;
+      const badge = phase.querySelector('[data-count]');
+      if(badge) badge.textContent = ck + '/' + total;
+    });
+  }
+
+  document.getElementById('search').addEventListener('input', (e)=>{
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('.phase').forEach(phase=>{
+      let hasMatch = false;
+      phase.querySelectorAll('.item').forEach(it=>{
+        const txt = it.textContent.toLowerCase();
+        const match = !q || txt.includes(q);
+        it.classList.toggle('hidden', !match);
+        if(match) hasMatch = true;
+      });
+      const title = phase.querySelector('.phase-title').textContent.toLowerCase();
+      if(title.includes(q)) hasMatch = true;
+      phase.classList.toggle('hidden', q && !hasMatch);
+      if(q && hasMatch) phase.classList.add('open');
+    });
+  });
+
+  document.addEventListener('change', (e)=>{
+    if(e.target.matches('input[type="checkbox"]')){
+      e.target.closest('.item').classList.toggle('done', e.target.checked);
+      saveState();
+      updateProgress();
+    }
+  });
+
+  // Init: apply default-checked classes, then load saved state if any
+  document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb=>{
+    cb.closest('.item').classList.add('done');
+  });
+  loadState();
+  updateProgress();
+  // Open phase 1 + 2 by default (สิ่งที่ตกลงแล้ว)
+  document.querySelector('.phase.p1').classList.add('open');
+  document.querySelector('.phase.p2').classList.add('open');
+</script>
+
+</body>
+</html>
