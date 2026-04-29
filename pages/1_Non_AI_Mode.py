@@ -17,7 +17,7 @@ from utils.data_loader import (
     init_session_state,
     render_disclaimer_sidebar,
 )
-from utils.scoring import predict
+from utils.scoring import predict, score_tfidf, score_bayes
 
 st.set_page_config(page_title="Non-AI Mode", page_icon="🩺", layout="wide")
 init_session_state()
@@ -165,6 +165,16 @@ result = ranked.merge(
 # 4️⃣ Display top-K
 # ---------------------------------------------------------------------------
 st.divider()
+
+# Engine info badge — แสดงให้เห็นว่ารันด้วย DuckDB SQL จริง
+engine = ranked.attrs.get("engine", "?")
+elapsed = ranked.attrs.get("scoring_time_ms", 0)
+n_rows = ranked.attrs.get("rows_scanned", 0)
+st.caption(
+    f"⚡ Powered by **{engine}** · scored {n_rows} diseases in **{elapsed:.1f} ms** "
+    f"(method: {method.upper()})"
+)
+
 st.markdown(f"### 4️⃣ ผลลัพธ์ Top-{top_k}")
 
 URGENCY_LABEL = {
@@ -220,7 +230,7 @@ for i, row in result.iterrows():
                     ),
                 )
                 st.caption(
-                    f"≈ {int(p*100)} จาก 100 คนที่มีอาการแบบนี้ "
+                    f"~ {int(p*100)} จาก 100 คนที่มีอาการแบบนี้ "
                     "น่าจะเป็นโรคนี้"
                 )
 
@@ -234,14 +244,14 @@ for i, row in result.iterrows():
 
         if red_flags:
             st.warning(
-                f"⚠ **Red flags ที่ควรระวัง — ถ้ามีอาการเหล่านี้ให้รีบไป ER ทันที:** "
+                f"WARNING: Red flags ที่ควรระวัง — ถ้ามีอาการเหล่านี้ให้รีบไป ER ทันที: "
                 f"{red_flags}"
             )
 
 # ---------------------------------------------------------------------------
 # Detail table
 # ---------------------------------------------------------------------------
-with st.expander("📋 ตารางผลลัพธ์เต็ม"):
+with st.expander("ตารางผลลัพธ์เต็ม"):
     show_cols = [
         "rank", "disease_th", "primary_specialty",
         "urgency_level", "icd10_code",
@@ -260,11 +270,45 @@ with st.expander("📋 ตารางผลลัพธ์เต็ม"):
     st.dataframe(result[avail], use_container_width=True, hide_index=True)
 
 # ---------------------------------------------------------------------------
-# Reset (FIXED: ใช้ on_click callback ป้องกัน StreamlitAPIException)
+# Scoring matrix — DuckDB intermediate result (all 41 diseases scored)
+# ---------------------------------------------------------------------------
+with st.expander("ดู scoring matrix (intermediate result จาก DuckDB)"):
+    st.caption(
+        "DataFrame ที่ DuckDB คืนกลับมาก่อน sort + truncate ด้วย Top-K · "
+        "เห็นทั้ง 41 โรคพร้อมคะแนนเต็ม"
+    )
+    if method == "tfidf":
+        full = score_tfidf(selected, arts)
+        st.dataframe(
+            full[["disease", "score", "n_matched", "n_disease_symptoms",
+                  "coverage", "confidence"]],
+            use_container_width=True, hide_index=True,
+        )
+    elif method == "bayes":
+        full = score_bayes(selected, arts)
+        st.dataframe(
+            full[["disease", "log_posterior", "posterior", "n_matched"]],
+            use_container_width=True, hide_index=True,
+        )
+    else:
+        ft = score_tfidf(selected, arts)[["disease", "score", "coverage"]]
+        fb = score_bayes(selected, arts)[["disease", "posterior"]]
+        full = ft.merge(fb, on="disease", how="outer").rename(
+            columns={"score": "tfidf_score", "posterior": "bayes_posterior"}
+        )
+        st.dataframe(full, use_container_width=True, hide_index=True)
+
+    a, b, c = st.columns(3)
+    a.metric("Engine", ranked.attrs.get("engine", "-"))
+    b.metric("Time", f"{ranked.attrs.get('scoring_time_ms', 0):.2f} ms")
+    c.metric("Rows scanned", ranked.attrs.get("rows_scanned", 0))
+
+# ---------------------------------------------------------------------------
+# Reset button
 # ---------------------------------------------------------------------------
 st.divider()
 st.button(
-    "🔄 ล้างการเลือกทั้งหมด",
+    "ล้างการเลือกทั้งหมด",
     on_click=_clear_all_symptoms,
     help="ล้าง checkbox + reset เพื่อเริ่มใหม่",
 )

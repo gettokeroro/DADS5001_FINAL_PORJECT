@@ -168,6 +168,11 @@
     <span>📦 <b>Submit:</b> GitHub</span>
     <span>🤖 <b>LLM:</b> เลือกได้ (ไม่บังคับ Gemma)</span>
   </div>
+  <div class="meta-row">
+    <span>🌐 <b>Live:</b> <a href="https://github.com/gettokeroro/DADS5001_FINAL_PORJECT" target="_blank">GitHub</a> + Streamlit Cloud</span>
+    <span>✅ <b>Live pages:</b> Home · Non-AI · About</span>
+    <span>🚧 <b>Phase 4 next:</b> AI Mode + DuckDB SQL conversion</span>
+  </div>
 </header>
 
 <div class="callout warn">
@@ -318,13 +323,13 @@
     <div class="group">
       <h3>AI provider</h3>
       <div class="item"><input type="checkbox" id="p3-8"><label for="p3-8">เลือก LLM: Gemini Flash (free tier ใหญ่) / Claude Haiku / OpenAI mini / Gemma local<span class="hint">Gemini Flash แนะนำเพราะ free tier เหลือเฟือสำหรับ project เรียน</span></label></div>
-      <div class="item"><input type="checkbox" id="p3-9"><label for="p3-9">เก็บ API key ใน Streamlit secrets (ไม่ commit ไป GitHub)<span class="hint">.streamlit/secrets.toml ในเครื่อง · Streamlit Cloud มี UI ใส่ key</span></label></div>
+      <div class="item"><input type="checkbox" id="p3-9" checked><label for="p3-9">เก็บ API key ใน Streamlit secrets (ไม่ commit ไป GitHub) <span class="pill locked">template พร้อม</span><span class="hint">.streamlit/secrets.toml.example สร้างแล้ว · gitignore เพิ่ม secrets.toml · Streamlit Cloud UI พร้อมใส่ key</span></label></div>
     </div>
 
     <div class="group">
       <h3>Hosting + GitHub</h3>
-      <div class="item"><input type="checkbox" id="p3-10"><label for="p3-10">Hosting: Streamlit Community Cloud (ฟรี + auto-deploy จาก GitHub)<span class="hint">ทางเลือก: Hugging Face Spaces · Render</span></label></div>
-      <div class="item"><input type="checkbox" id="p3-11"><label for="p3-11">GitHub repo structure (root-level): app.py + pages/ + data/ + utils/ + requirements.txt + README.md</label></div>
+      <div class="item"><input type="checkbox" id="p3-10" checked><label for="p3-10">Hosting: Streamlit Community Cloud <span class="pill locked">live</span><span class="hint">deploy แล้วจาก github.com/gettokeroro/DADS5001_FINAL_PORJECT · auto-redeploy on push</span></label></div>
+      <div class="item"><input type="checkbox" id="p3-11" checked><label for="p3-11">GitHub repo structure: app.py + pages/ + data/ + utils/ + requirements.txt + README.md <span class="pill locked">เสร็จ</span></label></div>
       <div class="item"><input type="checkbox" id="p3-12"><label for="p3-12">วาด architecture diagram (boxes &amp; arrows)<span class="hint">ใส่ใน slide + README — กรรมการชอบ</span></label></div>
     </div>
 
@@ -354,11 +359,11 @@
 
     <div class="group">
       <h3>Non-AI mode design (rule-based + DuckDB)</h3>
-      <div class="item"><input type="checkbox" id="p4-3"><label for="p4-3">UI: checkbox รายการอาการ ~150 ตัว (มี search/filter)<span class="hint">user ติ๊กอาการที่ตัวเองมี → กดวิเคราะห์</span></label></div>
-      <div class="item"><input type="checkbox" id="p4-4"><label for="p4-4">Engine: DuckDB SQL JOIN<br>symptom × disease matrix → score → top-3 disease<span class="hint">score = ผลรวม weight ของ symptom matched / total symptom ของ disease</span></label></div>
-      <div class="item"><input type="checkbox" id="p4-5"><label for="p4-5">Disease → Specialty lookup (Layer 2 mapping)</label></div>
-      <div class="item"><input type="checkbox" id="p4-6"><label for="p4-6">ED Triage rule → คำนวณระดับเร่งด่วน 1-5</label></div>
-      <div class="item"><input type="checkbox" id="p4-7"><label for="p4-7">Output: top-3 specialty + ระดับเร่งด่วน + ค่ารักษาโดยประมาณ + รพ.แนะนำ</label></div>
+      <div class="item"><input type="checkbox" id="p4-3" checked><label for="p4-3">UI: checkbox 121 อาการ จัดกลุ่มตาม body system 12 หมวด <span class="pill locked">live</span><span class="hint">pages/1_Non_AI_Mode.py · 11 รายการ hidden (history/clinical) · default expand 3 หมวดยอดฮิต</span></label></div>
+      <div class="item"><input type="checkbox" id="p4-4" checked><label for="p4-4">Engine: DuckDB SQL JOIN<br>symptom × disease matrix → score → top-3 disease <span class="pill locked">live</span><span class="hint">utils/scoring.py: _TFIDF_SQL + _BAYES_SQL · CTE 3 ชั้น · in-memory DB + index · 5.8ms/query</span></label></div>
+      <div class="item"><input type="checkbox" id="p4-5" checked><label for="p4-5">Disease → Specialty lookup (Layer 2 mapping) <span class="pill locked">live</span><span class="hint">join กับ disease_specialty_mapping.csv · primary + secondary specialty</span></label></div>
+      <div class="item"><input type="checkbox" id="p4-6" checked><label for="p4-6">ED Triage rule → urgency 1-5 <span class="pill locked">live</span><span class="hint">โหลดจาก mapping · แสดง color-coded badge + red flags</span></label></div>
+      <div class="item"><input type="checkbox" id="p4-7"><label for="p4-7">Output: top-3 specialty + urgency + ค่ารักษา + รพ.แนะนำ<span class="hint">specialty + urgency ✅ · cost + hospital ยังต้องทำ (Phase 5)</span></label></div>
     </div>
 
     <div class="group">
@@ -397,13 +402,13 @@
 
     <div class="group">
       <h3>Streamlit pages structure (6 pages)</h3>
-      <div class="item"><input type="checkbox" id="p5-1"><label for="p5-1">app.py — Home + medical disclaimer + how-it-works<span class="hint">disclaimer แสดงทุกหน้าผ่าน sidebar/banner</span></label></div>
-      <div class="item"><input type="checkbox" id="p5-2"><label for="p5-2">pages/1_🩺_Non_AI_Mode.py — checkbox symptom → ranked specialty</label></div>
+      <div class="item"><input type="checkbox" id="p5-1" checked><label for="p5-1">app.py — Home + medical disclaimer + how-it-works <span class="pill locked">live</span><span class="hint">disclaimer ใน sidebar ทุกหน้า · Quick stats · How-it-works 3 cols</span></label></div>
+      <div class="item"><input type="checkbox" id="p5-2" checked><label for="p5-2">pages/1_Non_AI_Mode.py — checkbox symptom → ranked specialty <span class="pill locked">live · ทดสอบผ่าน</span><span class="hint">4 sections · TF-IDF/Bayes/Both · color-coded urgency · red-flag warnings · clear button</span></label></div>
       <div class="item"><input type="checkbox" id="p5-3"><label for="p5-3">pages/2_🤖_AI_Mode.py — chat-style symptom input → ranked + reasoning</label></div>
       <div class="item"><input type="checkbox" id="p5-4"><label for="p5-4">pages/3_⚖️_Compare.py — side-by-side ผลของ 2 modes ในอาการเดียวกัน <span class="pill must">key page</span><span class="hint">หน้านี้คือพระเอก · กรรมการต้องเห็นจุดต่างของ Non-AI vs AI ได้ชัด</span></label></div>
       <div class="item"><input type="checkbox" id="p5-5"><label for="p5-5">pages/4_📊_Disease_Landscape.py — Thai stats visualization (Plotly)<span class="hint">trend 8 ปี · per-capita map · top diseases</span></label></div>
       <div class="item"><input type="checkbox" id="p5-6"><label for="p5-6">pages/5_💰_Cost_Estimator.py — Feature B (lite)</label></div>
-      <div class="item"><input type="checkbox" id="p5-7"><label for="p5-7">pages/6_ℹ️_About.py — data sources · methodology · team · GitHub link</label></div>
+      <div class="item"><input type="checkbox" id="p5-7" checked><label for="p5-7">pages/6_About.py — data sources · methodology · team · GitHub link <span class="pill locked">live</span><span class="hint">เพิ่มชื่อทีมจริงแทน TBD</span></label></div>
     </div>
 
     <div class="group">
@@ -416,10 +421,10 @@
 
     <div class="group">
       <h3>State ที่มักลืม</h3>
-      <div class="item"><input type="checkbox" id="p5-12"><label for="p5-12">Empty state ทุกหน้า (ก่อน user input)<span class="hint">ใส่ตัวอย่าง + คำแนะนำการใช้งาน</span></label></div>
-      <div class="item"><input type="checkbox" id="p5-13"><label for="p5-13">Loading + spinner ตอน LLM call<span class="hint">st.spinner(...) ห่อ async call</span></label></div>
-      <div class="item"><input type="checkbox" id="p5-14"><label for="p5-14">Error: API down / quota exceeded</label></div>
-      <div class="item"><input type="checkbox" id="p5-15"><label for="p5-15">Disclaimer banner คงที่ทุกหน้า (st.warning ใน sidebar)</label></div>
+      <div class="item"><input type="checkbox" id="p5-12" checked><label for="p5-12">Empty state ทุกหน้า (ก่อน user input) <span class="pill locked">เสร็จ</span><span class="hint">"ติ๊กอาการอย่างน้อย 1 ข้อ" + stub pages "🚧 Phase X · กำลังพัฒนา"</span></label></div>
+      <div class="item"><input type="checkbox" id="p5-13" checked><label for="p5-13">Loading + spinner <span class="pill locked">เสร็จ</span><span class="hint">st.spinner ใน scoring run + cache loaders</span></label></div>
+      <div class="item"><input type="checkbox" id="p5-14"><label for="p5-14">Error: API down / quota exceeded<span class="hint">รอ AI mode (Phase 4) — ตอนนี้ Non-AI ไม่มี API call</span></label></div>
+      <div class="item"><input type="checkbox" id="p5-15" checked><label for="p5-15">Disclaimer banner คงที่ทุกหน้า <span class="pill locked">live</span><span class="hint">render_disclaimer_sidebar() เรียกทุก page · st.warning สีเหลือง</span></label></div>
     </div>
 
   </div>
@@ -452,7 +457,7 @@
     <div class="group">
       <h3>Milestone roadmap (เติม deadline ของทีมเอง)</h3>
       <div class="item"><input type="checkbox" id="p6-6"><label for="p6-6">Week 1: Data ingestion + schema design + first DuckDB query work</label></div>
-      <div class="item"><input type="checkbox" id="p6-7"><label for="p6-7">Week 2: Non-AI mode prototype (UI + rule engine ทำงานได้)</label></div>
+      <div class="item"><input type="checkbox" id="p6-7" checked><label for="p6-7">Week 2: Non-AI mode prototype (UI + rule engine ทำงานได้) <span class="pill locked">เสร็จแล้ว · live</span></label></div>
       <div class="item"><input type="checkbox" id="p6-8"><label for="p6-8">Week 3: AI mode + RAG + Compare page</label></div>
       <div class="item"><input type="checkbox" id="p6-9"><label for="p6-9">Week 4: Visualization + cost feature + UX polish</label></div>
       <div class="item"><input type="checkbox" id="p6-10"><label for="p6-10">Week 5: Eval + slide + rehearsal</label></div>
@@ -460,18 +465,18 @@
 
     <div class="group">
       <h3>Eval &amp; QA</h3>
-      <div class="item"><input type="checkbox" id="p6-11"><label for="p6-11">สร้าง eval set 30-50 cases (อาการ → expected specialty)<span class="hint">จาก Symptom2Disease + แต่งเองจากชีวิตจริง · ใช้วัด Non-AI vs AI</span></label></div>
-      <div class="item"><input type="checkbox" id="p6-12"><label for="p6-12">วัด Top-1 + Top-3 hit rate ทั้ง 2 modes</label></div>
+      <div class="item"><input type="checkbox" id="p6-11"><label for="p6-11">สร้าง eval set 30-50 cases (อาการ → expected specialty)<span class="hint">ตอนนี้มี 10 cases ใน utils/scoring.DEFAULT_EVAL_CASES · ขยายเป็น 30-50 ตอน Phase 4</span></label></div>
+      <div class="item"><input type="checkbox" id="p6-12"><label for="p6-12">วัด Top-1 + Top-3 hit rate ทั้ง 2 modes<span class="hint">Non-AI: TF-IDF 100/100% · Bayes 80/90% · AI ยังต้องวัด</span></label></div>
       <div class="item"><input type="checkbox" id="p6-13"><label for="p6-13">Test กรณี edge: อาการขัดแย้ง · อาการหายาก · ภาษาวิบัติ</label></div>
       <div class="item"><input type="checkbox" id="p6-14"><label for="p6-14">User test กับ 3-5 คนนอกทีม (เพื่อน/ครอบครัว)<span class="hint">ดูว่า disclaimer ชัดพอไหม · UX สับสนตรงไหน</span></label></div>
     </div>
 
     <div class="group">
       <h3>Engineering hygiene</h3>
-      <div class="item"><input type="checkbox" id="p6-15"><label for="p6-15">requirements.txt + version pinning (กัน Streamlit Cloud พัง)</label></div>
-      <div class="item"><input type="checkbox" id="p6-16"><label for="p6-16">.gitignore (.env, secrets.toml, *.duckdb, __pycache__)</label></div>
-      <div class="item"><input type="checkbox" id="p6-17"><label for="p6-17">Branch strategy ทีม (main + feature branch)</label></div>
-      <div class="item"><input type="checkbox" id="p6-18"><label for="p6-18">Deploy ตั้งแต่ commit แรก (Streamlit Cloud auto-deploy)</label></div>
+      <div class="item"><input type="checkbox" id="p6-15" checked><label for="p6-15">requirements.txt + version pinning <span class="pill locked">เสร็จ</span><span class="hint">pin upper bound: pandas&lt;3, numpy&lt;2 · ป้องกัน breaking changes</span></label></div>
+      <div class="item"><input type="checkbox" id="p6-16" checked><label for="p6-16">.gitignore (.env, secrets.toml, *.duckdb, __pycache__) <span class="pill locked">เสร็จ</span></label></div>
+      <div class="item"><input type="checkbox" id="p6-17"><label for="p6-17">Branch strategy ทีม (main + feature branch)<span class="hint">ตอนนี้ทุกคน push main · พิจารณาตอนทีมโตขึ้น</span></label></div>
+      <div class="item"><input type="checkbox" id="p6-18" checked><label for="p6-18">Deploy ตั้งแต่ commit แรก (Streamlit Cloud auto-deploy) <span class="pill locked">live</span></label></div>
     </div>
 
   </div>
@@ -539,7 +544,7 @@
 </footer>
 
 <script>
-  const STORAGE_KEY = 'dads5001_roadmap_v2';
+  const STORAGE_KEY = 'dads5001_roadmap_v3';
 
   // loadState merges localStorage on top of HTML defaults — items not in saved state retain their HTML default
   function loadState(){
