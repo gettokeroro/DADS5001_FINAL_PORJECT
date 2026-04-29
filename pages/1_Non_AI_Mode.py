@@ -17,17 +17,30 @@ from utils.data_loader import (
     init_session_state,
     render_disclaimer_sidebar,
 )
-from utils.scoring import predict, score_tfidf, score_bayes
+from utils.scoring import predict
 
 st.set_page_config(page_title="Non-AI Mode", page_icon="🩺", layout="wide")
 init_session_state()
 render_disclaimer_sidebar()
 
+
+# ---------------------------------------------------------------------------
+# Reset callback (must be defined before button uses it)
+# ---------------------------------------------------------------------------
+def _clear_all_symptoms():
+    """Callback: ล้าง widget keys + selected_symptoms · ทำงานก่อน rerun
+    ห้ามแก้ session_state ของ widget หลัง render — ต้องใช้ callback"""
+    for k in list(st.session_state.keys()):
+        if isinstance(k, str) and k.startswith("sym_"):
+            del st.session_state[k]
+    st.session_state.selected_symptoms = []
+
+
 # ---------------------------------------------------------------------------
 # Header
 # ---------------------------------------------------------------------------
 st.title("🩺 Non-AI Mode")
-st.markdown("##### ติ๊กอาการที่คุณมี → ระบบใช้ TF-IDF scoring แนะนำ Top-3 แผนก")
+st.markdown("##### ติ๊กอาการที่คุณมี → ระบบใช้ TF-IDF / Bayes แนะนำ Top-3 แผนก")
 
 st.divider()
 
@@ -42,17 +55,18 @@ arts = get_scoring_artifacts()
 sym_visible = sym_dict[sym_dict["is_user_facing"] == True].copy()
 
 # ---------------------------------------------------------------------------
-# Symptom checkbox UI — grouped by body_system
+# 1️⃣ Symptom checkbox UI — grouped by body_system
 # ---------------------------------------------------------------------------
 st.markdown("### 1️⃣ เลือกอาการที่คุณมี")
-st.caption(f"แสดง {len(sym_visible)} อาการ จัดกลุ่มตามระบบร่างกาย · กางกล่องที่ต้องการเพื่อติ๊ก")
-
-# Order body systems by # of symptoms desc (likely to be expanded first)
-body_order = (
-    sym_visible.groupby("body_system").size().sort_values(ascending=False).index.tolist()
+st.caption(
+    f"แสดง {len(sym_visible)} อาการ จัดกลุ่มตามระบบร่างกาย · "
+    "กางกล่องที่ต้องการเพื่อติ๊ก"
 )
 
-# Default-expand top 3 most-likely-used groups
+body_order = (
+    sym_visible.groupby("body_system").size()
+    .sort_values(ascending=False).index.tolist()
+)
 DEFAULT_EXPANDED = {"ทั่วไป", "ทางเดินอาหาร", "ทางเดินหายใจ"}
 
 selected = []
@@ -74,45 +88,70 @@ for body in body_order:
 st.session_state.selected_symptoms = selected
 
 # ---------------------------------------------------------------------------
-# Scoring controls
+# 2️⃣ Selected recap (FIXED: ขึ้นก่อนผลลัพธ์ Top-3)
 # ---------------------------------------------------------------------------
 st.divider()
-st.markdown("### 2️⃣ เลือกวิธีคำนวณ และดูผลลัพธ์")
+st.markdown("### 2️⃣ อาการที่คุณติ๊ก")
 
-c1, c2, c3 = st.columns([2, 1, 1])
+if not selected:
+    st.info("👆 ติ๊กอาการอย่างน้อย 1 ข้อด้านบน เพื่อเริ่มวิเคราะห์")
+else:
+    sel_df = sym_dict[sym_dict["symptom_en"].isin(selected)][
+        ["symptom_th", "ui_label", "body_system"]
+    ].rename(
+        columns={
+            "symptom_th": "อาการ (ไทย)",
+            "ui_label": "ป้ายในแอป",
+            "body_system": "หมวด",
+        }
+    )
+    a, b = st.columns([1, 4])
+    a.metric("ติ๊กแล้ว", len(selected))
+    b.dataframe(sel_df, use_container_width=True, hide_index=True)
+
+# ---------------------------------------------------------------------------
+# Stop here if nothing selected — clear button still useful at end
+# ---------------------------------------------------------------------------
+if not selected:
+    st.divider()
+    st.button(
+        "🔄 ล้างการเลือกทั้งหมด",
+        on_click=_clear_all_symptoms,
+        help="ล้าง checkbox + reset",
+    )
+    st.stop()
+
+# ---------------------------------------------------------------------------
+# 3️⃣ Scoring controls
+# ---------------------------------------------------------------------------
+st.divider()
+st.markdown("### 3️⃣ เลือกวิธีคำนวณ")
+
+c1, c2 = st.columns([3, 1])
 with c1:
     method = st.radio(
         "วิธี scoring",
         options=["tfidf", "bayes", "both"],
         format_func={
-            "tfidf": "TF-IDF (recommended)",
-            "bayes": "Naive Bayes",
+            "tfidf": "TF-IDF — ถ่วงน้ำหนักด้วยความเฉพาะของอาการ (recommended)",
+            "bayes": "Naive Bayes — คำนวณ P(โรค|อาการ)",
             "both": "เปรียบเทียบทั้งสอง",
         }.get,
-        horizontal=True,
         key="scoring_method",
+        help="TF-IDF ใช้ specificity (อาการหายาก = น้ำหนักสูง) · "
+             "Bayes ใช้ทฤษฎีความน่าจะเป็น Naive Bayes",
     )
 with c2:
-    top_k = st.number_input("Top-K", min_value=1, max_value=10, value=3)
-with c3:
-    st.metric("อาการที่ติ๊ก", len(selected))
+    top_k = st.number_input(
+        "Top-K", min_value=1, max_value=10, value=3,
+        help="แสดงกี่อันดับแรก",
+    )
 
 # ---------------------------------------------------------------------------
 # Run scoring
 # ---------------------------------------------------------------------------
-if not selected:
-    st.info("👆 ติ๊กอาการอย่างน้อย 1 ข้อด้านบน เพื่อเริ่มวิเคราะห์")
-    st.stop()
-
 with st.spinner("กำลังคำนวณ..."):
-    if method == "both":
-        ranked = predict(selected, arts, method="both", top_k=top_k)
-        score_col = "avg_rank"
-        ascending = True
-    else:
-        ranked = predict(selected, arts, method=method, top_k=top_k)
-        score_col = "primary_score"
-        ascending = False
+    ranked = predict(selected, arts, method=method, top_k=top_k)
 
 # Join with specialty mapping
 result = ranked.merge(
@@ -123,10 +162,10 @@ result = ranked.merge(
 )
 
 # ---------------------------------------------------------------------------
-# Display top-K
+# 4️⃣ Display top-K
 # ---------------------------------------------------------------------------
 st.divider()
-st.markdown(f"### 3️⃣ ผลลัพธ์ Top-{top_k}")
+st.markdown(f"### 4️⃣ ผลลัพธ์ Top-{top_k}")
 
 URGENCY_LABEL = {
     1: ("🟥 1 — Resuscitation (ฉุกเฉินทันที)", "error"),
@@ -157,47 +196,75 @@ for i, row in result.iterrows():
                 st.markdown(f"**แผนกรอง:** {secondary}")
         with b:
             getattr(st, urg_kind)(urg_label)
+
             if method == "tfidf":
-                st.metric("Score", f"{row['primary_score']:.2f}")
-                st.caption(f"Coverage: {row.get('coverage', 0):.0%}")
+                st.metric(
+                    "TF-IDF Score",
+                    f"{row['primary_score']:.2f}",
+                    help="คะแนนจาก specificity weighting · ยิ่งสูงยิ่งตรงโรคนี้",
+                )
+                cov = row.get("coverage", 0) or 0
+                st.caption(
+                    f"Coverage: {cov:.0%} · "
+                    "อาการที่ติ๊ก match กับโรคนี้กี่ %"
+                )
+
             elif method == "bayes":
-                st.metric("Posterior", f"{row['primary_score']:.3f}")
-            else:
-                st.metric("Avg rank", f"{row['avg_rank']:.1f}")
+                p = float(row["primary_score"])
+                st.metric(
+                    "ความน่าจะเป็น",
+                    f"{p:.1%}",
+                    help=(
+                        "P(โรคนี้ | อาการที่ติ๊ก) จาก Naive Bayes · "
+                        "ตั้ง prior = 1/41 (uniform บน synthetic data)"
+                    ),
+                )
+                st.caption(
+                    f"≈ {int(p*100)} จาก 100 คนที่มีอาการแบบนี้ "
+                    "น่าจะเป็นโรคนี้"
+                )
+
+            else:  # both
+                st.metric(
+                    "Avg rank",
+                    f"{row['avg_rank']:.1f}",
+                    help="อันดับเฉลี่ยจาก TF-IDF + Bayes · ต่ำ = ดีกว่า",
+                )
+                st.caption("ค่าน้อย = อยู่อันดับสูงในทั้ง 2 วิธี")
 
         if red_flags:
-            st.warning(f"⚠ **Red flags ที่ควรระวัง — ถ้ามีอาการเหล่านี้ให้รีบไป ER ทันที:** {red_flags}")
+            st.warning(
+                f"⚠ **Red flags ที่ควรระวัง — ถ้ามีอาการเหล่านี้ให้รีบไป ER ทันที:** "
+                f"{red_flags}"
+            )
 
 # ---------------------------------------------------------------------------
 # Detail table
 # ---------------------------------------------------------------------------
 with st.expander("📋 ตารางผลลัพธ์เต็ม"):
-    show_cols = ["rank", "disease_th", "primary_specialty", "urgency_level", "icd10_code"]
+    show_cols = [
+        "rank", "disease_th", "primary_specialty",
+        "urgency_level", "icd10_code",
+    ]
     if method == "tfidf":
         show_cols += ["primary_score", "coverage"]
     elif method == "bayes":
         show_cols += ["primary_score"]
     elif method == "both":
-        show_cols = ["rank", "disease", "tfidf_score", "bayes_posterior", "avg_rank"]
+        show_cols = [
+            "rank", "disease", "tfidf_score",
+            "bayes_posterior", "avg_rank",
+        ]
 
     avail = [c for c in show_cols if c in result.columns]
     st.dataframe(result[avail], use_container_width=True, hide_index=True)
 
 # ---------------------------------------------------------------------------
-# Selected symptoms recap
+# Reset (FIXED: ใช้ on_click callback ป้องกัน StreamlitAPIException)
 # ---------------------------------------------------------------------------
-with st.expander("✓ อาการที่คุณติ๊ก", expanded=False):
-    sel_df = sym_dict[sym_dict["symptom_en"].isin(selected)][
-        ["symptom_th", "ui_label", "body_system"]
-    ]
-    st.dataframe(sel_df, use_container_width=True, hide_index=True)
-
-# ---------------------------------------------------------------------------
-# Reset
-# ---------------------------------------------------------------------------
-if st.button("🔄 ล้างการเลือกทั้งหมด"):
-    st.session_state.selected_symptoms = []
-    for k in list(st.session_state.keys()):
-        if isinstance(k, str) and k.startswith("sym_"):
-            st.session_state[k] = False
-    st.rerun()
+st.divider()
+st.button(
+    "🔄 ล้างการเลือกทั้งหมด",
+    on_click=_clear_all_symptoms,
+    help="ล้าง checkbox + reset เพื่อเริ่มใหม่",
+)
