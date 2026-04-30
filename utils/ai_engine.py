@@ -33,6 +33,83 @@ def _get_genai():
 
 
 # ---------------------------------------------------------------------------
+# Model resolution — Google deprecates model names regularly
+# ---------------------------------------------------------------------------
+_MODEL_CACHE: dict[str, str] = {}
+
+# Try in order — first working model wins. Newest first.
+_FLASH_CANDIDATES = [
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-flash-latest",
+    "gemini-1.5-flash-latest",
+    "gemini-1.5-flash-002",
+    "gemini-1.5-flash",
+]
+
+
+def _resolve_model_name(api_key: str) -> str:
+    """Find a working Gemini Flash model name from current account.
+    Caches result by api_key. Robust against Google's model deprecations."""
+    if api_key in _MODEL_CACHE:
+        return _MODEL_CACHE[api_key]
+
+    genai = _get_genai()
+    genai.configure(api_key=api_key)
+
+    try:
+        models = list(genai.list_models())
+    except Exception as e:
+        # If listing fails, return first candidate and hope for the best
+        _MODEL_CACHE[api_key] = _FLASH_CANDIDATES[0]
+        return _FLASH_CANDIDATES[0]
+
+    # Build set of names that support generateContent
+    available = set()
+    for m in models:
+        name = m.name.rsplit("/", 1)[-1]
+        methods = getattr(m, "supported_generation_methods", []) or []
+        if "generateContent" in methods:
+            available.add(name)
+
+    # Match preferred order
+    for c in _FLASH_CANDIDATES:
+        if c in available:
+            _MODEL_CACHE[api_key] = c
+            return c
+
+    # Fallback: any model with "flash" in name (skip experimental)
+    for name in sorted(available):
+        if "flash" in name.lower() and "exp" not in name.lower():
+            _MODEL_CACHE[api_key] = name
+            return name
+
+    # Absolute last resort: any model
+    if available:
+        name = sorted(available)[0]
+        _MODEL_CACHE[api_key] = name
+        return name
+
+    raise ValueError(
+        "No Gemini models available for this API key · "
+        "ตรวจ key + permissions ที่ aistudio.google.com"
+    )
+
+
+def list_available_models(api_key: str) -> list[str]:
+    """For debugging — list all models accessible with this key."""
+    genai = _get_genai()
+    genai.configure(api_key=api_key)
+    try:
+        return sorted([
+            m.name.rsplit("/", 1)[-1] for m in genai.list_models()
+            if "generateContent" in (getattr(m, "supported_generation_methods", []) or [])
+        ])
+    except Exception as e:
+        return [f"<error: {e}>"]
+
+
+# ---------------------------------------------------------------------------
 # Pydantic schemas (structured output for STEP 1)
 # ---------------------------------------------------------------------------
 
@@ -117,16 +194,20 @@ def extract_symptoms(
     user_text: str,
     dictionary_df: pd.DataFrame,
     api_key: str,
-    model: str = "gemini-1.5-flash",
+    model: Optional[str] = None,
 ) -> tuple[ExtractedSymptoms, float]:
     """
     STEP 1: Use Gemini to extract structured symptom list from Thai free-text.
     Returns (ExtractedSymptoms, elapsed_ms).
     Raises ValueError if API call fails or output is unparseable.
+    If model is None, auto-resolves to a working Gemini Flash variant.
     """
     t0 = time.perf_counter()
     genai = _get_genai()
     genai.configure(api_key=api_key)
+
+    if model is None:
+        model = _resolve_model_name(api_key)
 
     dict_table = _build_dictionary_table(dictionary_df)
     prompt = (
@@ -191,7 +272,7 @@ def narrate_result(
     ranked_df: pd.DataFrame,
     mapping_df: pd.DataFrame,
     api_key: str,
-    model: str = "gemini-1.5-flash",
+    model: Optional[str] = None,
 ) -> tuple[str, float]:
     """
     STEP 2: Use Gemini to write a Thai narrative explaining the Top-3 ranked diseases.
@@ -200,6 +281,9 @@ def narrate_result(
     t0 = time.perf_counter()
     genai = _get_genai()
     genai.configure(api_key=api_key)
+
+    if model is None:
+        model = _resolve_model_name(api_key)
 
     # Join top-K with mapping to get specialty + urgency + red flags
     top_k = ranked_df.head(3)
@@ -242,47 +326,44 @@ def narrate_result(
 
 
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
 # Full pipeline
 # ---------------------------------------------------------------------------
 
 def full_pipeline(
     user_text: str,
     dictionary_df: pd.DataFrame,
-    scoring_arts,           # ScoringArtifacts from utils.scoring
+    scoring_arts,
     mapping_df: pd.DataFrame,
     api_key: str,
     method: str = "tfidf",
     top_k: int = 3,
 ) -> AIResult:
-    """
-    Run STEP 1 → scoring → STEP 2 sequentially.
-    Returns AIResult with all intermediate results + timings.
-    On error, returns AIResult with .error set (UI shows graceful fallback).
-    """
+    """Run STEP 1 -> scoring -> STEP 2. Returns AIResult.
+    On error, returns AIResult with .error set."""
     from utils.scoring import predict
 
     try:
-        # STEP 1
         extracted, t_ext = extract_symptoms(user_text, dictionary_df, api_key)
 
-        # No symptoms found → bail out gracefully
         if not extracted.symptoms:
             return AIResult(
                 extracted=extracted,
                 ranked_df=pd.DataFrame(),
-                narration="⚠ ไม่สามารถระบุอาการที่ตรงกับฐานข้อมูลได้จากข้อความที่ให้มา · "
-                          "ลองพิมพ์อาการให้ชัดเจนขึ้น (เช่น \"ไอแห้ง 3 วัน + เจ็บคอ\") "
-                          "หรือสลับไปใช้ Non-AI Mode เพื่อติ๊ก checkbox โดยตรง",
+                narration=(
+                    "ไม่สามารถระบุอาการที่ตรงกับฐานข้อมูลได้จากข้อความที่ให้มา - "
+                    "ลองพิมพ์อาการให้ชัดเจนขึ้น (เช่น 'ไอแห้ง 3 วัน + เจ็บคอ') "
+                    "หรือสลับไปใช้ Non-AI Mode เพื่อติ๊ก checkbox โดยตรง"
+                ),
                 extract_time_ms=t_ext,
             )
 
-        # Score with Non-AI engine
         symptom_codes = [s.symptom_en for s in extracted.symptoms]
         ts = time.perf_counter()
         ranked = predict(symptom_codes, scoring_arts, method=method, top_k=top_k)
         t_score = (time.perf_counter() - ts) * 1000
 
-        # STEP 2
         narration, t_narr = narrate_result(user_text, ranked, mapping_df, api_key)
 
         return AIResult(

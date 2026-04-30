@@ -20,6 +20,8 @@ from utils.ai_engine import (
     full_pipeline,
     check_rate_limit,
     reset_rate_limit,
+    list_available_models,
+    _resolve_model_name,
 )
 
 st.set_page_config(page_title="AI Mode", page_icon="🤖", layout="wide")
@@ -95,19 +97,22 @@ EXAMPLE_QUERIES = [
     "เจ็บแน่นหน้าอก ร้าวไปแขนซ้าย เหงื่อท่วม หายใจไม่ออก (ฉุกเฉิน!)",
 ]
 
+# Use one consistent key for the textarea — example buttons write to it directly
+TEXTAREA_KEY = "ai_input_widget"
+
 with st.expander("💡 ตัวอย่างคำถาม (คลิกเพื่อใช้)"):
     for ex in EXAMPLE_QUERIES:
         if st.button(ex, key=f"ex_{hash(ex)}", use_container_width=True):
-            st.session_state["ai_input_text"] = ex
+            # เขียนตรงไปที่ widget key — Streamlit จะใช้ตอน render รอบหน้า
+            st.session_state[TEXTAREA_KEY] = ex
             st.rerun()
 
 user_text = st.text_area(
     "อธิบายอาการของคุณ",
-    value=st.session_state.get("ai_input_text", ""),
     height=140,
     placeholder="เช่น '3 วันมานี้ ไอแห้งๆ ตอนกลางคืน เจ็บคอตอนเช้า มีน้ำมูกใส'",
     help="พิมพ์เป็นประโยคหรือรายการอาการ · ระบุระยะเวลา/ความรุนแรงได้เพื่อความแม่นยำ",
-    key="ai_input_widget",
+    key=TEXTAREA_KEY,
 )
 
 go = st.button("🤖 วิเคราะห์ด้วย AI", type="primary", use_container_width=True)
@@ -149,13 +154,26 @@ with st.spinner("🤖 AI กำลังวิเคราะห์..."):
         top_k=3,
     )
 
-st.session_state["ai_input_text"] = ""  # clear so example reload works
+# (no clear — keep textarea content so user สามารถ tweak แล้วลองใหม่)
 
 # ---------------------------------------------------------------------------
 # Error handling
 # ---------------------------------------------------------------------------
 if result.error:
     st.error(f"❌ AI Pipeline error: {result.error}")
+
+    # Auto-debug: ถ้าเป็น 404 model not found → แสดง available models
+    if "404" in result.error or "not found" in result.error.lower():
+        with st.expander("🔧 Debug — Available models บน account นี้", expanded=True):
+            models = list_available_models(api_key)
+            st.write("Models ที่ใช้ได้กับ key นี้:")
+            for m in models:
+                st.code(m, language="text")
+            st.caption(
+                "ถ้าไม่เห็น `gemini-2.5-flash` หรือ `gemini-2.0-flash` "
+                "ให้ตรวจ key + permissions ที่ aistudio.google.com"
+            )
+
     st.info(
         "💡 ลองใช้ **🩺 Non-AI Mode** เป็นทางเลือก · หรือลองพิมพ์อาการให้ชัดเจนขึ้น"
     )
@@ -165,11 +183,15 @@ if result.error:
 # Pipeline performance badge
 # ---------------------------------------------------------------------------
 total_ms = result.extract_time_ms + result.scoring_time_ms + result.narrate_time_ms
+try:
+    used_model = _resolve_model_name(api_key)
+except Exception:
+    used_model = "auto"
 st.caption(
     f"⚡ Pipeline: extract **{result.extract_time_ms:.0f}ms** + "
     f"score **{result.scoring_time_ms:.0f}ms** + "
     f"narrate **{result.narrate_time_ms:.0f}ms** = "
-    f"**{total_ms:.0f}ms** total · model: gemini-1.5-flash"
+    f"**{total_ms:.0f}ms** total · model: **{used_model}**"
 )
 
 st.divider()
