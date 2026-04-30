@@ -28,12 +28,15 @@ render_disclaimer_sidebar()
 # Reset callback (must be defined before button uses it)
 # ---------------------------------------------------------------------------
 def _clear_all_symptoms():
-    """Callback: ล้าง widget keys + selected_symptoms · ทำงานก่อน rerun
-    ห้ามแก้ session_state ของ widget หลัง render — ต้องใช้ callback"""
+    """Callback: bump reset_counter เพื่อให้ widget keys เปลี่ยน → Streamlit
+    treat เป็น widget ใหม่ทั้งหมด · ป้องกัน state เก่าค้าง"""
+    st.session_state.reset_counter = st.session_state.get("reset_counter", 0) + 1
+    st.session_state.selected_symptoms = []
+    # ลบ widget keys เก่าทั้งหมด (defensive — บาง version ของ Streamlit
+    # ยังจำ state แม้ key เปลี่ยน)
     for k in list(st.session_state.keys()):
         if isinstance(k, str) and k.startswith("sym_"):
             del st.session_state[k]
-    st.session_state.selected_symptoms = []
 
 
 # ---------------------------------------------------------------------------
@@ -69,6 +72,9 @@ body_order = (
 )
 DEFAULT_EXPANDED = {"ทั่วไป", "ทางเดินอาหาร", "ทางเดินหายใจ"}
 
+# Version counter — bumped by clear button to invalidate widget keys
+_v = st.session_state.get("reset_counter", 0)
+
 selected = []
 for body in body_order:
     sub = sym_visible[sym_visible["body_system"] == body].sort_values("symptom_th")
@@ -79,7 +85,7 @@ for body in body_order:
             col = cols[i % 2]
             checked = col.checkbox(
                 row.ui_label,
-                key=f"sym_{row.symptom_en}",
+                key=f"sym_{row.symptom_en}_v{_v}",
                 value=(row.symptom_en in st.session_state.selected_symptoms),
             )
             if checked:
