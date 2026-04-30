@@ -1,0 +1,42 @@
+﻿disease_en,prevalence_weight,prevalence_tier,note
+Fungal infection,15.0,common,Skin fungal infections common in tropical TH
+Allergy,50.0,very_common,Allergic rhinitis #2-3 OPD ranking
+GERD,30.0,common,Reflux common in urban TH (lifestyle)
+Chronic cholestasis,0.5,rare,Specific liver condition
+Drug Reaction,8.0,uncommon,Allergy reactions OPD
+Peptic ulcer diseae,10.0,uncommon,GI ulcer
+AIDS,1.0,rare,HIV prevalence ~1.1% Thailand
+Diabetes ,40.0,very_common,DM prevalence ~9% adults · top NCD
+Gastroenteritis,35.0,common,Diarrhoeal disease top 5 OPD
+Bronchial Asthma,12.0,common,Asthma 7-9% prevalence
+Hypertension ,60.0,very_common,HT prevalence ~25% adults · top NCD
+Migraine,20.0,common,Headache disorders common
+Cervical spondylosis,8.0,uncommon,Office workers / aging
+Paralysis (brain hemorrhage),2.0,rare,Stroke ~280/100k incidence
+Jaundice,3.0,rare,Symptom of liver/biliary
+Malaria,0.5,rare,Rare in urban TH · border areas only
+Chicken pox,4.0,uncommon,Vaccine has reduced incidence
+Dengue,5.0,uncommon,Seasonal · 50-150/100k incidence
+Typhoid,1.0,rare,Rare with sanitation
+hepatitis A,2.0,rare,Sanitation reduced cases
+Hepatitis B,3.0,rare,Endemic ~5% carrier · dropping
+Hepatitis C,1.5,rare,Less common
+Hepatitis D,0.2,very_rare,Co-infection with HBV
+Hepatitis E,0.5,rare,Travel-related
+Alcoholic hepatitis,2.0,rare,Alcoholic liver disease
+Tuberculosis,2.0,rare,TB ~150/100k incidence
+Common Cold,100.0,very_common,URI #1 OPD top by far
+Pneumonia,12.0,common,Pneumonia top 10 IPD
+Dimorphic hemmorhoids(piles),25.0,common,Hemorrhoids common adult population
+Heart attack,3.0,rare,AMI ~50/100k incidence
+Varicose veins,15.0,common,Common in standing occupations
+Hypothyroidism,8.0,uncommon,Thyroid disorder ~5%
+Hyperthyroidism,6.0,uncommon,Less common than hypo
+Hypoglycemia,4.0,uncommon,Mostly diabetic patients
+Osteoarthristis,30.0,common,OA in elderly common
+Arthritis,18.0,common,RA + other arthritis
+(vertigo) Paroymsal  Positional Vertigo,8.0,uncommon,BPPV common with aging
+Acne,45.0,very_common,Most teens / young adults
+Urinary tract infection,28.0,common,UTI top 10 OPD esp. women
+Psoriasis,4.0,uncommon,~1-2% prevalence
+Impetigo,8.0,uncommon,Skin infection in kids

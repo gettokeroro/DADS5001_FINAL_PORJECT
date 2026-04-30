@@ -72,16 +72,34 @@ def load_artifacts(data_dir: str | Path = "data") -> ScoringArtifacts:
     idf_df = pd.DataFrame(idf_records)
     idf_dict = {r["symptom"]: r["idf"] for r in idf_records}
 
-    # Disease prior — uniform (synthetic balanced)
-    prior = {d: 1.0 / N for d in diseases}
+    # === Population prevalence (Phase 1) ===
+    # อิง Top OPD ranking 2564 ของไทย · ป้องกันการให้ Dengue/Malaria
+    # น้ำหนักเท่ากับ Common Cold ในการตัดสินใจ
+    prev_path = data_dir / "processed" / "disease_prevalence.csv"
+    if prev_path.exists():
+        prev_df = pd.read_csv(prev_path, encoding="utf-8-sig")
+    else:
+        # Fallback — uniform if file missing
+        prev_df = pd.DataFrame({
+            "disease_en": diseases,
+            "prevalence_weight": [1.0] * N,
+            "prevalence_tier": ["unknown"] * N,
+        })
+
+    # Disease prior — based on prevalence (replaces uniform)
+    prev_dict = dict(zip(prev_df["disease_en"], prev_df["prevalence_weight"]))
+    total_prev = sum(prev_dict.get(d, 1.0) for d in diseases)
+    prior = {d: prev_dict.get(d, 1.0) / total_prev for d in diseases}
 
     # DuckDB connection — register the DataFrames as tables
     conn = duckdb.connect(database=":memory:")
     conn.register("disease_symptom_long_df", disease_symptom_long)
     conn.register("symptom_idf_df", idf_df)
+    conn.register("prevalence_df", prev_df)
     # Persist as actual tables (zero-copy from pandas)
     conn.execute("CREATE TABLE disease_symptom_long AS SELECT * FROM disease_symptom_long_df")
     conn.execute("CREATE TABLE symptom_idf AS SELECT * FROM symptom_idf_df")
+    conn.execute("CREATE TABLE prevalence AS SELECT * FROM prevalence_df")
     conn.execute("CREATE INDEX idx_dsl_symptom ON disease_symptom_long(symptom)")
     conn.execute("CREATE INDEX idx_dsl_disease ON disease_symptom_long(disease)")
 
@@ -125,13 +143,22 @@ SELECT
   COALESCE(m.n_matched, 0) AS n_matched,
   t.n_disease_symptoms,
   ROUND(COALESCE(m.n_matched * 1.0 / t.n_disease_symptoms, 0), 3) AS coverage,
+  COALESCE(p.prevalence_weight, 1.0) AS prevalence_weight,
+  COALESCE(p.prevalence_tier, 'unknown') AS prevalence_tier,
+  -- Prevalence-adjusted score (Phase 1 — softer formula):
+  --   base_score = raw_score × (0.5 + 0.5 × coverage)
+  --   prev_mult  = POWER(prev, 0.25)  -- subtle boost · CC=3.16x, HA=1.32x
+  --   final      = base × prev_mult
+  -- Floor prev at 0.5 so very rare diseases not penalized too much
   ROUND(
     COALESCE(m.raw_score, 0)
-    * (0.5 + 0.5 * COALESCE(m.n_matched * 1.0 / t.n_disease_symptoms, 0)),
+    * (0.5 + 0.5 * COALESCE(m.n_matched * 1.0 / t.n_disease_symptoms, 0))
+    * POWER(GREATEST(COALESCE(p.prevalence_weight, 1.0), 0.5), 0.25),
     4
   ) AS score
 FROM disease_total t
 LEFT JOIN matched m ON t.disease = m.disease
+LEFT JOIN prevalence p ON t.disease = p.disease_en
 ORDER BY score DESC
 """
 
@@ -204,12 +231,18 @@ WITH
       SUM(CASE WHEN freq > 0 THEN 1 ELSE 0 END) AS n_matched
     FROM with_freq
     GROUP BY disease
+  ),
+  prior_norm AS (
+    -- Normalize prevalence to be valid prior P(disease)
+    SELECT disease_en, prevalence_weight / SUM(prevalence_weight) OVER () AS prior_p
+    FROM prevalence
   )
 SELECT
-  disease,
-  ROUND(log_likelihood + LN(?), 3) AS log_posterior,
-  n_matched
-FROM per_disease
+  pd.disease,
+  ROUND(pd.log_likelihood + LN(COALESCE(pn.prior_p, 1.0/41)), 3) AS log_posterior,
+  pd.n_matched
+FROM per_disease pd
+LEFT JOIN prior_norm pn ON pd.disease = pn.disease_en
 ORDER BY log_posterior DESC
 """
 
@@ -233,8 +266,8 @@ def score_bayes(
                             "rows_scanned": 0, "sql": _BAYES_SQL})
         return empty
 
-    prior = arts.disease_prior[arts.diseases[0]]  # uniform → same for all
-    df = arts.duckdb_conn.execute(_BAYES_SQL, [valid, smooth, prior]).fetchdf()
+    # Bayes now uses per-disease prior from prevalence table (Phase 1)
+    df = arts.duckdb_conn.execute(_BAYES_SQL, [valid, smooth]).fetchdf()
 
     # Convert log_posterior → normalized posterior (softmax)
     max_lp = df["log_posterior"].max()
@@ -385,25 +418,25 @@ DEFAULT_EVAL_CASES = [
         "expected_disease": "Pneumonia",
     },
     {
-        "name": "Tuberculosis — chronic cough with hemoptysis",
+        "name": "Tuberculosis - chronic cough with hemoptysis",
         "symptoms": ["cough", "chest_pain", "blood_in_sputum", "weight_loss",
                      "fatigue", "mild_fever", "sweating"],
         "expected_disease": "Tuberculosis",
     },
     {
-        "name": "Dengue fever — classic presentation",
+        "name": "Dengue fever - classic presentation",
         "symptoms": ["high_fever", "headache", "joint_pain", "muscle_pain",
                      "red_spots_over_body", "vomiting", "fatigue", "pain_behind_the_eyes"],
         "expected_disease": "Dengue",
     },
     {
-        "name": "Migraine — visual aura",
+        "name": "Migraine - visual aura",
         "symptoms": ["headache", "nausea", "vomiting", "blurred_and_distorted_vision",
                      "indigestion"],
         "expected_disease": "Migraine",
     },
     {
-        "name": "Diabetes — classic triad",
+        "name": "Diabetes - classic triad",
         "symptoms": ["fatigue", "polyuria", "increased_appetite", "weight_loss",
                      "blurred_and_distorted_vision", "excessive_hunger",
                      "irregular_sugar_level"],
