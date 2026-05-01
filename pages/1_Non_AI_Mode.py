@@ -17,7 +17,7 @@ from utils.data_loader import (
     init_session_state,
     render_disclaimer_sidebar,
 )
-from utils.scoring import predict, score_tfidf, score_bayes
+from utils.scoring import predict, score_tfidf, score_bayes, classify_confidence
 
 st.set_page_config(page_title="Non-AI Mode", page_icon="🩺", layout="wide")
 init_session_state()
@@ -183,6 +183,20 @@ st.caption(
 
 st.markdown(f"### 4️⃣ ผลลัพธ์ Top-{top_k}")
 
+# === Phase 2: Confidence badge (ดี / กลาง / ต่ำ) ===
+# คำนวณจาก full ranking (41 โรค) ก่อน truncate ด้วย Top-K
+_full_for_conf = score_tfidf(selected, arts) if method != "bayes" else score_bayes(selected, arts)
+_conf = classify_confidence(_full_for_conf)
+_color_map = {"high": "success", "medium": "warning", "low": "error"}
+_st_func = getattr(st, _color_map.get(_conf["level"], "info"))
+_st_func(
+    f"{_conf['emoji']} **{_conf['label']}** — {_conf['reason']}"
+)
+if _conf["level"] == "low":
+    st.caption(
+        "💡 ลองติ๊กอาการเพิ่มเติม · ระบบจะแม่นขึ้นเมื่อมีข้อมูลมากกว่านี้"
+    )
+
 URGENCY_LABEL = {
     1: ("🟥 1 — Resuscitation (ฉุกเฉินทันที)", "error"),
     2: ("🟧 2 — Emergent (รีบเข้า รพ.)", "warning"),
@@ -309,9 +323,6 @@ with st.expander("ดู scoring matrix (intermediate result จาก DuckDB)")
     b.metric("Time", f"{ranked.attrs.get('scoring_time_ms', 0):.2f} ms")
     c.metric("Rows scanned", ranked.attrs.get("rows_scanned", 0))
 
-# ---------------------------------------------------------------------------
-# Reset button
-# ---------------------------------------------------------------------------
 st.divider()
 st.button(
     "ล้างการเลือกทั้งหมด",

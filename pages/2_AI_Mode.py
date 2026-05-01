@@ -26,7 +26,7 @@ from utils.ai_engine import (
     AIResult,
     ExtractedSymptoms,
 )
-from utils.scoring import predict, score_tfidf, score_bayes, suggest_co_symptoms
+from utils.scoring import predict, score_tfidf, score_bayes, suggest_co_symptoms, classify_confidence
 
 st.set_page_config(page_title="AI Mode", page_icon="🤖", layout="wide")
 init_session_state()
@@ -251,6 +251,10 @@ elif st.session_state.ai_step == "result":
     # Run scoring + narrate
     with st.spinner("🤖 น้องอุ่นในกำลังวิเคราะห์..."):
         ranked = predict(all_codes, arts, method="tfidf", top_k=3)
+        # Phase 2: classify confidence from full ranking
+        full_for_conf = score_tfidf(all_codes, arts)
+        confidence = classify_confidence(full_for_conf)
+
         # Rate limit for narrate
         allowed, _ = check_rate_limit(st.session_state, max_calls=MAX_CALLS_PER_SESSION)
         if not allowed:
@@ -258,11 +262,17 @@ elif st.session_state.ai_step == "result":
             st.stop()
         try:
             narration, t_narr = narrate_result(
-                st.session_state.ai_initial_text, ranked, mapping, api_key
+                st.session_state.ai_initial_text, ranked, mapping, api_key,
+                confidence=confidence,
             )
         except ValueError as e:
             st.error(f"❌ Narrate error: {e}")
             st.stop()
+
+    # Show confidence badge
+    _color_map = {"high": "success", "medium": "warning", "low": "error"}
+    _st_func = getattr(st, _color_map.get(confidence["level"], "info"))
+    _st_func(f"{confidence['emoji']} **{confidence['label']}** — {confidence['reason']}")
 
     # Performance badge
     try:
@@ -346,7 +356,7 @@ elif st.session_state.ai_step == "result":
                 del st.session_state[TEXTAREA_KEY]
             st.rerun()
     with b:
-        with st.expander("🔧 รายละเอียดเทคนิค"):
+        with st.expander("รายละเอียดเทคนิค"):
             tab1, tab2 = st.tabs(["Extracted (JSON)", "Scoring matrix"])
             with tab1:
                 st.json(extracted.model_dump())

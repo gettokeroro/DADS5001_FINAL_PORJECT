@@ -318,6 +318,7 @@ def narrate_result(
     mapping_df: pd.DataFrame,
     api_key: str,
     model: Optional[str] = None,
+    confidence: Optional[dict] = None,
 ) -> tuple[str, float]:
     """
     STEP 2: Use Gemini to write a Thai narrative explaining the Top-3 ranked diseases.
@@ -346,8 +347,35 @@ def narrate_result(
         )
     ranked_block = "\n".join(rows)
 
+    # Add confidence guidance to prompt if low/medium
+    confidence_block = ""
+    if confidence:
+        level = confidence.get("level", "medium")
+        if level == "low":
+            confidence_block = (
+                "\n## ⚠ Confidence: LOW\n"
+                f"ระบบ rule-based บอกว่า: {confidence.get('reason', '')}\n"
+                "**สำคัญ:** เปิดด้วยการบอก user ตรงๆ ว่าน้องไม่ค่อยมั่นใจ · "
+                "อาการที่บอกมายังกว้างเกินไป · "
+                "ขอให้ user บอกอาการเพิ่มเติม (เวลาที่เป็น, ความรุนแรง, อาการอื่นๆ) "
+                "ก่อนสรุปโรค · อย่าทำราวกับมั่นใจมาก\n"
+            )
+        elif level == "medium":
+            confidence_block = (
+                "\n## Confidence: MEDIUM\n"
+                f"ระบบ rule-based บอกว่า: {confidence.get('reason', '')}\n"
+                "บอก user ว่าระบบเชื่อพอประมาณ · ผลที่ให้ใช้เป็น guide ได้ "
+                "แต่ยังไม่ชัด 100% · ให้ปรึกษาแพทย์เพื่อยืนยัน\n"
+            )
+        else:  # high
+            confidence_block = (
+                "\n## Confidence: HIGH\n"
+                "ระบบ rule-based มั่นใจในผล · ตอบได้แบบปกติ\n"
+            )
+
     prompt = (
-        f"{_NARRATE_SYSTEM_PROMPT}\n\n"
+        f"{_NARRATE_SYSTEM_PROMPT}\n"
+        f"{confidence_block}"
         f"## User text\n{user_text}\n\n"
         f"## Top-3 result\n{ranked_block}\n\n"
         "## Answer (Thai Markdown):\n"
@@ -389,6 +417,7 @@ def full_pipeline(
     try:
         extracted, t_ext = extract_symptoms(user_text, dictionary_df, api_key)
 
+
         if not extracted.symptoms:
             return AIResult(
                 extracted=extracted,
@@ -428,12 +457,7 @@ def full_pipeline(
         )
 
 
-# ---------------------------------------------------------------------------
-# Rate limiter
-# ---------------------------------------------------------------------------
-
 def check_rate_limit(session_state, max_calls: int = 20) -> tuple[bool, int]:
-    """Returns (allowed, calls_so_far)."""
     counter_key = "ai_call_counter"
     n = session_state.get(counter_key, 0)
     if n >= max_calls:

@@ -506,3 +506,64 @@ def suggest_co_symptoms(
     if not valid:
         return pd.DataFrame(columns=["symptom", "relevance", "n_diseases_have_it"])
     return arts.duckdb_conn.execute(_CO_SYMPTOM_SQL, [valid, top_k]).fetchdf()
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 — Confidence classification (combined: score + coverage + gap)
+# ---------------------------------------------------------------------------
+
+def classify_confidence(ranked_df: pd.DataFrame) -> dict:
+    """Classify confidence of the ranked result based on multiple signals.
+
+    Combines absolute score, gap to runner-up, and coverage to avoid the
+    "softmax-confident-but-low-score" trap.
+
+    Returns dict with:
+        level: 'high' | 'medium' | 'low'
+        emoji: visual indicator
+        label: Thai display text
+        reason: why this level
+        top_score, gap_pct, top_coverage: raw signals (for debug)
+    """
+    if ranked_df.empty or len(ranked_df) == 0:
+        return {
+            "level": "low", "emoji": "🔴",
+            "label": "ความมั่นใจต่ำมาก",
+            "reason": "ไม่มีโรคใดในฐานข้อมูลตรงกับอาการที่ระบุ",
+            "top_score": 0.0, "gap_pct": 0.0, "top_coverage": 0.0,
+        }
+
+    top_score = float(ranked_df["score"].iloc[0]) if "score" in ranked_df.columns \
+                else float(ranked_df["primary_score"].iloc[0])
+    second_score = (
+        float(ranked_df["score"].iloc[1]) if len(ranked_df) > 1 and "score" in ranked_df.columns
+        else float(ranked_df["primary_score"].iloc[1]) if len(ranked_df) > 1
+        else 0.0
+    )
+    top_coverage = float(ranked_df["coverage"].iloc[0]) if "coverage" in ranked_df.columns else 0.0
+    gap_pct = ((top_score - second_score) / top_score) if top_score > 0 else 0.0
+
+    # Combined thresholds — high if (score strong AND coverage good) OR (score very strong AND gap clear)
+    is_high = (top_score > 5 and top_coverage > 0.30) or (top_score > 8 and gap_pct > 0.50)
+    if is_high:
+        return {
+            "level": "high", "emoji": "🟢",
+            "label": "ความมั่นใจสูง",
+            "reason": f"คะแนน {top_score:.1f} สูง · ครอบคลุมอาการ {top_coverage:.0%} · "
+                      f"ทิ้งห่างอันดับ 2 ที่ {gap_pct:.0%}",
+            "top_score": top_score, "gap_pct": gap_pct, "top_coverage": top_coverage,
+        }
+    if (top_score > 2 and top_coverage > 0.15) or (top_score > 4):
+        return {
+            "level": "medium", "emoji": "🟡",
+            "label": "ความมั่นใจปานกลาง",
+            "reason": f"คะแนน {top_score:.1f} พอใช้ · ครอบคลุม {top_coverage:.0%} · "
+                      "ระบบเชื่อแต่ไม่แน่ใจมาก ควรพิจารณาผลรวมๆ",
+            "top_score": top_score, "gap_pct": gap_pct, "top_coverage": top_coverage,
+        }
+    return {
+        "level": "low", "emoji": "🔴",
+        "label": "ความมั่นใจต่ำ",
+        "reason": f"คะแนน {top_score:.1f} ต่ำ หรือครอบคลุมแค่ {top_coverage:.0%} - อาการกว้างเกินไป ระบบเดาอย่างมั่นใจไม่ได้ - แนะนำให้บอกอาการเพิ่มเติม",
+        "top_score": top_score, "gap_pct": gap_pct, "top_coverage": top_coverage,
+    }
