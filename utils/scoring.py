@@ -449,3 +449,60 @@ DEFAULT_EVAL_CASES = [
         "expected_disease": "Common Cold",
     },
 ]
+
+
+# ---------------------------------------------------------------------------
+# Phase 1.5 — Co-symptom suggestion (interactive follow-up)
+# ---------------------------------------------------------------------------
+
+_CO_SYMPTOM_SQL = """
+WITH
+  user_symptoms AS (SELECT UNNEST(?::VARCHAR[]) AS symptom),
+  -- Step A: rank candidate diseases lightly using just user input
+  candidate_diseases AS (
+    SELECT
+      l.disease,
+      SUM(l.freq * i.idf) * COALESCE(POWER(GREATEST(p.prevalence_weight, 0.5), 0.25), 1.0) AS rough_score
+    FROM disease_symptom_long l
+    JOIN user_symptoms u ON l.symptom = u.symptom
+    JOIN symptom_idf i ON l.symptom = i.symptom
+    LEFT JOIN prevalence p ON l.disease = p.disease_en
+    GROUP BY l.disease, p.prevalence_weight
+    ORDER BY rough_score DESC
+    LIMIT 7
+  ),
+  -- Step B: find symptoms common in those candidates but NOT yet user-mentioned
+  co_symptoms AS (
+    SELECT
+      l.symptom,
+      SUM(l.freq * c.rough_score) AS relevance,
+      COUNT(DISTINCT l.disease) AS n_diseases_have_it
+    FROM disease_symptom_long l
+    JOIN candidate_diseases c ON l.disease = c.disease
+    WHERE l.symptom NOT IN (SELECT symptom FROM user_symptoms)
+      AND l.freq >= 0.5
+    GROUP BY l.symptom
+    ORDER BY relevance DESC
+    LIMIT ?
+  )
+SELECT
+  cs.symptom,
+  ROUND(cs.relevance, 3) AS relevance,
+  cs.n_diseases_have_it
+FROM co_symptoms cs
+"""
+
+
+def suggest_co_symptoms(
+    user_symptoms: list[str],
+    arts: ScoringArtifacts,
+    top_k: int = 5,
+) -> pd.DataFrame:
+    """Suggest top-K symptoms that commonly co-occur with user's initial symptoms.
+    Used by AI Mode for interactive follow-up before final scoring.
+    Returns DataFrame: symptom, relevance, n_diseases_have_it.
+    """
+    valid = [s for s in user_symptoms if s in arts.symptoms]
+    if not valid:
+        return pd.DataFrame(columns=["symptom", "relevance", "n_diseases_have_it"])
+    return arts.duckdb_conn.execute(_CO_SYMPTOM_SQL, [valid, top_k]).fetchdf()
