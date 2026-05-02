@@ -140,3 +140,68 @@ def render_disclaimer_sidebar():
             "**ไม่ใช่คำวินิจฉัยทางการแพทย์** "
             "กรุณาปรึกษาแพทย์จริงเสมอ"
         )
+
+
+# ---------------------------------------------------------------------------
+# Phase 6 — Drug + Hospital info loaders (skeleton with hard-coded mappings)
+# ---------------------------------------------------------------------------
+
+@st.cache_data(show_spinner="Loading drug mapping...")
+def load_drug_mapping() -> pd.DataFrame:
+    """Load disease → drug mapping (hard-coded skeleton).
+    Future: replace with real บัญชียาหลักแห่งชาติ data integration."""
+    p = DATA / "processed" / "disease_drug_mapping.csv"
+    return pd.read_csv(p, encoding="utf-8-sig") if p.exists() else pd.DataFrame()
+
+
+@st.cache_data(show_spinner="Loading hospital hint...")
+def load_hospital_hint() -> pd.DataFrame:
+    """Load specialty → recommended hospital types (skeleton).
+    Future: replace with real hospital master data filtered by province."""
+    p = DATA / "processed" / "specialty_hospital_hint.csv"
+    return pd.read_csv(p, encoding="utf-8-sig") if p.exists() else pd.DataFrame()
+
+
+def render_drug_panel(disease_en: str, drug_df: pd.DataFrame):
+    """Render drug expander for a disease (educational only)."""
+    drugs = drug_df[drug_df["disease_en"] == disease_en] if not drug_df.empty else drug_df
+    if drugs.empty:
+        return
+    with st.expander(f"💊 ยาในบัญชียาหลักที่อาจเกี่ยวข้อง ({len(drugs)} รายการ)"):
+        st.caption(
+            "⚠ **ข้อมูลเพื่อการศึกษาเท่านั้น** · ห้ามซื้อยา/ใช้ยาเอง · "
+            "ยาเหล่านี้ต้องได้รับการสั่งโดยแพทย์/เภสัชกรเท่านั้น"
+        )
+        for _, d in drugs.iterrows():
+            with st.container(border=True):
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.markdown(f"**{d['drug_en']}** · {d['drug_th']}")
+                    if pd.notna(d.get('indication_th')):
+                        st.caption(f"📋 ข้อบ่งใช้: {d['indication_th']}")
+                    if pd.notna(d.get('dosage_note')):
+                        st.caption(f"📏 ขนาดอ้างอิง: {d['dosage_note']}")
+                with col2:
+                    nle = d.get('nle_status', '?')
+                    st.markdown(f"บัญชี **{nle}**")
+
+
+def render_hospital_panel(specialty: str, hint_df: pd.DataFrame):
+    """Render hospital type recommendation expander (skeleton)."""
+    if hint_df.empty:
+        return
+    matched = hint_df[hint_df["primary_specialty"] == specialty]
+    if matched.empty:
+        return
+    row = matched.iloc[0]
+    with st.expander(f"🏥 ประเภท รพ.ที่เหมาะกับ {specialty}"):
+        types = str(row["recommended_hospital_types"]).split(",")
+        st.markdown("**ประเภท รพ.แนะนำ:**")
+        for t in types:
+            st.markdown(f"- {t.strip()}")
+        if pd.notna(row.get("note")):
+            st.caption(f"💡 {row['note']}")
+        st.caption(
+            "🚧 Phase 6: ระบบยังไม่กรองตามจังหวัด · "
+            "สัปดาห์หน้าจะเพิ่ม province filter จาก data.go.th hospital master"
+        )

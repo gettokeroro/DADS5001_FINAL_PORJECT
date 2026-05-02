@@ -15,6 +15,10 @@ from utils.data_loader import (
     get_scoring_artifacts,
     init_session_state,
     render_disclaimer_sidebar,
+    load_drug_mapping,
+    load_hospital_hint,
+    render_drug_panel,
+    render_hospital_panel,
 )
 from utils.ai_engine import (
     extract_symptoms,
@@ -345,6 +349,14 @@ elif st.session_state.ai_step == "result":
                 if red_flags:
                     st.warning(f"⚠ Red flags: {red_flags}")
 
+                # === Phase 6 skeleton: Drug + Hospital info panels ===
+                _drug_df = load_drug_mapping()
+                _hospital_hint_df = load_hospital_hint()
+                _disease_key = row.get("disease_en") if pd.notna(row.get("disease_en")) else row["disease"]
+                render_drug_panel(_disease_key, _drug_df)
+                if primary and primary != "—":
+                    render_hospital_panel(primary, _hospital_hint_df)
+
     # Buttons
     st.divider()
     a, b = st.columns(2)
@@ -356,7 +368,7 @@ elif st.session_state.ai_step == "result":
                 del st.session_state[TEXTAREA_KEY]
             st.rerun()
     with b:
-        with st.expander("รายละเอียดเทคนิค"):
+        with st.expander("Debug info"):
             tab1, tab2 = st.tabs(["Extracted (JSON)", "Scoring matrix"])
             with tab1:
                 st.json(extracted.model_dump())

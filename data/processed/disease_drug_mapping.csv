@@ -1,0 +1,16 @@
+disease_en,drug_th,drug_en,nle_status,dosage_note,indication_th,disclaimer_level
+GERD,โอเมพราโซล,Omeprazole 20mg,ก,วันละ 1 ครั้ง ก่อนอาหาร 30 นาที,รักษากรดไหลย้อน แผลในกระเพาะ,standard
+GERD,ยาลดกรดน้ำ,Antacid,ก,15 ml หลังอาหาร/ก่อนนอน,บรรเทากรดเกินเฉียบพลัน,standard
+Common Cold,พาราเซตามอล,Paracetamol 500mg,ก,500-1000 mg ทุก 4-6 ชั่วโมง,ลดไข้ บรรเทาปวด,standard
+Common Cold,คลอเฟนิรามีน,Chlorpheniramine 4mg,ก,4 mg ทุก 4-6 ชั่วโมง,ลดน้ำมูก คัดจมูก,standard
+Hypertension ,อัมโลดิปีน,Amlodipine 5mg,ก,5-10 mg วันละ 1 ครั้ง,ความดันโลหิตสูง (CCB),standard
+Hypertension ,เอนาลาพริล,Enalapril 5mg,ก,5-20 mg วันละ 1-2 ครั้ง,ความดันโลหิตสูง (ACEi),standard
+Diabetes ,เมตฟอร์มิน,Metformin 500mg,ก,500-2000 mg/วัน หลังอาหาร,เบาหวานชนิดที่ 2 (1st line),standard
+Migraine,พาราเซตามอล,Paracetamol 500mg,ก,500-1000 mg เมื่อปวด,บรรเทาปวดศีรษะเล็กน้อย,standard
+Migraine,ไอบูโพรเฟน,Ibuprofen 400mg,ก,400 mg ทุก 6-8 ชั่วโมง หลังอาหาร,บรรเทาปวดศีรษะปานกลาง,standard
+Bronchial Asthma,ซัลบูทามอล (พ่น),Salbutamol inhaler,ก,2 puff เมื่อมีอาการ,หอบหืด acute attack,strict
+Tuberculosis,ไอโซไนอาซิด,Isoniazid (INH),ก,5 mg/kg/วัน,รักษาวัณโรค (ส่วนหนึ่งของ HRZE regimen),strict
+Pneumonia,อะม็อกซีซิลลิน,Amoxicillin 500mg,ก,500 mg ทุก 8 ชั่วโมง,ปอดอักเสบจากแบคทีเรีย (1st line),strict
+Acne,เบนซอยล์เพอร์ออกไซด์,Benzoyl Peroxide 5%,ก,ทาวันละ 1-2 ครั้ง,สิวเรื้อรัง,standard
+Urinary tract infection,ทริมีโทพริม-ซัลฟาเมโทซาโซล,TMP-SMX (Bactrim),ก,1 เม็ด ทุก 12 ชั่วโมง 3 วัน,UTI ผู้ใหญ่,strict
+Hypothyroidism,เลโวไทรอกซีน,Levothyroxine 50mcg,ก,25-100 mcg วันละ 1 ครั้ง ก่อนอาหารเช้า,ภาวะไทรอยด์ต่ำ,standard

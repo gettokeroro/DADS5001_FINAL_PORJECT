@@ -20,12 +20,24 @@
 
 | # | Page | Mode | Status |
 |---|---|---|---|
-| 1 | 🩺 Non-AI Mode | Checkbox + TF-IDF/Bayes scoring | ✅ Live |
-| 2 | 🤖 AI Mode | Free-text + LLM + RAG | 🚧 Phase 4 |
-| 3 | ⚖️ Compare | Side-by-side Non-AI vs AI | 🚧 Phase 5 |
-| 4 | 📊 Disease Landscape | Thai stats from data.go.th | 🚧 Phase 5 |
-| 5 | 💰 Cost Estimator | ค่ารักษาประมาณการ (Feature B) | 🚧 Phase 5 |
+| 1 | 🩺 Non-AI Mode | Checkbox + TF-IDF/Bayes + Drug/Hospital info | ✅ Live |
+| 2 | 🤖 AI Mode | Free-text + Gemini + 2-step + Co-symptom + Drug/Hospital info | ✅ Live |
+| 3 | ⚖️ Compare | Side-by-side Non-AI vs AI | 🚧 Phase 7 |
+| 4 | 📊 Disease Landscape | Thai stats from data.go.th | 🚧 Phase 7 |
+| 5 | 💰 Cost Estimator | ค่ารักษาประมาณการ (Feature B) | 🚧 Phase 7 |
 | 6 | ℹ️ About | Methodology + data sources | ✅ Live |
+
+### Improvement Phases (post-launch)
+
+| Phase | Feature | Status |
+|---|---|---|
+| 1 | Population prevalence weighting (Top OPD Thai) | ✅ Done |
+| 1.5 | Interactive co-symptom follow-up (AI mode) | ✅ Done |
+| 2 | Confidence classification (high/medium/low badges) | ✅ Done |
+| 3 | Casual Thai dictionary expansion | ⬜ Next week |
+| 4 | Add common diseases (Influenza, Electrolyte, Vitamin etc.) | ⬜ Next week |
+| 5 | Honest fallback responses | ⬜ Next week |
+| **6** | **Drug + Hospital info panels (skeleton + real data)** | **🟡 Skeleton live · real data integration next week** |
 
 ---
 

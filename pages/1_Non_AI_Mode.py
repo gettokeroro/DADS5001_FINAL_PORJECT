@@ -16,6 +16,10 @@ from utils.data_loader import (
     get_scoring_artifacts,
     init_session_state,
     render_disclaimer_sidebar,
+    load_drug_mapping,
+    load_hospital_hint,
+    render_drug_panel,
+    render_hospital_panel,
 )
 from utils.scoring import predict, score_tfidf, score_bayes, classify_confidence
 
@@ -267,6 +271,14 @@ for i, row in result.iterrows():
                 f"WARNING: Red flags ที่ควรระวัง — ถ้ามีอาการเหล่านี้ให้รีบไป ER ทันที: "
                 f"{red_flags}"
             )
+
+        # === Phase 6 skeleton: Drug + Hospital info panels ===
+        _drug_df = load_drug_mapping()
+        _hospital_hint_df = load_hospital_hint()
+        _disease_key = row.get("disease_en") if pd.notna(row.get("disease_en")) else row["disease"]
+        render_drug_panel(_disease_key, _drug_df)
+        if pd.notna(primary) and primary != "—":
+            render_hospital_panel(primary, _hospital_hint_df)
 
 # ---------------------------------------------------------------------------
 # Detail table
