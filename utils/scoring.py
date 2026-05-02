@@ -458,16 +458,16 @@ DEFAULT_EVAL_CASES = [
 _CO_SYMPTOM_SQL = """
 WITH
   user_symptoms AS (SELECT UNNEST(?::VARCHAR[]) AS symptom),
-  -- Step A: rank candidate diseases lightly using just user input
+  -- Step A: rank candidate diseases by PURE TF-IDF match (no prevalence)
+  -- ป้องกัน flu-like diseases (Common Cold prev=100) บดบัง specialty matches
   candidate_diseases AS (
     SELECT
       l.disease,
-      SUM(l.freq * i.idf) * COALESCE(POWER(GREATEST(p.prevalence_weight, 0.5), 0.25), 1.0) AS rough_score
+      SUM(l.freq * i.idf) AS rough_score
     FROM disease_symptom_long l
     JOIN user_symptoms u ON l.symptom = u.symptom
     JOIN symptom_idf i ON l.symptom = i.symptom
-    LEFT JOIN prevalence p ON l.disease = p.disease_en
-    GROUP BY l.disease, p.prevalence_weight
+    GROUP BY l.disease
     ORDER BY rough_score DESC
     LIMIT 7
   ),
