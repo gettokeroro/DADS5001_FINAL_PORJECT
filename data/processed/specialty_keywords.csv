@@ -1,0 +1,13 @@
+specialty,keywords,note
+ห้องฉุกเฉิน (ER),ฉุกเฉิน;อุบัติเหตุ;trauma;emergency;ER;วิกฤต;sepsis;burn;ไฟไหม้;ผู้ป่วยวิกฤต,รพ.ใหญ่ทุกแห่งมี ER · keyword กว้าง
+อายุรกรรมหัวใจ (Cardiology),หัวใจ;cardiac;cardio;PCI;CABG;หลอดเลือดหัวใจ;หลอดเลือด;vascular;intervention;สวนหัวใจ,Excellence Center หัวใจ พบใน รพ.ศูนย์
+อายุรกรรมโรคปอด (Pulmonology),ปอด;respiratory;pulmonary;การหายใจ;Respiratory Failure;หายใจล้มเหลว;ทางเดินหายใจ,
+อายุรกรรมประสาท (Neurology),สมอง;neuro;neurology;stroke;หลอดเลือดสมอง;ประสาท;neurological;Neuro-intervention;spine neurosurg,รวม stroke center
+อายุรกรรมต่อมไร้ท่อ (Endocrinology),ต่อมไร้ท่อ;endocrine;เบาหวาน;diabetes;ไทรอยด์;thyroid;hormone;ฮอร์โมน,เฉพาะทาง · รพ.ใหญ่
+อายุรกรรมทางเดินอาหาร (GI),ทางเดินอาหาร;GI;gastro;ลำไส้;กระเพาะ;colon;CA Colon;endoscop;ส่องกล้อง;laparoscopic,
+อายุรกรรม GI/ตับ (Hepatology),ตับ;liver;hepatic;hepato;ตับอักเสบ;hepatitis;Hepatology;CA liver,
+ผิวหนัง (Dermatology),ผิวหนัง;dermatology;skin;ผิว;derm,รพ.ทั่วไป + คลินิกพอ
+ออร์โธปิดิกส์ (Orthopedics),กระดูก;ortho;orthopedic;orthopedist;spine;joint;เอ็น;ข้อ;กายอุปกรณ์;rehabilitation,รวม spine + rehab
+หู คอ จมูก (ENT),หู;คอ;จมูก;ENT;otolaryng;otology;หูเทียม;cochlear,
+เวชศาสตร์ทั่วไป (GP),ทั่วไป;general;ปฐมภูมิ;primary;family medicine;เวชศาสตร์ครอบครัว;รพ.สต.;PCU,รพ.สต./คลินิกใกล้บ้าน
+โรคติดเชื้อ (ID),ติดเชื้อ;infectious;โควิด;COVID;sepsis;infection;ID;ดื้อยา;HIV;วัณโรค;TB,

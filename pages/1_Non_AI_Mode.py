@@ -18,6 +18,8 @@ from utils.data_loader import (
     render_disclaimer_sidebar,
     load_drug_mapping,
     load_hospital_hint,
+    load_hospitals_master,
+    load_specialty_keywords,
     render_drug_panel,
     render_hospital_panel,
 )
@@ -74,7 +76,6 @@ body_order = (
     sym_visible.groupby("body_system").size()
     .sort_values(ascending=False).index.tolist()
 )
-DEFAULT_EXPANDED = {"ทั่วไป", "ทางเดินอาหาร", "ทางเดินหายใจ"}
 
 # Version counter — bumped by clear button to invalidate widget keys
 _v = st.session_state.get("reset_counter", 0)
@@ -82,8 +83,7 @@ _v = st.session_state.get("reset_counter", 0)
 selected = []
 for body in body_order:
     sub = sym_visible[sym_visible["body_system"] == body].sort_values("symptom_th")
-    expand = body in DEFAULT_EXPANDED
-    with st.expander(f"**{body}** ({len(sub)})", expanded=expand):
+    with st.expander(f"**{body}** ({len(sub)})", expanded=False):
         cols = st.columns(2)
         for i, row in enumerate(sub.itertuples()):
             col = cols[i % 2]
@@ -201,6 +201,48 @@ if _conf["level"] == "low":
         "💡 ลองติ๊กอาการเพิ่มเติม · ระบบจะแม่นขึ้นเมื่อมีข้อมูลมากกว่านี้"
     )
 
+# ---------------------------------------------------------------------------
+# Phase 6 real: Province filter (Global · บนสุดของ result section)
+# ---------------------------------------------------------------------------
+_hosp_master = load_hospitals_master()
+_kw_dict = load_specialty_keywords()
+_all_provinces = (
+    sorted(_hosp_master["province"].dropna().unique().tolist())
+    if not _hosp_master.empty else []
+)
+
+if "hosp_p_submitted" not in st.session_state:
+    st.session_state["hosp_p_submitted"] = []
+
+st.markdown("#### 🏥 เลือกจังหวัดเพื่อดู รพ.แนะนำใต้แต่ละโรค")
+_pc1, _pc2 = st.columns([4, 1])
+with _pc1:
+    st.multiselect(
+        "เลือก 1 จังหวัดขึ้นไป (พิมพ์เพื่อ filter)",
+        options=_all_provinces,
+        placeholder="เช่น เชียงใหม่, ขอนแก่น, กรุงเทพมหานคร",
+        key="hosp_p_select",
+        help="พิมพ์ชื่อจังหวัดเพื่อค้นหาใน dropdown · เลือกได้หลายจังหวัด",
+    )
+with _pc2:
+    st.write("")
+    if st.button(
+        "🔍 ค้นหา รพ.",
+        use_container_width=True,
+        type="primary",
+        key="hosp_search_btn",
+    ):
+        st.session_state["hosp_p_submitted"] = list(
+            st.session_state.get("hosp_p_select", [])
+        )
+
+_submitted_provinces = st.session_state.get("hosp_p_submitted", [])
+if not _submitted_provinces:
+    st.info(
+        "👆 กรุณาเลือก **1 จังหวัดขึ้นไป** ในช่องด้านบน แล้วกดปุ่ม "
+        "**🔍 ค้นหา รพ.** เพื่อให้ระบบแสดงรายชื่อโรงพยาบาลใต้แต่ละโรค"
+    )
+
 URGENCY_LABEL = {
     1: ("🟥 1 — Resuscitation (ฉุกเฉินทันที)", "error"),
     2: ("🟧 2 — Emergent (รีบเข้า รพ.)", "warning"),
@@ -272,13 +314,20 @@ for i, row in result.iterrows():
                 f"{red_flags}"
             )
 
-        # === Phase 6 skeleton: Drug + Hospital info panels ===
+        # === Phase 6: Drug + Hospital info panels (real province-filtered) ===
         _drug_df = load_drug_mapping()
         _hospital_hint_df = load_hospital_hint()
         _disease_key = row.get("disease_en") if pd.notna(row.get("disease_en")) else row["disease"]
         render_drug_panel(_disease_key, _drug_df)
         if pd.notna(primary) and primary != "—":
-            render_hospital_panel(primary, _hospital_hint_df)
+            render_hospital_panel(
+                primary,
+                _hospital_hint_df,
+                hospitals_df=_hosp_master,
+                keywords_dict=_kw_dict,
+                selected_provinces=_submitted_provinces,
+                key_suffix=f"_r{rank}_{_disease_key}",
+            )
 
 # ---------------------------------------------------------------------------
 # Detail table

@@ -14,6 +14,8 @@ Usage:
 """
 from __future__ import annotations
 from pathlib import Path
+import re
+from math import log
 import pandas as pd
 import streamlit as st
 
@@ -164,22 +166,95 @@ def load_hospital_hint() -> pd.DataFrame:
     return pd.read_csv(p, encoding="utf-8-sig") if p.exists() else pd.DataFrame()
 
 
-def render_drug_panel(disease_en: str, drug_df: pd.DataFrame):
-    """Render drug expander for a disease (educational only).
-    Compatible with both v1 schema (drug_en, dosage_note, nle_status) and
-    v2 schema (drug_generic, dose_note, ed_category, reimbursement_note)."""
+# ---------------------------------------------------------------------------
+# Phase 6 real data — hospitals master + specialty keywords
+# ---------------------------------------------------------------------------
+def _strip_html(s) -> str:
+    """Remove HTML tags + collapse whitespace · ใช้กับ specialty_note ที่มี <br />"""
+    if pd.isna(s):
+        return s
+    s = re.sub(r"<[^>]+>", " ", str(s))
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+@st.cache_data(show_spinner="Loading hospitals master...")
+def load_hospitals_master() -> pd.DataFrame:
+    """Load hospitals_thailand.csv (UTF-8) · strip HTML in specialty_note.
+    Phase 6 real — ใช้แทน specialty_hospital_hint เมื่อต้องกรองตามจังหวัด."""
+    p = DATA / "processed" / "hospitals_thailand.csv"
+    if not p.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(p)
+    if "specialty_note" in df.columns:
+        df["specialty_note"] = df["specialty_note"].apply(_strip_html)
+    return df
+
+
+@st.cache_data(show_spinner="Loading specialty keywords...")
+def load_specialty_keywords() -> dict:
+    """Load specialty → keyword list (สำหรับ score รพ. ตามความเชี่ยวชาญ).
+    Returns: {specialty_name: [kw1, kw2, ...]}"""
+    p = DATA / "processed" / "specialty_keywords.csv"
+    if not p.exists():
+        return {}
+    df = pd.read_csv(p, encoding="utf-8-sig")
+    out = {}
+    for _, r in df.iterrows():
+        kws = [k.strip() for k in str(r.get("keywords", "")).split(";") if k.strip()]
+        out[r["specialty"]] = kws
+    return out
+
+
+def _hospital_type_tier(htype: str) -> int:
+    """Map hospital_type → tier (4=บิ๊กเฉพาะทาง, 1=คลินิก/รพ.สต.)"""
+    if not htype or pd.isna(htype):
+        return 1
+    h = str(htype)
+    if "ศูนย์" in h or "มหาวิทยาลัย" in h:
+        return 4
+    if "ทั่วไป" in h:
+        return 3
+    if "ชุมชน" in h:
+        return 2
+    return 1
+
+
+def _score_hospital(row, keywords, recommended_types):
+    # Composite score: keyword match * 100 + tier * 10 * boost + log(beds+1)
+    from math import log
+    note = str(row.get("specialty_note", "") or "").lower()
+    kw_hits = sum(1 for k in keywords if k.lower() in note) if keywords else 0
+    spec_match = min(kw_hits / 3.0, 1.0)
+
+    htype = str(row.get("hospital_type", "") or "")
+    tier = _hospital_type_tier(htype)
+    rec_boost = 1.5 if any(rt and rt in htype for rt in recommended_types) else 1.0
+
+    beds = row.get("beds", 0) or 0
+    try:
+        beds = float(beds)
+    except (TypeError, ValueError):
+        beds = 0
+    if pd.isna(beds):
+        beds = 0
+    return spec_match * 100 + tier * 10 * rec_boost + log(beds + 1)
+
+
+def render_drug_panel(disease_en, drug_df):
     drugs = drug_df[drug_df["disease_en"] == disease_en] if not drug_df.empty else drug_df
     if drugs.empty:
         return
-    # Detect schema version
     is_v2 = "drug_generic" in drug_df.columns
     drug_name_col = "drug_generic" if is_v2 else "drug_en"
     dose_col = "dose_note" if is_v2 else "dosage_note"
     cat_col = "ed_category" if is_v2 else "nle_status"
 
-    with st.expander(f"💊 ยาในบัญชียาหลักที่อาจเกี่ยวข้อง ({len(drugs)} รายการ)"):
+    title = "💊 ยาในบัญชียาหลักที่อาจเกี่ยวข้อง ({n} รายการ)".format(n=len(drugs))
+    with st.expander(title):
         st.caption(
-            "⚠ **ข้อมูลเพื่อการศึกษาเท่านั้น** · ห้ามซื้อยา/ใช้ยาเอง · "
+            "⚠ **ข้อมูลเพื่อการศึกษาเท่านั้น** · "
+            "ห้ามซื้อยา/ใช้ยาเอง · "
             "ยาเหล่านี้ต้องได้รับการสั่งโดยแพทย์/เภสัชกรเท่านั้น"
         )
         for _, d in drugs.iterrows():
@@ -194,30 +269,89 @@ def render_drug_panel(disease_en: str, drug_df: pd.DataFrame):
                     if is_v2 and pd.notna(d.get('reimbursement_note')):
                         st.caption(f"💰 เบิก: {d['reimbursement_note']}")
                     if is_v2 and pd.notna(d.get('prescription_tier')):
-                        tier = d['prescription_tier']
-                        if str(tier).lower() == "strict":
-                            st.caption(f"🔒 ต้องสั่งโดยแพทย์เฉพาะทาง")
+                        if str(d['prescription_tier']).lower() == "strict":
+                            st.caption("🔒 ต้องสั่งโดยแพทย์เฉพาะทาง")
                 with col2:
-                    nle = d.get(cat_col, '?')
-                    st.markdown(f"บัญชี **{nle}**")
+                    st.markdown(f"บัญชี **{d.get(cat_col, '?')}**")
 
 
-def render_hospital_panel(specialty: str, hint_df: pd.DataFrame):
-    """Render hospital type recommendation expander (skeleton)."""
+def render_hospital_panel(specialty, hint_df, hospitals_df=None, keywords_dict=None,
+                          selected_provinces=None, key_suffix="", max_cards=10):
     if hint_df.empty:
         return
     matched = hint_df[hint_df["primary_specialty"] == specialty]
-    if matched.empty:
+    hint_row = matched.iloc[0] if not matched.empty else None
+    recommended_types = []
+    if hint_row is not None:
+        recommended_types = [t.strip() for t in str(hint_row["recommended_hospital_types"]).split(",")]
+
+    real_mode = (
+        hospitals_df is not None
+        and not hospitals_df.empty
+        and selected_provinces
+    )
+
+    if not real_mode:
+        if hint_row is None:
+            return
+        title = f"🏥 ประเภท รพ.ที่เหมาะกับ {specialty}"
+        with st.expander(title):
+            st.markdown("**ประเภท รพ.แนะนำ:**")
+            for t in recommended_types:
+                st.markdown(f"- {t}")
+            if pd.notna(hint_row.get("note")):
+                st.caption(f"💡 {hint_row['note']}")
+            if hospitals_df is not None and not hospitals_df.empty:
+                st.info(
+                    "👆 เลือกจังหวัด + กดปุ่มค้นหา รพ. ด้านบน "
+                    "เพื่อดูรายชื่อโรงพยาบาลในจังหวัดของคุณ"
+                )
+            else:
+                st.caption("🚧 Phase 6: ระบบยังไม่กรองตามจังหวัด")
         return
-    row = matched.iloc[0]
-    with st.expander(f"🏥 ประเภท รพ.ที่เหมาะกับ {specialty}"):
-        types = str(row["recommended_hospital_types"]).split(",")
-        st.markdown("**ประเภท รพ.แนะนำ:**")
-        for t in types:
-            st.markdown(f"- {t.strip()}")
-        if pd.notna(row.get("note")):
-            st.caption(f"💡 {row['note']}")
-        st.caption(
-            "🚧 Phase 6: ระบบยังไม่กรองตามจังหวัด · "
-            "สัปดาห์หน้าจะเพิ่ม province filter จาก data.go.th hospital master"
-        )
+
+    sub = hospitals_df[hospitals_df["province"].isin(selected_provinces)].copy()
+    label = f"🏥 รพ.แนะนำสำหรับ {specialty} · {', '.join(selected_provinces)}"
+    if sub.empty:
+        with st.expander(label):
+            st.warning(
+                f"ไม่พบ รพ. ในจังหวัด {', '.join(selected_provinces)} "
+                "(ในฐานข้อมูลปัจจุบัน)"
+            )
+        return
+
+    keywords = (keywords_dict or {}).get(specialty, [])
+    sub["_score"] = sub.apply(
+        lambda r: _score_hospital(r, keywords, recommended_types), axis=1
+    )
+    sub = sub.sort_values("_score", ascending=False).head(max_cards)
+    n_total = int((hospitals_df["province"].isin(selected_provinces)).sum())
+    suffix = (
+        f" (แสดง {len(sub)} จาก {n_total} แห่ง · "
+        "เรียงตามความเชี่ยวชาญ + ขนาด)"
+    )
+    with st.expander(label + suffix):
+        if hint_row is not None and pd.notna(hint_row.get("note")):
+            st.caption(f"💡 {hint_row['note']}")
+        for _, r in sub.iterrows():
+            with st.container(border=True):
+                c1, c2 = st.columns([3, 1])
+                with c1:
+                    st.markdown(f"**{r['hospital_th']}**  \n*{r.get('hospital_en', '')}*")
+                    st.caption(
+                        f"📍 {r['province']} · "
+                        f"{r.get('hospital_type', '—')} · "
+                        f"{r.get('affiliation', '—')}"
+                    )
+                    note = r.get("specialty_note")
+                    if pd.notna(note) and str(note).strip():
+                        s = str(note)
+                        display = s[:200] + ("..." if len(s) > 200 else "")
+                        st.markdown(f"🩺 {display}")
+                with c2:
+                    if pd.notna(r.get("beds")):
+                        try:
+                            st.metric("เตียง", int(r["beds"]))
+                        except (TypeError, ValueError):
+                            pass
+                    st.caption(f"H Code: {r.get('h_code', '—')}")

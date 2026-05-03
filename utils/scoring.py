@@ -533,18 +533,34 @@ def classify_confidence(ranked_df: pd.DataFrame) -> dict:
             "top_score": 0.0, "gap_pct": 0.0, "top_coverage": 0.0,
         }
 
-    top_score = float(ranked_df["score"].iloc[0]) if "score" in ranked_df.columns \
-                else float(ranked_df["primary_score"].iloc[0])
-    second_score = (
-        float(ranked_df["score"].iloc[1]) if len(ranked_df) > 1 and "score" in ranked_df.columns
-        else float(ranked_df["primary_score"].iloc[1]) if len(ranked_df) > 1
-        else 0.0
-    )
+    # Detect score column · supports TF-IDF (score), Bayes (posterior), or generic (primary_score)
+    if "score" in ranked_df.columns:
+        score_col, is_bayes = "score", False
+    elif "posterior" in ranked_df.columns:
+        score_col, is_bayes = "posterior", True
+    elif "primary_score" in ranked_df.columns:
+        score_col, is_bayes = "primary_score", False
+    else:
+        return {
+            "level": "low", "emoji": "🔴",
+            "label": "ความมั่นใจต่ำมาก",
+            "reason": "ไม่พบคอลัมน์คะแนนใน ranked_df",
+            "top_score": 0.0, "gap_pct": 0.0, "top_coverage": 0.0,
+        }
+
+    top_score = float(ranked_df[score_col].iloc[0])
+    second_score = float(ranked_df[score_col].iloc[1]) if len(ranked_df) > 1 else 0.0
     top_coverage = float(ranked_df["coverage"].iloc[0]) if "coverage" in ranked_df.columns else 0.0
     gap_pct = ((top_score - second_score) / top_score) if top_score > 0 else 0.0
 
-    # Combined thresholds — high if (score strong AND coverage good) OR (score very strong AND gap clear)
-    is_high = (top_score > 5 and top_coverage > 0.30) or (top_score > 8 and gap_pct > 0.50)
+    # Bayes uses posterior in [0,1]; TF-IDF uses raw score (~0-20+) → different thresholds
+    if is_bayes:
+        # Posterior-based: high if posterior > 0.5 with clear gap, medium if > 0.2
+        is_high = (top_score > 0.5 and gap_pct > 0.30) or (top_score > 0.7)
+        is_medium = top_score > 0.2 or (top_score > 0.1 and gap_pct > 0.20)
+    else:
+        is_high = (top_score > 5 and top_coverage > 0.30) or (top_score > 8 and gap_pct > 0.50)
+        is_medium = (top_score > 2 and top_coverage > 0.15) or (top_score > 4)
     if is_high:
         return {
             "level": "high", "emoji": "🟢",
@@ -553,7 +569,7 @@ def classify_confidence(ranked_df: pd.DataFrame) -> dict:
                       f"ทิ้งห่างอันดับ 2 ที่ {gap_pct:.0%}",
             "top_score": top_score, "gap_pct": gap_pct, "top_coverage": top_coverage,
         }
-    if (top_score > 2 and top_coverage > 0.15) or (top_score > 4):
+    if is_medium:
         return {
             "level": "medium", "emoji": "🟡",
             "label": "ความมั่นใจปานกลาง",
