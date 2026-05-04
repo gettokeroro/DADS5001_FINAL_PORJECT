@@ -16,6 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 import re
 from math import log
+from urllib.parse import quote_plus
 import pandas as pd
 import streamlit as st
 
@@ -241,6 +242,118 @@ def _score_hospital(row, keywords, recommended_types):
     return spec_match * 100 + tier * 10 * rec_boost + log(beds + 1)
 
 
+# ---------------------------------------------------------------------------
+# Phase 6 polish — Badge helpers (drug payment + hospital insurance)
+# ---------------------------------------------------------------------------
+def drug_payment_badge(ed_category) -> dict:
+    """Map ED category → payment/access badge.
+
+    Returns:
+        {emoji, label, sub_label, kind} where kind ∈ {success, warning, error, info}
+    """
+    if pd.isna(ed_category) or not str(ed_category).strip():
+        return {
+            "emoji": "💵",
+            "label": "ชำระเอง",
+            "sub_label": "นอกบัญชียาหลักแห่งชาติ",
+            "kind": "info",
+        }
+    cat = str(ed_category).strip()
+    # ก/ข/ค — เบิกได้ทุกสิทธิ แต่ tier การเข้าถึงต่าง
+    tier_map = {
+        "ก": "พื้นฐาน — มีทุก รพ./ร้านยา",
+        "ข": "ทั่วไป — มี รพ. ส่วนใหญ่",
+        "ค": "เฉพาะทาง — รพ. จังหวัดขึ้นไป",
+    }
+    if cat in tier_map:
+        return {
+            "emoji": "🟢",
+            "label": "เบิกได้ทุกสิทธิ",
+            "sub_label": tier_map[cat],
+            "kind": "success",
+        }
+    if cat == "ง":
+        return {
+            "emoji": "🟡",
+            "label": "เบิกแบบมีเงื่อนไข",
+            "sub_label": "ต้องแพทย์เฉพาะทางสั่ง",
+            "kind": "warning",
+        }
+    if cat == "จ1":
+        return {
+            "emoji": "🟠",
+            "label": "เคสพิเศษ",
+            "sub_label": "เฉพาะโรคที่กำหนด",
+            "kind": "warning",
+        }
+    if cat == "จ2":
+        return {
+            "emoji": "🔴",
+            "label": "ยาแพง · เคสพิเศษ",
+            "sub_label": "เข้าโครงการพิเศษ",
+            "kind": "error",
+        }
+    # fallback
+    return {
+        "emoji": "❔",
+        "label": f"บัญชี {cat}",
+        "sub_label": "ตรวจสอบกับเภสัชกร",
+        "kind": "info",
+    }
+
+
+def hospital_insurance_badge(affiliation) -> dict:
+    """Map affiliation → insurance acceptance badge."""
+    if pd.isna(affiliation) or not str(affiliation).strip():
+        return {
+            "emoji": "🏥",
+            "label": "ตรวจสอบกับ รพ. โดยตรง",
+            "kind": "info",
+        }
+    aff = str(affiliation)
+    # ทหาร / ตำรวจ
+    if "กลาโหม" in aff or "ตำรวจ" in aff:
+        return {
+            "emoji": "🪖",
+            "label": "ทหาร/ตำรวจ + ข้าราชการ · ฉุกเฉินรับทุกสิทธิ",
+            "kind": "info",
+        }
+    # เอกชน
+    if "เอกชน" in aff:
+        return {
+            "emoji": "💼",
+            "label": "ประกันสังคม · ชำระเอง  (บัตรทองตามที่ รพ. เข้าร่วม)",
+            "kind": "warning",
+        }
+    # รัฐทุกประเภท (สป.สธ., สธ., กทม., มหาวิทยาลัย, ศึกษาธิการ, อปท., สภากาชาด, ฯลฯ)
+    state_keywords = [
+        "สาธารณสุข", "สป.สธ", "กทม", "มหาวิทยาลัย", "ศึกษาธิการ",
+        "อปท", "ปกครองส่วนท้องถิ่น", "สภากาชาด", "พระราชวัง",
+        "กรมการแพทย์",
+    ]
+    if any(k in aff for k in state_keywords):
+        return {
+            "emoji": "🏛️",
+            "label": "บัตรทอง · ประกันสังคม · ข้าราชการ",
+            "kind": "success",
+        }
+    # อื่นๆ (รัฐวิสาหกิจ, ยุติธรรม, คมนาคม, มหาดไทย, อิสระ, ฯลฯ)
+    return {
+        "emoji": "🏥",
+        "label": "ตรวจสอบกับ รพ. โดยตรง",
+        "kind": "info",
+    }
+
+
+def google_maps_url(hospital_th, province=None) -> str:
+    """Build Google Maps search URL for a hospital · ใส่จังหวัดเพื่อให้แม่นยำ."""
+    parts = [str(hospital_th)]
+    if province and pd.notna(province):
+        parts.append(str(province))
+    query = " ".join(parts)
+    return f"https://www.google.com/maps/search/{quote_plus(query)}"
+
+
 def render_drug_panel(disease_en, drug_df):
     drugs = drug_df[drug_df["disease_en"] == disease_en] if not drug_df.empty else drug_df
     if drugs.empty:
@@ -272,7 +385,14 @@ def render_drug_panel(disease_en, drug_df):
                         if str(d['prescription_tier']).lower() == "strict":
                             st.caption("🔒 ต้องสั่งโดยแพทย์เฉพาะทาง")
                 with col2:
-                    st.markdown(f"บัญชี **{d.get(cat_col, '?')}**")
+                    cat_val = d.get(cat_col)
+                    st.markdown(f"บัญชี **{cat_val if pd.notna(cat_val) else '—'}**")
+                    if is_v2:
+                        badge = drug_payment_badge(cat_val)
+                        st.markdown(
+                            f"{badge['emoji']} **{badge['label']}**"
+                        )
+                        st.caption(badge["sub_label"])
 
 
 def render_hospital_panel(specialty, hint_df, hospitals_df=None, keywords_dict=None,
@@ -348,10 +468,18 @@ def render_hospital_panel(specialty, hint_df, hospitals_df=None, keywords_dict=N
                         s = str(note)
                         display = s[:200] + ("..." if len(s) > 200 else "")
                         st.markdown(f"🩺 {display}")
+                    # Google Maps link — ใส่จังหวัดเพื่อให้ Google resolve แม่นยำ
+                    maps_url = google_maps_url(
+                        r["hospital_th"], r.get("province")
+                    )
+                    st.markdown(
+                        f"📞 [โทร · ดูแผนที่บน Google Maps]({maps_url})"
+                    )
                 with c2:
-                    if pd.notna(r.get("beds")):
-                        try:
-                            st.metric("เตียง", int(r["beds"]))
-                        except (TypeError, ValueError):
-                            pass
+                    # Insurance badge — replaces former 'beds' metric
+                    badge = hospital_insurance_badge(r.get("affiliation"))
+                    st.markdown(
+                        f"{badge['emoji']} **สิทธิที่รับ**"
+                    )
+                    st.caption(badge["label"])
                     st.caption(f"H Code: {r.get('h_code', '—')}")
