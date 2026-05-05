@@ -5,12 +5,15 @@ DADS5001 Final Project · Streamlit multi-page app
 import streamlit as st
 from pathlib import Path
 
+from utils.styling import inject_global_css
+
 st.set_page_config(
     page_title="Symptom-to-Specialty Triage",
     page_icon="🩺",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+inject_global_css()
 
 # ---------------------------------------------------------------------------
 # Sidebar disclaimer (visible on every page via Streamlit's multi-page)
