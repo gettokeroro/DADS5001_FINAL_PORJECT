@@ -24,7 +24,14 @@ from utils.data_loader import (
     render_hospital_panel,
 )
 from utils.scoring import predict, score_tfidf, score_bayes, classify_confidence
-from utils.styling import inject_global_css
+
+# Defensive: utils/styling.py เป็นงานของ Kade ที่ยังไม่ได้ push ขึ้น GitHub
+# (รอ BG_R1_web.jpg re-sync) — fallback no-op เพื่อไม่ให้ Streamlit Cloud crash
+try:
+    from utils.styling import inject_global_css
+except ImportError:
+    def inject_global_css():
+        pass
 
 st.set_page_config(page_title="Non-AI Mode", page_icon="🩺", layout="wide")
 inject_global_css()
