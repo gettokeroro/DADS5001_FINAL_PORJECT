@@ -78,7 +78,7 @@ sym_visible = sym_dict[sym_dict["is_user_facing"] == True].copy()
 st.markdown("### 1️⃣ เลือกอาการที่คุณมี")
 st.caption(
     f"แสดง {len(sym_visible)} อาการ จัดกลุ่มตามระบบร่างกาย · "
-    "กางกล่องที่ต้องการเพื่อติ๊ก"
+    "พิมพ์ค้นหาด้านบน หรือกางกล่องด้านล่างเพื่อติ๊ก"
 )
 
 body_order = (
@@ -89,7 +89,58 @@ body_order = (
 # Version counter — bumped by clear button to invalidate widget keys
 _v = st.session_state.get("reset_counter", 0)
 
+# ---------------------------------------------------------------------------
+# 🔍 Search box (Phase 4 UX) — quick filter ข้าม body_system
+# Key prefix `sym_search_*` เพื่อให้ clear button (ที่ลบ key ขึ้นต้น `sym_`) reset ครบ
+# ---------------------------------------------------------------------------
+_search_term = st.text_input(
+    "🔍 ค้นหาอาการ (พิมพ์ภาษาไทยหรืออังกฤษ)",
+    placeholder="เช่น: ปวด, ไข้, fever, headache, คัน",
+    key=f"sym_search_q_v{_v}",
+    help="ระบบจะค้นจาก: ชื่อไทย · คำเรียกอื่น · ชื่ออังกฤษ · label · "
+         "ผลการค้นหาจะติ๊กได้เลย sync กับกล่องด้านล่าง",
+)
+
 selected = []
+_search_shown: set[str] = set()  # symptoms ที่ขึ้นใน search results — กัน double-append
+
+if _search_term and _search_term.strip():
+    _q = _search_term.strip().lower()
+    _matches = sym_visible[
+        sym_visible["symptom_th"].fillna("").str.lower().str.contains(_q, na=False, regex=False) |
+        sym_visible["symptom_th_alt"].fillna("").str.lower().str.contains(_q, na=False, regex=False) |
+        sym_visible["symptom_en"].fillna("").str.lower().str.contains(_q, na=False, regex=False) |
+        sym_visible["ui_label"].fillna("").str.lower().str.contains(_q, na=False, regex=False)
+    ].sort_values("symptom_th")
+
+    if len(_matches) == 0:
+        st.info(
+            f"ℹ️ ไม่พบอาการที่มีคำว่า **'{_search_term}'** · "
+            "ลองพิมพ์คำอื่น หรือเปิดกล่องด้านล่างเพื่อหาตามหมวด"
+        )
+    else:
+        with st.container(border=True):
+            st.markdown(
+                f"#### 🔍 ผลการค้นหา · **{len(_matches)} รายการ** match กับ "
+                f"\"{_search_term}\""
+            )
+            _search_cols = st.columns(2)
+            for _i, _row in enumerate(_matches.itertuples()):
+                _col = _search_cols[_i % 2]
+                _checked = _col.checkbox(
+                    f"{_row.ui_label}  ·  _หมวด: {_row.body_system}_",
+                    key=f"sym_searchresult_{_row.symptom_en}_v{_v}",
+                    value=(_row.symptom_en in st.session_state.selected_symptoms),
+                )
+                if _checked:
+                    selected.append(_row.symptom_en)
+                    _search_shown.add(_row.symptom_en)
+            st.caption(
+                "💡 ติ๊กในผลค้นหาด้านบนนี้ก็ได้ · หรือเลื่อนลงไปหากล่องตามหมวดด้านล่าง · "
+                "ทั้ง 2 ที่ sync กันอัตโนมัติ"
+            )
+
+# Body-system expanders (existing UI · always shown)
 for body in body_order:
     sub = sym_visible[sym_visible["body_system"] == body].sort_values("symptom_th")
     with st.expander(f"**{body}** ({len(sub)})", expanded=False):
@@ -101,7 +152,8 @@ for body in body_order:
                 key=f"sym_{row.symptom_en}_v{_v}",
                 value=(row.symptom_en in st.session_state.selected_symptoms),
             )
-            if checked:
+            # de-dup: ถ้าติ๊กผ่าน search section ไปแล้ว · skip append ซ้ำ
+            if checked and row.symptom_en not in _search_shown:
                 selected.append(row.symptom_en)
 
 st.session_state.selected_symptoms = selected
