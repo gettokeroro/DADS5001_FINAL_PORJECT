@@ -320,3 +320,11 @@ hepatitis A,nausea,0.95
 hepatitis A,loss_of_appetite,0.95
 hepatitis A,abdominal_pain,0.95
 hepatitis A,diarrhoea,0.95
+Influenza,high_fever,0.95
+Influenza,chills,0.9
+Influenza,muscle_pain,0.95
+Influenza,joint_pain,0.85
+Influenza,headache,0.9
+Influenza,fatigue,0.95
+Influenza,malaise,0.9
+Influenza,cough,0.85

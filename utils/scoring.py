@@ -33,7 +33,7 @@ import duckdb
 @dataclass
 class ScoringArtifacts:
     """Pre-computed lookup tables + DuckDB connection used by scoring methods."""
-    diseases: list[str]                    # 41 unique disease names
+    diseases: list[str]                    # 42 unique disease names (Phase 4: +Influenza)
     symptoms: list[str]                    # 132 symptom column names
     symptom_idf: dict[str, float]          # IDF weight per symptom
     disease_prior: dict[str, float]        # P(disease) — uniform on synthetic data
@@ -239,7 +239,7 @@ WITH
   )
 SELECT
   pd.disease,
-  ROUND(pd.log_likelihood + LN(COALESCE(pn.prior_p, 1.0/41)), 3) AS log_posterior,
+  ROUND(pd.log_likelihood + LN(COALESCE(pn.prior_p, 1.0/42)), 3) AS log_posterior,  -- N_DISEASES (update เมื่อเพิ่มโรคใหม่)
   pd.n_matched
 FROM per_disease pd
 LEFT JOIN prior_norm pn ON pd.disease = pn.disease_en
