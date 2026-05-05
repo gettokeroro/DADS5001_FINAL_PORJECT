@@ -9,8 +9,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from utils.data_loader import init_session_state, render_disclaimer_sidebar
+from utils.styling import inject_global_css
 
 st.set_page_config(page_title="Compare", page_icon="⚖️", layout="wide")
+inject_global_css()
 init_session_state()
 render_disclaimer_sidebar()
 

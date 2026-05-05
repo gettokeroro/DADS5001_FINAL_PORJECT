@@ -31,8 +31,10 @@ from utils.ai_engine import (
     ExtractedSymptoms,
 )
 from utils.scoring import predict, score_tfidf, score_bayes, suggest_co_symptoms, classify_confidence
+from utils.styling import inject_global_css
 
 st.set_page_config(page_title="AI Mode", page_icon="🤖", layout="wide")
+inject_global_css()
 init_session_state()
 render_disclaimer_sidebar()
 

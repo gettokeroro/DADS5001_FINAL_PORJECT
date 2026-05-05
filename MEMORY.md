@@ -1,7 +1,7 @@
 # Project Memory — DADS5001 Final
 > Memory file สำหรับทีม (Kade + พี่เก็ตโตะ) · update เมื่อมีงานใหม่ · ไฟล์นี้ commit ขึ้น git ได้
 
-อัปเดตล่าสุด: **2026-05-03 (Kade)**
+อัปเดตล่าสุด: **2026-05-05 (Kade)**
 
 ---
 
@@ -22,6 +22,7 @@
 | 4 — Add diseases (Influenza, Electrolyte ฯลฯ) | ⬜ ค้าง | |
 | 5 — Honest fallback responses | ⬜ ค้าง | |
 | 6 — Drug + Hospital data | 🟡 in progress | อ่านด้านล่าง |
+| 7 — UI styling sync | 🟡 in progress | batch 1 done (2_AI, 3_Compare) · batch 2 ค้าง 3 หน้า |
 
 ## 📦 Phase 6 — Drug + Hospital integration
 
@@ -76,6 +77,26 @@
      - Option (ก) sidebar (sticky ทุกหน้า) | (ข) หลัง Top-3 โรค ⭐ แนะนำ | (ค) ทั้งสองที่
 
 4. **MongoDB Atlas ingestion** (Kade's value-add ตามแผน)
+
+## 🎨 Phase 7 — UI / Styling sync
+
+### ✅ Batch 1 · CSS injection across pages (2026-05-05 by Kade)
+
+**ปัญหาที่เจอ:** มีแค่ `app.py` + `pages/1_Non_AI_Mode.py` ที่เรียก `inject_global_css()` · 5 หน้าอื่นข้าม → user สลับหน้าแล้ว navy theme + BG image + sidebar gradient หายหมด กลับเป็น default Streamlit
+
+**Batch 1 — แก้แล้ว:**
+- ✅ `pages/2_AI_Mode.py` — เพิ่ม `from utils.styling import inject_global_css` + `inject_global_css()` หลัง set_page_config
+- ✅ `pages/3_Compare.py` — เพิ่มเหมือนกัน
+
+**Batch 2 — ยังเหลือ (TODO):**
+- ⬜ `pages/4_Disease_Landscape.py`
+- ⬜ `pages/5_Cost_Estimator.py`
+- ⬜ `pages/6_About.py`
+
+**Palette ปัจจุบัน (ไม่เปลี่ยน, จาก `styling.py` + `config.toml`):**
+- accent `#22B7E9` (cyan) · navy text `#02497E`
+- BG = `BG_R1.png` + 78% white overlay
+- Sidebar = 5-stop gradient (pale → cyan-mid → blue-deep)
 
 ## 🗂 ไฟล์ data ที่อยู่ใน OneDrive
 
