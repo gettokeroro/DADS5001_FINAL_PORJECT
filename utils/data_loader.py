@@ -44,7 +44,7 @@ def load_itachi_train() -> pd.DataFrame:
 
 @st.cache_data(show_spinner="Loading specialty mapping...")
 def load_specialty_mapping() -> pd.DataFrame:
-    """Load Disease → ICD-10 → Specialty → Urgency mapping (43 rows · Phase 4: +Influenza, +Dehydration)."""
+    """Load Disease → ICD-10 → Specialty → Urgency mapping (44 rows · Phase 4: +Influenza, +Dehydration, +Pharyngitis)."""
     return pd.read_csv(
         DATA / "processed" / "disease_specialty_mapping.csv",
         encoding="utf-8-sig",
@@ -151,7 +151,7 @@ def render_disclaimer_sidebar():
 
 @st.cache_data(show_spinner="Loading drug mapping...")
 def load_drug_mapping() -> pd.DataFrame:
-    """Load disease → drug mapping. Prefer v2 (89 drugs · 43 diseases · ED category)
+    """Load disease → drug mapping. Prefer v2 (93 drugs · 44 diseases · ED category)
     over skeleton v1 (15 drugs · 11 diseases) if available."""
     v2 = DATA / "processed" / "disease_drug_mapping_v2_ed.csv"
     v1 = DATA / "processed" / "disease_drug_mapping.csv"
