@@ -255,9 +255,9 @@ elif st.session_state.ai_step == "result":
     # Run scoring + narrate
     with st.spinner("🤖 น้องอุ่นในกำลังวิเคราะห์..."):
         ranked = predict(all_codes, arts, method="tfidf", top_k=3)
-        # Phase 2: classify confidence from full ranking
+        # Phase 2 + 5: classify confidence from full ranking · pass n_symptoms
         full_for_conf = score_tfidf(all_codes, arts)
-        confidence = classify_confidence(full_for_conf)
+        confidence = classify_confidence(full_for_conf, n_user_symptoms=len(all_codes))
 
         # Rate limit for narrate
         allowed, _ = check_rate_limit(st.session_state, max_calls=MAX_CALLS_PER_SESSION)
@@ -274,9 +274,25 @@ elif st.session_state.ai_step == "result":
             st.stop()
 
     # Show confidence badge
-    _color_map = {"high": "success", "medium": "warning", "low": "error"}
+    _color_map = {"high": "success", "medium": "warning", "low": "error", "very_low": "warning"}
     _st_func = getattr(st, _color_map.get(confidence["level"], "info"))
     _st_func(f"{confidence['emoji']} **{confidence['label']}** — {confidence['reason']}")
+
+    # Phase 5: Honest fallback banner เมื่อ very_low/low — แสดงก่อน Top-3
+    if confidence["level"] == "very_low":
+        st.warning(
+            "⚠️ **ระบบไม่สามารถสรุปได้ชัดเจน** — ข้อมูลอาการที่พี่ระบุยังน้อยเกินไป "
+            "ผลด้านล่างเป็นเพียง **reference เท่านั้น** · กรุณาปรึกษาแพทย์ก่อนตัดสินใจ"
+        )
+        st.caption(
+            "💡 ลองพิมพ์อาการเพิ่ม (เวลาที่เป็น · ความรุนแรง · ตำแหน่ง · อาการร่วม) "
+            "น้องอุ่นในจะวิเคราะห์ได้แม่นยำกว่านี้"
+        )
+    elif confidence["level"] == "low":
+        st.info(
+            "ℹ️ **ผลด้านล่างใช้เป็น reference ประกอบการตัดสินใจ** — ระบบยังไม่มั่นใจมาก · "
+            "การปรึกษาแพทย์/เภสัชกรยังเป็นทางเลือกที่ปลอดภัยที่สุด"
+        )
 
     # Performance badge
     try:

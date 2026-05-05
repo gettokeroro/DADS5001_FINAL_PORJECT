@@ -24,8 +24,10 @@ from utils.data_loader import (
     render_hospital_panel,
 )
 from utils.scoring import predict, score_tfidf, score_bayes, classify_confidence
+from utils.styling import inject_global_css
 
 st.set_page_config(page_title="Non-AI Mode", page_icon="🩺", layout="wide")
+inject_global_css()
 init_session_state()
 render_disclaimer_sidebar()
 
@@ -187,16 +189,31 @@ st.caption(
 
 st.markdown(f"### 4️⃣ ผลลัพธ์ Top-{top_k}")
 
-# === Phase 2: Confidence badge (ดี / กลาง / ต่ำ) ===
+# === Phase 2 + 5: Confidence badge (สูง / กลาง / ต่ำ / ต่ำมาก) ===
 # คำนวณจาก full ranking (41 โรค) ก่อน truncate ด้วย Top-K
 _full_for_conf = score_tfidf(selected, arts) if method != "bayes" else score_bayes(selected, arts)
-_conf = classify_confidence(_full_for_conf)
-_color_map = {"high": "success", "medium": "warning", "low": "error"}
+_conf = classify_confidence(_full_for_conf, n_user_symptoms=len(selected))
+_color_map = {"high": "success", "medium": "warning", "low": "error", "very_low": "warning"}
 _st_func = getattr(st, _color_map.get(_conf["level"], "info"))
 _st_func(
     f"{_conf['emoji']} **{_conf['label']}** — {_conf['reason']}"
 )
-if _conf["level"] == "low":
+
+# Phase 5: Honest fallback banner เมื่อ very_low/low — แสดงก่อน Top-3
+if _conf["level"] == "very_low":
+    st.warning(
+        "⚠️ **ระบบไม่สามารถสรุปได้ชัดเจน** — ข้อมูลอาการที่ระบุยังน้อยเกินไป "
+        "ผลด้านล่างเป็นเพียง **reference เท่านั้น** · กรุณาปรึกษาแพทย์ก่อนตัดสินใจ"
+    )
+    st.caption(
+        "💡 ลองติ๊กอาการเพิ่มอย่างน้อย 3 ข้อ (ตำแหน่ง / ความรุนแรง / อาการร่วม) "
+        "ระบบจะให้ผลที่แม่นยำกว่านี้"
+    )
+elif _conf["level"] == "low":
+    st.info(
+        "ℹ️ **ผลด้านล่างใช้เป็น reference ประกอบการตัดสินใจ** — ระบบยังไม่มั่นใจมาก · "
+        "การปรึกษาแพทย์/เภสัชกรยังเป็นทางเลือกที่ปลอดภัยที่สุด"
+    )
     st.caption(
         "💡 ลองติ๊กอาการเพิ่มเติม · ระบบจะแม่นขึ้นเมื่อมีข้อมูลมากกว่านี้"
     )

@@ -512,14 +512,25 @@ def suggest_co_symptoms(
 # Phase 2 — Confidence classification (combined: score + coverage + gap)
 # ---------------------------------------------------------------------------
 
-def classify_confidence(ranked_df: pd.DataFrame) -> dict:
+def classify_confidence(
+    ranked_df: pd.DataFrame,
+    n_user_symptoms: int | None = None,
+) -> dict:
     """Classify confidence of the ranked result based on multiple signals.
 
     Combines absolute score, gap to runner-up, and coverage to avoid the
     "softmax-confident-but-low-score" trap.
 
+    Phase 5: ถ้า user ระบุอาการน้อยมาก (≤ 2) AND top_score ต่ำ (TF-IDF < 1.5
+    หรือ Bayes < 0.1) → tier "very_low" → caller ต้องแสดง fallback banner
+    เพราะ ranked result ไม่น่าเชื่อถือพอจะใช้เป็น guidance.
+
+    Args:
+        ranked_df: full ranking (TF-IDF / Bayes) — ห้ามส่ง top-K truncated
+        n_user_symptoms: จำนวนอาการที่ user ระบุ (ใช้สำหรับ very_low check)
+
     Returns dict with:
-        level: 'high' | 'medium' | 'low'
+        level: 'very_low' | 'low' | 'medium' | 'high'
         emoji: visual indicator
         label: Thai display text
         reason: why this level
@@ -527,8 +538,8 @@ def classify_confidence(ranked_df: pd.DataFrame) -> dict:
     """
     if ranked_df.empty or len(ranked_df) == 0:
         return {
-            "level": "low", "emoji": "🔴",
-            "label": "ความมั่นใจต่ำมาก",
+            "level": "very_low", "emoji": "⚪",
+            "label": "ข้อมูลไม่พอตัดสิน",
             "reason": "ไม่มีโรคใดในฐานข้อมูลตรงกับอาการที่ระบุ",
             "top_score": 0.0, "gap_pct": 0.0, "top_coverage": 0.0,
         }
@@ -552,6 +563,22 @@ def classify_confidence(ranked_df: pd.DataFrame) -> dict:
     second_score = float(ranked_df[score_col].iloc[1]) if len(ranked_df) > 1 else 0.0
     top_coverage = float(ranked_df["coverage"].iloc[0]) if "coverage" in ranked_df.columns else 0.0
     gap_pct = ((top_score - second_score) / top_score) if top_score > 0 else 0.0
+
+    # Phase 5: very_low tier — ข้อมูลน้อยเกินไป + คะแนนต่ำ
+    # Threshold: TF-IDF < 1.5 (ปกติคะแนนดีอยู่ที่ 5+), Bayes < 0.1 (ปกติ 0.5+)
+    n_syms = n_user_symptoms if n_user_symptoms is not None else 0
+    very_low_threshold = 0.1 if is_bayes else 1.5
+    is_very_low = (n_syms <= 2) and (top_score < very_low_threshold)
+    if is_very_low:
+        return {
+            "level": "very_low", "emoji": "⚪",
+            "label": "ข้อมูลไม่พอตัดสิน",
+            "reason": (
+                f"อาการที่ระบุน้อยเกินไป ({n_syms} อาการ · คะแนน {top_score:.2f}) — "
+                "ผลด้านล่างเป็นแค่ reference · ระบบไม่แนะนำให้พึ่งพิงผลนี้"
+            ),
+            "top_score": top_score, "gap_pct": gap_pct, "top_coverage": top_coverage,
+        }
 
     # Bayes uses posterior in [0,1]; TF-IDF uses raw score (~0-20+) → different thresholds
     if is_bayes:

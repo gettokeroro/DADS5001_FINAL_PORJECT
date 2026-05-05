@@ -347,11 +347,23 @@ def narrate_result(
         )
     ranked_block = "\n".join(rows)
 
-    # Add confidence guidance to prompt if low/medium
+    # Add confidence guidance to prompt if low/medium/very_low
     confidence_block = ""
     if confidence:
         level = confidence.get("level", "medium")
-        if level == "low":
+        if level == "very_low":
+            # Phase 5: ตอบสั้นๆ · ห้ามวิเคราะห์ Top-3 · ขอข้อมูลเพิ่มอย่างเดียว
+            confidence_block = (
+                "\n## ⚠ Confidence: VERY LOW (Honest Fallback Mode)\n"
+                f"ระบบ rule-based บอกว่า: {confidence.get('reason', '')}\n"
+                "**สำคัญมาก — บังคับ:**\n"
+                "- ตอบสั้น **ไม่เกิน 3-4 บรรทัด** เท่านั้น\n"
+                "- บอก user ตรงๆ ว่าน้องยังให้คำตอบไม่ได้ ข้อมูลอาการน้อยเกินไป\n"
+                "- ขอให้ user พิมพ์อาการเพิ่ม: **เวลาที่เป็น · ความรุนแรง · ตำแหน่ง · อาการร่วม**\n"
+                "- **ห้าม** วิเคราะห์โรคใน Top-3 · **ห้าม** บอกชื่อโรค · **ห้าม** แนะนำแผนก\n"
+                "- เน้น 'ขอข้อมูลเพิ่ม' เป็นหลัก · น้ำเสียงอบอุ่น เรียก user ว่า 'พี่' ตามปกติ\n"
+            )
+        elif level == "low":
             confidence_block = (
                 "\n## ⚠ Confidence: LOW\n"
                 f"ระบบ rule-based บอกว่า: {confidence.get('reason', '')}\n"
