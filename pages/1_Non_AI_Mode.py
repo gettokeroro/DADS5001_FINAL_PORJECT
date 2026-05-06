@@ -54,6 +54,30 @@ def _clear_all_symptoms():
             del st.session_state[k]
 
 
+def _on_symptom_toggle(symptom_en: str, widget_key: str):
+    """Single callback ที่ใช้ทั้ง search section + expander section
+
+    Source of truth: ``st.session_state.selected_symptoms`` (list)
+
+    Flow:
+      • Pre-render เรา sync ``st.session_state[widget_key] = sym in selected_symptoms``
+      • User ติ๊ก/ปลด → callback อ่าน widget state ใหม่ → patch source of truth
+      • Streamlit rerun → pre-render sync ทุก widget ที่เกี่ยวข้องกลับมาตรง
+
+    เลิก loop append (`selected = []` แล้ว rebuild ทุก rerun) — pattern เก่าทำให้
+    state ของ expander widget ค้าง ไม่ sync กับ search section · ตอน user clear search
+    แล้วพิมพ์คำใหม่ symptom ที่ติ๊กไว้ใน search รอบก่อน "หาย" จาก selected_symptoms
+    """
+    is_checked = bool(st.session_state.get(widget_key, False))
+    syms = st.session_state.selected_symptoms
+    if is_checked:
+        if symptom_en not in syms:
+            syms.append(symptom_en)
+    else:
+        if symptom_en in syms:
+            syms.remove(symptom_en)
+
+
 # ---------------------------------------------------------------------------
 # Header
 # ---------------------------------------------------------------------------
@@ -101,9 +125,9 @@ _search_term = st.text_input(
          "ผลการค้นหาจะติ๊กได้เลย sync กับกล่องด้านล่าง",
 )
 
-selected = []
-_search_shown: set[str] = set()  # symptoms ที่ขึ้นใน search results — กัน double-append
-
+# Compute search matches ครั้งเดียว · ใช้ทั้ง search section + expander auto-expand + badges
+_matched_symptoms: set[str] = set()
+_matches: pd.DataFrame = pd.DataFrame()
 if _search_term and _search_term.strip():
     _q = _search_term.strip().lower()
     _matches = sym_visible[
@@ -112,7 +136,13 @@ if _search_term and _search_term.strip():
         sym_visible["symptom_en"].fillna("").str.lower().str.contains(_q, na=False, regex=False) |
         sym_visible["ui_label"].fillna("").str.lower().str.contains(_q, na=False, regex=False)
     ].sort_values("symptom_th")
+    _matched_symptoms = set(_matches["symptom_en"].tolist())
 
+# ---------------------------------------------------------------------------
+# 🔍 Search results section (เฉพาะตอน search active)
+# ใช้ on_change callback · pre-sync state จาก selected_symptoms
+# ---------------------------------------------------------------------------
+if _search_term and _search_term.strip():
     if len(_matches) == 0:
         st.info(
             f"ℹ️ ไม่พบอาการที่มีคำว่า **'{_search_term}'** · "
@@ -127,36 +157,70 @@ if _search_term and _search_term.strip():
             _search_cols = st.columns(2)
             for _i, _row in enumerate(_matches.itertuples()):
                 _col = _search_cols[_i % 2]
-                _checked = _col.checkbox(
-                    f"{_row.ui_label}  ·  _หมวด: {_row.body_system}_",
-                    key=f"sym_searchresult_{_row.symptom_en}_v{_v}",
-                    value=(_row.symptom_en in st.session_state.selected_symptoms),
+                _key = f"sym_searchresult_{_row.symptom_en}_v{_v}"
+                # Pre-render sync · widget state ← source of truth
+                st.session_state[_key] = (
+                    _row.symptom_en in st.session_state.selected_symptoms
                 )
-                if _checked:
-                    selected.append(_row.symptom_en)
-                    _search_shown.add(_row.symptom_en)
+                _col.checkbox(
+                    f"{_row.ui_label}  ·  _หมวด: {_row.body_system}_",
+                    key=_key,
+                    on_change=_on_symptom_toggle,
+                    args=(_row.symptom_en, _key),
+                )
             st.caption(
                 "💡 ติ๊กในผลค้นหาด้านบนนี้ก็ได้ · หรือเลื่อนลงไปหากล่องตามหมวดด้านล่าง · "
                 "ทั้ง 2 ที่ sync กันอัตโนมัติ"
             )
 
-# Body-system expanders (existing UI · always shown)
+# ---------------------------------------------------------------------------
+# Body-system expanders
+# • Auto-expand เมื่อ body system มี match search OR มี ติ๊กแล้ว
+#   (override default expanded=False ที่ user อนุมัติใน plan)
+# • Header badge: 🔍 N match · ✅ N ติ๊ก
+# • Highlight matched label ด้วย prefix 🔍
+# ---------------------------------------------------------------------------
+_selected_set = set(st.session_state.selected_symptoms)
+
 for body in body_order:
     sub = sym_visible[sym_visible["body_system"] == body].sort_values("symptom_th")
-    with st.expander(f"**{body}** ({len(sub)})", expanded=False):
+    sub_syms = set(sub["symptom_en"].tolist())
+    n_match_in_body = len(sub_syms & _matched_symptoms)
+    n_tick_in_body = len(sub_syms & _selected_set)
+
+    # Auto-expand if any match OR any tick
+    _expand = bool(n_match_in_body) or bool(n_tick_in_body)
+
+    # Header label: base + badges (เฉพาะตัวที่ > 0)
+    _label_parts = [f"**{body}** ({len(sub)})"]
+    if n_match_in_body:
+        _label_parts.append(f"🔍 {n_match_in_body} match")
+    if n_tick_in_body:
+        _label_parts.append(f"✅ {n_tick_in_body} ติ๊ก")
+    _label = " · ".join(_label_parts)
+
+    with st.expander(_label, expanded=_expand):
         cols = st.columns(2)
         for i, row in enumerate(sub.itertuples()):
             col = cols[i % 2]
-            checked = col.checkbox(
-                row.ui_label,
-                key=f"sym_{row.symptom_en}_v{_v}",
-                value=(row.symptom_en in st.session_state.selected_symptoms),
+            _key = f"sym_{row.symptom_en}_v{_v}"
+            # Pre-render sync · widget state ← source of truth
+            st.session_state[_key] = (
+                row.symptom_en in st.session_state.selected_symptoms
             )
-            # de-dup: ถ้าติ๊กผ่าน search section ไปแล้ว · skip append ซ้ำ
-            if checked and row.symptom_en not in _search_shown:
-                selected.append(row.symptom_en)
+            # Highlight: prefix 🔍 ถ้า match search รอบนี้
+            _ui_label = row.ui_label
+            if row.symptom_en in _matched_symptoms:
+                _ui_label = f"🔍 {_ui_label}"
+            col.checkbox(
+                _ui_label,
+                key=_key,
+                on_change=_on_symptom_toggle,
+                args=(row.symptom_en, _key),
+            )
 
-st.session_state.selected_symptoms = selected
+# Snapshot สำหรับโค้ดด้านล่าง (selected_symptoms ถูก mutate ใน callback)
+selected = list(st.session_state.selected_symptoms)
 
 # ---------------------------------------------------------------------------
 # 2️⃣ Selected recap (FIXED: ขึ้นก่อนผลลัพธ์ Top-3)
