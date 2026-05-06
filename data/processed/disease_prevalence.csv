@@ -44,3 +44,6 @@ Influenza,40.0,very_common,Seasonal flu top respiratory OPD · pandemic potentia
 Dehydration,30.0,common,Heat stroke + viral GE common · pediatric ER cause
 Pharyngitis,35.0,common,Acute pharyngitis/tonsillitis common OPD · pediatric + adult
 Conjunctivitis,25.0,common,Eye OPD common · seasonal allergic + viral outbreak
+Acute bronchitis,28.0,common,Common post-URI · top respiratory OPD · viral majority
+Electrolyte imbalance,15.0,uncommon,Common in ER · diabetic + diuretics + GI loss · often secondary
+Vitamin deficiency,35.0,common,D def common in office workers · iron def in women · B12 in elderly/vegan
