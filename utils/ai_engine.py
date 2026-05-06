@@ -299,7 +299,7 @@ _NARRATE_SYSTEM_PROMPT = """คุณคือ "น้องอุ่นใน (
 
 **ย่อหน้า 6 — แหล่งอ้างอิง (สำคัญ — ใส่ทุกครั้ง)**
 "📚 แหล่งข้อมูลที่น้องใช้:
-- itachi9604 disease-symptom dataset (Kaggle, 44 โรค × 132 อาการ · เพิ่ม Influenza + Dehydration + Pharyngitis)
+- itachi9604 disease-symptom dataset (Kaggle, 45 โรค × 132 อาการ · เพิ่ม Influenza + Dehydration + Pharyngitis + Conjunctivitis)
 - แนวทาง ED Triage 5-level ของกระทรวงสาธารณสุข
 - ICD-10-TM (กรมการแพทย์)"
 
