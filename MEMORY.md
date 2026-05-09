@@ -1,7 +1,7 @@
 # Project Memory — DADS5001 Final
 > Memory file สำหรับทีม (Kade + พี่เก็ตโตะ) · update เมื่อมีงานใหม่ · ไฟล์นี้ commit ขึ้น git ได้
 
-อัปเดตล่าสุด: **2026-05-05 (Kade)**
+อัปเดตล่าสุด: **2026-05-09 (Kade)**
 
 ---
 
@@ -18,7 +18,7 @@
 | 1 — Population prevalence weighting | ✅ done | data/processed/disease_prevalence.csv |
 | 1.5 — Interactive co-symptom follow-up | ✅ done | scoring.py + AI Mode page |
 | 2 — Confidence + UI warnings | ✅ done | high/med/low badges |
-| 3 — Casual Thai dict expansion | ⬜ ค้าง | สำหรับสัปดาห์หน้า |
+| 3 — Casual Thai dict expansion | ✅ done | Top 30 priority symptoms · slang moderate · ดูด้านล่าง |
 | 4 — Add diseases (Influenza, Electrolyte ฯลฯ) | ⬜ ค้าง | |
 | 5 — Honest fallback responses | ⬜ ค้าง | |
 | 6 — Drug + Hospital data | 🟡 in progress | อ่านด้านล่าง |
@@ -77,6 +77,38 @@
      - Option (ก) sidebar (sticky ทุกหน้า) | (ข) หลัง Top-3 โรค ⭐ แนะนำ | (ค) ทั้งสองที่
 
 4. **MongoDB Atlas ingestion** (Kade's value-add ตามแผน)
+
+## 💬 Phase 3 — Casual Thai dictionary expansion
+
+### ✅ เสร็จแล้ว (2026-05-09 by Kade + Claude)
+
+**ไฟล์ที่แก้:** `data/processed/symptom_dictionary_th.csv`
+**Backup:** `data/processed/symptom_dictionary_th.bak.csv` (snapshot ก่อนแก้)
+
+**Top 30 priority symptoms ที่ขยาย slang** (เน้น use case คนไทยใช้บ่อย):
+- A. ไข้หวัด/ภูมิแพ้ (8): headache, high_fever, mild_fever, chills, cough, continuous_sneezing, runny_nose, throat_irritation
+- B. ทางเดินอาหาร (6): stomach_pain, nausea, vomiting, diarrhoea, constipation, loss_of_appetite
+- C. ผิวหนัง (3): itching, skin_rash, red_spots_over_body
+- D. ปวดเมื่อย (4): joint_pain, muscle_pain, back_pain, fatigue
+- E. หัวใจ/หายใจ (3): chest_pain, breathlessness, palpitations
+- F. ทั่วไป/neuro (3): dizziness, malaise, dehydration
+- G. ทางเดินปัสสาวะ (2): burning_micturition, polyuria
+- H. จิตใจ (1): anxiety
+
+**Slang level:** moderate — รวม "อ้วก, ขี้แตก, กาก, ฉี่, อึ, ขี้ก้อน" (ไม่ใส่ "เยี่ยว, ตด")
+
+**Stats:**
+- ก่อน: ~60 alts ใน 30 rows (avg 2.0/row)
+- หลัง: ~150 alts ใน 30 rows (avg 5.0/row) — **+90 tokens**
+- 102 rows อื่นไม่แตะ
+
+**Smoke test:** simulate `str.contains` (pages/1_Non_AI_Mode.py line 135) กับ:
+- ประโยคพี่เคด 3 ประโยค → 7/7 tokens match ถูก row เป้าหมาย ✅
+- 30 drafted sentences (1 ประโยค/อาการ) → 30/30 match ถูก row ✅
+
+### 🔧 ยังเหลือ (TODO รอบหน้า)
+- 102 rows ที่เหลือ — ขยาย slang ทีละ batch (priority: รออ้างอิงจาก user feedback หลัง deploy)
+- AI Mode prompt — อัปเดต few-shot ตัวอย่างให้ใช้ slang เหล่านี้ด้วย (optional)
 
 ## 🎨 Phase 7 — UI / Styling sync
 
