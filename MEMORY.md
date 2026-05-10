@@ -18,7 +18,7 @@
 | 1 — Population prevalence weighting | ✅ done | data/processed/disease_prevalence.csv |
 | 1.5 — Interactive co-symptom follow-up | ✅ done | scoring.py + AI Mode page |
 | 2 — Confidence + UI warnings | ✅ done | high/med/low badges |
-| 3 — Casual Thai dict expansion | ✅ done | Top 30 priority symptoms · slang moderate · ดูด้านล่าง |
+| 3 — Casual Thai dict expansion | ✅ done | Batch 1 (top 30) + Batch 2 (91 rows) — 121/121 user-facing 100% |
 | 4 — Add diseases (Influenza, Electrolyte ฯลฯ) | ⬜ ค้าง | |
 | 5 — Honest fallback responses | ⬜ ค้าง | |
 | 6 — Drug + Hospital data | 🟡 in progress | อ่านด้านล่าง |
@@ -106,8 +106,37 @@
 - ประโยคพี่เคด 3 ประโยค → 7/7 tokens match ถูก row เป้าหมาย ✅
 - 30 drafted sentences (1 ประโยค/อาการ) → 30/30 match ถูก row ✅
 
+### ✅ Batch 2 · 91 user-facing rows ที่เหลือ (2026-05-09 by Kade + AI review)
+
+**Backup:** `data/processed/symptom_dictionary_th.bak2.csv` (snapshot ก่อน batch 2)
+**Draft + changelog:** `phase3_batch2_draft.md` (6 AI-recommended fixes ที่ Kade approve)
+
+**Slang level:** moderate (เหมือน batch 1) — "ตด" คงไว้ใน passage_of_gases · ไม่เพิ่ม "เยี่ยว"
+
+**Coverage:** 15 body systems · ผิวหนัง 14 · ทางเดินอาหาร 12 · กล้ามเนื้อข้อ 10 · ทั่วไป 10 ·
+ตา 6 · ปัสสาวะ 6 · หัวใจ 6 · จิตใจ 5 · ประสาท 5 · หู คอ จมูก 5 ·
+หายใจ 4 · ต่อมไร้ท่อ 3 · เล็บ 3 · สมอง 1 · สืบพันธุ์ 1
+
+**6 AI-recommended fixes (applied):**
+- Row 22 (ปวดเวลาถ่าย) + `ขี้ลำบาก`
+- Row 26 (ท้องบวม) `ท้องป่อง` → `ท้องโตผิดปกติ` (de-dup กับ row 19)
+- Row 71 (พูดไม่ชัด) `ลิ้นอ้อ` → `พูดเหมือนเมา`
+- Row 72 (เดินเซ) `ก้าวไม่มั่น` → `เดินโซเซ`
+- Row 84 (ต่อมไทรอยด์โต) `ก้อนที่คอ` → `คอพอกโต`, `ลูกกระเดือกโต` (de-dup กับ row 43)
+- Row 91 (ประจำเดือน) `ประจำเดือนไม่มา` → `เมนส์มาๆ หายๆ`
+
+**Stats:**
+- ก่อน: avg 1.7 alts/row · หลัง: **avg 4.80 alts/row** — **+~281 tokens**
+- User-facing coverage: 30/121 → **121/121 (100%)**
+
+**Smoke test** (`pages/1_Non_AI_Mode.py` line 135 pattern · 278 🆕 tokens):
+- ✅ Perfect: 252/278 (90.6%)
+- ⚠️ Ambiguous: 26/278 — natural medical overlap (ดีซ่าน, อ่อนแรง, เสมหะ, ใจสั่น) ไม่ใช่ bug
+- ❌ Miss: **0/278**
+
 ### 🔧 ยังเหลือ (TODO รอบหน้า)
-- 102 rows ที่เหลือ — ขยาย slang ทีละ batch (priority: รออ้างอิงจาก user feedback หลัง deploy)
+- 11 non-user-facing rows (`is_user_facing == False`) — ไม่จำเป็น แต่ขยายได้ถ้ามีเวลา
+- User feedback หลัง deploy — รวบรวม slang ที่ user พิมพ์แล้วไม่ match
 - AI Mode prompt — อัปเดต few-shot ตัวอย่างให้ใช้ slang เหล่านี้ด้วย (optional)
 
 ## 🎨 Phase 7 — UI / Styling sync
