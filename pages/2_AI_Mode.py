@@ -1,97 +1,173 @@
 """
-Page 2 · AI Mode (Phase 4 + 1.5 — interactive follow-up)
-รับ free-text → Gemini extract → ถามอาการเพิ่มถ้าน้อยกว่า 4 → DuckDB scoring → Gemini narrate
+Page 2 · AI Mode — Phase 8 redesign
+=====================================
+UX: button-based question tree (Q1→Q2→Q3+→diagnosis)
+  Q1  chief complaint (6 buckets)
+  Q2  sub-symptoms of that bucket
+  Q3+ adaptive co-symptoms from suggest_co_symptoms
+  free text screen — match กับ symptom_dictionary_th
+  diagnosis — doctor mascot · Gemma narrate · drug + hospital cards
+
+Architecture: Hybrid (symptom tree + Gemma narrate ตอนจบ)
+State storage: st.session_state["ai8_*"]
 """
-import streamlit as st
-import pandas as pd
+from __future__ import annotations
 import sys
 from pathlib import Path
+
+import pandas as pd
+import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from utils.data_loader import (
-    load_symptom_dict,
-    load_specialty_mapping,
     get_scoring_artifacts,
     init_session_state,
-    render_disclaimer_sidebar,
     load_drug_mapping,
     load_hospital_hint,
+    load_hospitals_master,
+    load_specialty_keywords,
+    load_specialty_mapping,
+    load_symptom_dict,
+    render_disclaimer_sidebar,
     render_drug_panel,
     render_hospital_panel,
 )
 from utils.ai_engine import (
-    extract_symptoms,
-    narrate_result,
-    check_rate_limit,
-    reset_rate_limit,
-    list_available_models,
-    _resolve_model_name,
     AIResult,
     ExtractedSymptoms,
+    _resolve_model_name,
+    check_rate_limit,
+    list_available_models,
+    narrate_result,
 )
-from utils.scoring import predict, score_tfidf, score_bayes, suggest_co_symptoms, classify_confidence
-from utils.styling import inject_global_css
+from utils.scoring import (
+    classify_confidence,
+    predict,
+    score_tfidf,
+    suggest_co_symptoms,
+)
+from utils.styling import (
+    inject_ai_mode_css,
+    inject_global_css,
+    render_doctor_mascot,
+    render_nurse_mascot,
+)
+from utils.symptom_tree import (
+    CHIEF_COMPLAINTS,
+    FREETEXT_CODE,
+    SKIP_CODE,
+    TreeOption,
+    get_q1_options,
+    get_q2_options,
+    get_q3plus_options,
+    is_tree_done,
+    match_freetext,
+)
 
-st.set_page_config(page_title="AI Mode", page_icon="🤖", layout="wide")
+# ---------------------------------------------------------------------------
+# Page config
+# ---------------------------------------------------------------------------
+st.set_page_config(page_title="AI Mode — น้องอุ่นใน", page_icon="🏥", layout="wide")
 inject_global_css()
+inject_ai_mode_css()
 init_session_state()
 render_disclaimer_sidebar()
 
-MAX_CALLS_PER_SESSION = 20
-FOLLOWUP_THRESHOLD = 4   # ถ้า extracted < นี้ → ถามเพิ่ม
-TOP_K_CO_SYMPTOMS = 5
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+MAX_CALLS      = 20
+TOP_K_Q3       = 5
+ICONS = {
+    "fever":           "🤒",
+    "cold":            "🤧",
+    "headache":        "🤕",
+    "stomach":         "🤢",
+    "musculoskeletal": "💪",
+    "skin":            "🩹",
+}
+
+# ---------------------------------------------------------------------------
+# Session state keys (ai8_* prefix to avoid clash with old ai_ keys)
+# ---------------------------------------------------------------------------
+DEFAULTS: dict = {
+    "ai8_step":            "q1",   # q1|q2|q3plus|freetext|result
+    "ai8_chief":           None,   # dict from CHIEF_COMPLAINTS
+    "ai8_picked":          [],     # list[str] — accumulated symptom_en codes
+    "ai8_seen":            set(),  # symptom_en already offered (for Q3+ exclusion)
+    "ai8_q_count":         0,      # number of question screens shown (for soft cap)
+    "ai8_freetext_prev":   "q2",   # step to return after freetext resolves
+    "ai8_call_counter":    0,
+    "ai8_narration":       "",
+    "ai8_ranked":          None,
+    "ai8_confidence":      None,
+    "ai8_prov_key":        "ai8_provinces",  # key for province multiselect widget
+}
+for k, v in DEFAULTS.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
 
 
-def _get_api_key():
+def _reset():
+    for k, v in DEFAULTS.items():
+        st.session_state[k] = v
+    st.rerun()
+
+
+def _api_key():
     try:
         return st.secrets.get("GOOGLE_API_KEY") or st.secrets.get("GEMINI_API_KEY")
     except Exception:
         return None
 
 
-# ---------------------------------------------------------------------------
-# Initialize state
-# ---------------------------------------------------------------------------
-DEFAULTS = {
-    "ai_step": "input",                # input | followup | result
-    "ai_extracted": None,              # ExtractedSymptoms
-    "ai_initial_text": "",
-    "ai_co_symptoms_df": None,         # DataFrame
-    "ai_extra_codes": [],              # list[str] selected in followup
-    "ai_final_result": None,           # AIResult
-    "ai_call_counter": 0,
-}
-for k, v in DEFAULTS.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
+def _progress_dots(current_step: str) -> str:
+    steps = ["q1", "q2", "q3plus", "result"]
+    dots = []
+    for s in steps:
+        if s == current_step:
+            dots.append('<span class="ai-dot now"></span>')
+        elif steps.index(s) < steps.index(current_step):
+            dots.append('<span class="ai-dot done"></span>')
+        else:
+            dots.append('<span class="ai-dot"></span>')
+    return f'<div class="ai-progress">{"".join(dots)}</div>'
 
-TEXTAREA_KEY = "ai_input_widget"
+
+def _tag_html(picked: list[str], sym_dict: pd.DataFrame) -> str:
+    tags = []
+    for code in picked:
+        match = sym_dict[sym_dict["symptom_en"] == code]
+        th = match["symptom_th"].iloc[0] if not match.empty else code
+        tags.append(f'<span class="ai-tag">{th}</span>')
+    return " ".join(tags)
+
 
 # ---------------------------------------------------------------------------
-# Header
+# Load shared data (cached)
 # ---------------------------------------------------------------------------
-st.title("🤖 AI Mode")
-st.markdown("##### พิมพ์อาการเป็นภาษาธรรมชาติ → น้องอุ่นในจะถามเพิ่มถ้าข้อมูลน้อย → Top-3 แผนก")
+sym_dict  = load_symptom_dict()
+mapping   = load_specialty_mapping()
+arts      = get_scoring_artifacts()
+drug_df   = load_drug_mapping()
+hint_df   = load_hospital_hint()
+hosp_df   = load_hospitals_master()
+kw_dict   = load_specialty_keywords()
+vis_dict  = sym_dict[sym_dict["is_user_facing"] == True].copy()
 
-# Rate limit
-calls_used = st.session_state.get("ai_call_counter", 0)
-calls_left = MAX_CALLS_PER_SESSION - calls_used
-c1, c2, c3 = st.columns([2, 1, 1])
-with c1:
-    pass
-with c2:
-    st.metric("Calls", f"{calls_used}/{MAX_CALLS_PER_SESSION}")
-with c3:
-    if st.button("🔄 Reset", help="reset counter + state"):
-        for k in list(DEFAULTS.keys()):
-            st.session_state[k] = DEFAULTS[k]
-        # Force textarea fresh
-        if TEXTAREA_KEY in st.session_state:
-            del st.session_state[TEXTAREA_KEY]
-        st.rerun()
+api_key = _api_key()
 
-api_key = _get_api_key()
+# ---------------------------------------------------------------------------
+# Sidebar — rate limit counter + reset
+# ---------------------------------------------------------------------------
+with st.sidebar:
+    st.markdown("---")
+    calls_used = st.session_state.ai8_call_counter
+    st.metric("AI Calls", f"{calls_used}/{MAX_CALLS}")
+    if st.button("🔄 เริ่มใหม่", use_container_width=True):
+        _reset()
+
 if not api_key:
     st.error(
         "⚠ ยังไม่ได้ตั้งค่า GOOGLE_API_KEY · "
@@ -99,248 +175,318 @@ if not api_key:
     )
     st.stop()
 
-st.divider()
-
-# ---------------------------------------------------------------------------
-# Load shared data
-# ---------------------------------------------------------------------------
-sym_dict = load_symptom_dict()
-mapping = load_specialty_mapping()
-arts = get_scoring_artifacts()
-visible_dict = sym_dict[sym_dict["is_user_facing"] == True]
-
-
 # ===========================================================================
-# STEP: input — กรอกอาการครั้งแรก
+# Q1 — Chief complaint
 # ===========================================================================
-if st.session_state.ai_step == "input":
-    st.markdown("### 1️⃣ พิมพ์อาการของคุณเป็นภาษาธรรมชาติ")
+if st.session_state.ai8_step == "q1":
+    st.markdown(_progress_dots("q1"), unsafe_allow_html=True)
 
-    EXAMPLE_QUERIES = [
-        "3 วันมานี้ ไอแห้งๆ ตอนกลางคืน เจ็บคอตอนเช้า",
-        "ปวดหัวข้างเดียวมา 2 วัน คลื่นไส้ มองภาพเป็นจุดดำ",
-        "รู้สึกเหนื่อยง่ายขึ้น ไม่อยากกินอาหาร",
-        "ฉี่บ่อยมาก กระหายน้ำตลอด น้ำหนักลด",
-        "เจ็บแน่นหน้าอก ร้าวไปแขนซ้าย เหงื่อท่วม (ฉุกเฉิน!)",
-    ]
-    with st.expander("💡 ตัวอย่างคำถาม (คลิกเพื่อใช้)"):
-        for ex in EXAMPLE_QUERIES:
-            if st.button(ex, key=f"ex_{hash(ex)}", use_container_width=True):
-                st.session_state[TEXTAREA_KEY] = ex
+    render_nurse_mascot(
+        "สวัสดีค่ะ หนูชื่อ น้องอุ่นใน 😊",
+        sub="วันนี้พี่มีอาการอะไรมาคะ? เลือกที่ตรงกับที่พี่เป็นได้เลยนะคะ",
+    )
+
+    options = get_q1_options()
+    col_pairs = [options[i:i+2] for i in range(0, len(options), 2)]
+    for pair in col_pairs:
+        cols = st.columns(len(pair))
+        for col, cc in zip(cols, pair):
+            icon = ICONS.get(cc["id"], "🏥")
+            label = f"{icon} {cc['label']}"
+            if col.button(label, use_container_width=True, key=f"q1_{cc['id']}"):
+                st.session_state.ai8_chief   = cc
+                st.session_state.ai8_q_count = 1
+                st.session_state.ai8_step    = "q2"
                 st.rerun()
 
-    st.text_area(
-        "อธิบายอาการของคุณ",
-        height=140,
-        placeholder="เช่น 'ไอแห้งๆ 3 วัน เจ็บคอ มีน้ำมูก'",
-        key=TEXTAREA_KEY,
+    st.markdown("---")
+    st.caption("หรือถ้าพี่มีอาการอื่นที่ไม่ตรงกับด้านบน พิมพ์ในช่องด้านล่างได้เลยค่ะ")
+    with st.expander("✏️ พิมพ์อาการเอง"):
+        ft_in = st.text_input("พิมพ์อาการ (ภาษาไทยหรืออังกฤษ)", key="q1_freetext_in")
+        if st.button("ตรวจสอบ", key="q1_freetext_check"):
+            ft_in = ft_in.strip()
+            if ft_in:
+                match = match_freetext(ft_in, vis_dict)
+                if match:
+                    st.success(f"✅ พบ: {match.label_th} ({match.symptom_en})")
+                    st.session_state.ai8_picked.append(match.symptom_en)
+                    st.session_state.ai8_seen.add(match.symptom_en)
+                    st.session_state.ai8_freetext_prev = "q1"
+                    st.session_state.ai8_step = "q3plus"
+                    st.session_state.ai8_q_count += 1
+                    st.rerun()
+                else:
+                    st.warning("ไม่พบอาการที่ตรงกัน — ลองพิมพ์ด้วยคำอื่นนะคะ (เช่น ปวดหัว, ไอ, คลื่นไส้)")
+
+
+# ===========================================================================
+# Q2 — Sub-symptoms of chief complaint
+# ===========================================================================
+elif st.session_state.ai8_step == "q2":
+    cc   = st.session_state.ai8_chief
+    st.markdown(_progress_dots("q2"), unsafe_allow_html=True)
+
+    prompt = cc.get("q2_prompt", "อาการไหนเด่นคะ?")
+    render_nurse_mascot(
+        f"พี่เลือก **{cc['label']}** ค่ะ 😊",
+        sub=f"{prompt} (เลือกได้หลายข้อ)",
     )
 
-    user_text = st.session_state.get(TEXTAREA_KEY, "")
-    if st.button("🤖 วิเคราะห์ด้วย AI", type="primary", use_container_width=True):
-        if not user_text.strip():
-            st.warning("กรุณาพิมพ์อาการก่อน")
-            st.stop()
+    # Show basket if already picked something
+    if st.session_state.ai8_picked:
+        st.markdown(
+            "**อาการที่เลือกแล้ว:** " + _tag_html(st.session_state.ai8_picked, sym_dict),
+            unsafe_allow_html=True,
+        )
 
-        # Rate limit (1 call สำหรับ extract)
-        allowed, _ = check_rate_limit(st.session_state, max_calls=MAX_CALLS_PER_SESSION)
-        if not allowed:
-            st.error(f"Rate limit ถึงแล้ว ({MAX_CALLS_PER_SESSION} calls/session)")
-            st.stop()
+    opts = get_q2_options(cc["id"], vis_dict)
+    st.markdown("##### เลือกอาการที่พี่รู้สึก:")
 
-        with st.spinner("🤖 น้องอุ่นในกำลังอ่านอาการของพี่..."):
-            try:
-                extracted, _t = extract_symptoms(user_text, visible_dict, api_key)
-            except ValueError as e:
-                st.error(f"❌ Extract error: {e}")
-                if "404" in str(e) or "not found" in str(e).lower():
-                    with st.expander("🔧 Available models"):
-                        for m in list_available_models(api_key):
-                            st.code(m)
-                st.stop()
+    for opt in opts:
+        if opt.symptom_en == FREETEXT_CODE:
+            continue  # shown separately below
+        icon = "✅" if opt.symptom_en in st.session_state.ai8_picked else "⬜"
+        if st.button(f"{icon} {opt.label_th}", key=f"q2_{opt.symptom_en}", use_container_width=True):
+            picked = st.session_state.ai8_picked
+            if opt.symptom_en not in picked:
+                picked.append(opt.symptom_en)
+            st.session_state.ai8_seen.add(opt.symptom_en)
 
-        st.session_state.ai_initial_text = user_text
-        st.session_state.ai_extracted = extracted
+            if is_tree_done(picked, arts, st.session_state.ai8_q_count):
+                st.session_state.ai8_step = "result"
+            else:
+                st.session_state.ai8_step = "q3plus"
+                st.session_state.ai8_q_count += 1
+            st.rerun()
 
-        # Decide next step: followup if extracted < threshold
-        n_extracted = len(extracted.symptoms)
-        if n_extracted < FOLLOWUP_THRESHOLD:
-            # Compute co-symptoms (no AI call needed — pure SQL)
-            initial_codes = [s.symptom_en for s in extracted.symptoms]
-            co_df = suggest_co_symptoms(initial_codes, arts, top_k=TOP_K_CO_SYMPTOMS)
-            # Join with Thai labels
-            co_df = co_df.merge(
-                visible_dict[["symptom_en", "symptom_th", "ui_label", "body_system"]],
-                left_on="symptom", right_on="symptom_en", how="left"
-            )
-            st.session_state.ai_co_symptoms_df = co_df
-            st.session_state.ai_step = "followup"
+    # Freetext option
+    with st.expander("✏️ อื่นๆ พิมพ์เอง"):
+        ft_in = st.text_input("พิมพ์อาการ", key="q2_freetext_in")
+        if st.button("ตรวจสอบ", key="q2_freetext_check"):
+            ft_in = ft_in.strip()
+            if ft_in:
+                match = match_freetext(ft_in, vis_dict)
+                if match:
+                    st.success(f"✅ พบ: {match.label_th}")
+                    if match.symptom_en not in st.session_state.ai8_picked:
+                        st.session_state.ai8_picked.append(match.symptom_en)
+                    st.session_state.ai8_seen.add(match.symptom_en)
+                    st.session_state.ai8_freetext_prev = "q2"
+                    st.session_state.ai8_q_count += 1
+                    if is_tree_done(st.session_state.ai8_picked, arts, st.session_state.ai8_q_count):
+                        st.session_state.ai8_step = "result"
+                    else:
+                        st.session_state.ai8_step = "q3plus"
+                    st.rerun()
+                else:
+                    st.warning("ไม่พบอาการที่ตรงกัน — ลองพิมพ์ด้วยคำอื่นนะคะ")
+
+    st.markdown("---")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("← กลับ", key="q2_back", use_container_width=True):
+            st.session_state.ai8_step = "q1"
+            st.rerun()
+    with col_b:
+        picked_count = len(st.session_state.ai8_picked)
+        btn_label = f"ขอคำวินิจฉัยเลย ({picked_count} อาการ)" if picked_count else "ข้ามไปวินิจฉัย"
+        if st.button(btn_label, key="q2_skip", use_container_width=True):
+            if picked_count == 0:
+                # Add chief complaint seed symptoms
+                for s in cc["symptoms"][:2]:
+                    if s not in st.session_state.ai8_picked:
+                        st.session_state.ai8_picked.append(s)
+            st.session_state.ai8_step = "result"
+            st.rerun()
+
+
+# ===========================================================================
+# Q3+ — Adaptive co-symptom questions
+# ===========================================================================
+elif st.session_state.ai8_step == "q3plus":
+    picked   = st.session_state.ai8_picked
+    q_count  = st.session_state.ai8_q_count
+    st.markdown(_progress_dots("q3plus"), unsafe_allow_html=True)
+
+    render_nurse_mascot(
+        "มีอาการอื่นร่วมด้วยไหมคะ? 🩺",
+        sub="หนูค้นหาอาการที่มักเกิดร่วมกันให้แล้วค่ะ",
+    )
+
+    # Basket
+    if picked:
+        st.markdown(
+            "**อาการที่เลือกแล้ว:** " + _tag_html(picked, sym_dict),
+            unsafe_allow_html=True,
+        )
+
+    opts = get_q3plus_options(picked, arts, vis_dict, top_k=TOP_K_Q3, exclude=st.session_state.ai8_seen)
+
+    st.markdown("##### มีอาการข้างล่างนี้ด้วยไหมคะ?")
+    for opt in opts:
+        if opt.symptom_en == FREETEXT_CODE:
+            continue
+
+        if opt.is_skip:   # "ไม่มีอาการอื่น"
+            if st.button(f"✅ {opt.label_th}", key=f"q3_skip_{q_count}", use_container_width=True):
+                st.session_state.ai8_step = "result"
+                st.rerun()
         else:
-            st.session_state.ai_step = "result"
-        st.rerun()
+            icon = "✅" if opt.symptom_en in picked else "⬜"
+            if st.button(
+                f"{icon} {opt.label_th}",
+                key=f"q3_{opt.symptom_en}_{q_count}",
+                use_container_width=True,
+                help=opt.sublabel or "",
+            ):
+                if opt.symptom_en not in picked:
+                    picked.append(opt.symptom_en)
+                st.session_state.ai8_seen.add(opt.symptom_en)
+                st.session_state.ai8_q_count += 1
 
+                if is_tree_done(picked, arts, st.session_state.ai8_q_count):
+                    st.session_state.ai8_step = "result"
+                else:
+                    st.session_state.ai8_step = "q3plus"
+                st.rerun()
 
-# ===========================================================================
-# STEP: followup — ถามอาการเพิ่ม
-# ===========================================================================
-elif st.session_state.ai_step == "followup":
-    extracted = st.session_state.ai_extracted
-    co_df = st.session_state.ai_co_symptoms_df
+    # Freetext option
+    with st.expander("✏️ อื่นๆ พิมพ์เอง"):
+        ft_in = st.text_input("พิมพ์อาการ", key=f"q3_freetext_in_{q_count}")
+        if st.button("ตรวจสอบ", key=f"q3_freetext_check_{q_count}"):
+            ft_in = ft_in.strip()
+            if ft_in:
+                match = match_freetext(ft_in, vis_dict)
+                if match:
+                    st.success(f"✅ พบ: {match.label_th}")
+                    if match.symptom_en not in picked:
+                        picked.append(match.symptom_en)
+                    st.session_state.ai8_seen.add(match.symptom_en)
+                    st.session_state.ai8_q_count += 1
+                    if is_tree_done(picked, arts, st.session_state.ai8_q_count):
+                        st.session_state.ai8_step = "result"
+                    st.rerun()
+                else:
+                    st.warning("ไม่พบอาการที่ตรงกัน — ลองพิมพ์ด้วยคำอื่นนะคะ")
 
-    st.markdown("### 2️⃣ น้องอุ่นในเข้าใจอาการของพี่แล้ว")
-
-    # Show what was extracted
-    if extracted.symptoms:
-        rows = []
-        for s in extracted.symptoms:
-            match = sym_dict[sym_dict["symptom_en"] == s.symptom_en]
-            th = match["symptom_th"].iloc[0] if len(match) else s.symptom_en
-            rows.append({"อาการ": th, "code": s.symptom_en, "ความมั่นใจ": f"{s.confidence:.0%}"})
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-    else:
-        st.warning("น้องยังจับอาการของพี่ไม่ได้ ลองพิมพ์ใหม่ที่ชัดเจนขึ้นนะครับ")
-
-    st.divider()
-    st.markdown("### 3️⃣ ขออนุญาตถามเพิ่มอีกนิดนะครับ 🙏")
-    st.caption(
-        "อาการที่พี่บอกมายังน้อยอยู่ · "
-        "น้องลองหาอาการที่มัก **เกิดร่วมกัน** กับสิ่งที่พี่บอกมา · "
-        "ติ๊กที่ตรงกับที่พี่รู้สึกด้วย เพื่อให้ผลแม่นขึ้น"
-    )
-
-    # Checkboxes for co-symptoms
-    if not co_df.empty:
-        extra_selected = []
-        cols = st.columns(2)
-        for i, row in enumerate(co_df.itertuples()):
-            col = cols[i % 2]
-            label = row.ui_label if pd.notna(row.ui_label) else row.symptom
-            checked = col.checkbox(
-                f"{label}",
-                key=f"extra_{row.symptom}",
-                value=False,
-                help=f"พบใน {row.n_diseases_have_it} โรคที่ใกล้เคียงกับอาการที่พี่บอก",
-            )
-            if checked:
-                extra_selected.append(row.symptom)
-        st.session_state.ai_extra_codes = extra_selected
-
-    st.divider()
-    a, b = st.columns(2)
-    with a:
-        if st.button("✅ วิเคราะห์ต่อ (รวมอาการทั้งหมด)", type="primary", use_container_width=True):
-            st.session_state.ai_step = "result"
+    st.markdown("---")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("← กลับ", key=f"q3_back_{q_count}", use_container_width=True):
+            st.session_state.ai8_step = "q2"
             st.rerun()
-    with b:
-        if st.button("⏭ ข้ามไปวิเคราะห์เลย (ใช้แค่อาการเดิม)", use_container_width=True):
-            st.session_state.ai_extra_codes = []
-            st.session_state.ai_step = "result"
+    with col_b:
+        if st.button(
+            f"🏥 ขอคำวินิจฉัย ({len(picked)} อาการ)",
+            key=f"q3_diagnose_{q_count}",
+            use_container_width=True,
+        ):
+            st.session_state.ai8_step = "result"
             st.rerun()
 
 
 # ===========================================================================
-# STEP: result — รัน scoring + narrate
+# RESULT — Scoring + Gemma narrate + Top-3 + Drug/Hospital
 # ===========================================================================
-elif st.session_state.ai_step == "result":
-    extracted = st.session_state.ai_extracted
-    extra_codes = st.session_state.ai_extra_codes
-    initial_codes = [s.symptom_en for s in extracted.symptoms]
-    all_codes = list(dict.fromkeys(initial_codes + extra_codes))  # dedupe, preserve order
+elif st.session_state.ai8_step == "result":
+    picked = st.session_state.ai8_picked
 
-    if not all_codes:
-        st.warning("ไม่มีอาการให้วิเคราะห์ · ลองใหม่")
-        if st.button("← กลับไปแก้ไข"):
-            st.session_state.ai_step = "input"
-            st.rerun()
+    # Guard: ถ้าไม่มีอาการเลย ส่งกลับ Q1
+    if not picked:
+        st.warning("ยังไม่มีอาการที่เลือก — กรุณาเริ่มต้นใหม่")
+        if st.button("← กลับหน้าแรก"):
+            _reset()
         st.stop()
 
-    # Run scoring + narrate
-    with st.spinner("🤖 น้องอุ่นในกำลังวิเคราะห์..."):
-        ranked = predict(all_codes, arts, method="tfidf", top_k=3)
-        # Phase 2 + 5: classify confidence from full ranking · pass n_symptoms
-        full_for_conf = score_tfidf(all_codes, arts)
-        confidence = classify_confidence(full_for_conf, n_user_symptoms=len(all_codes))
+    st.markdown(_progress_dots("result"), unsafe_allow_html=True)
 
-        # Rate limit for narrate
-        allowed, _ = check_rate_limit(st.session_state, max_calls=MAX_CALLS_PER_SESSION)
+    # Province filter (top of diagnosis page)
+    with st.sidebar:
+        st.markdown("#### 🏥 กรองโรงพยาบาล")
+        all_provinces = sorted(hosp_df["province"].dropna().unique().tolist()) if not hosp_df.empty else []
+        selected_prov = st.multiselect(
+            "เลือกจังหวัด",
+            options=all_provinces,
+            default=[],
+            key=st.session_state.ai8_prov_key,
+            placeholder="ทุกจังหวัด (ไม่กรอง)",
+        )
+
+    # Run scoring + narrate (only once — cache in session state)
+    if st.session_state.ai8_ranked is None:
+        allowed, _ = check_rate_limit(st.session_state, max_calls=MAX_CALLS,
+                                      counter_key="ai8_call_counter")
         if not allowed:
-            st.error(f"Rate limit ถึงแล้ว ({MAX_CALLS_PER_SESSION} calls/session)")
-            st.stop()
-        try:
-            narration, t_narr = narrate_result(
-                st.session_state.ai_initial_text, ranked, mapping, api_key,
-                confidence=confidence,
-            )
-        except ValueError as e:
-            st.error(f"❌ Narrate error: {e}")
+            st.error(f"Rate limit ถึงแล้ว ({MAX_CALLS} calls/session) · กด 🔄 เริ่มใหม่ด้านซ้าย")
             st.stop()
 
-    # Show confidence badge
-    _color_map = {"high": "success", "medium": "warning", "low": "error", "very_low": "warning"}
-    _st_func = getattr(st, _color_map.get(confidence["level"], "info"))
-    _st_func(f"{confidence['emoji']} **{confidence['label']}** — {confidence['reason']}")
+        with st.spinner("🏥 หนูกำลังวิเคราะห์อาการของพี่..."):
+            ranked   = predict(picked, arts, method="tfidf", top_k=3)
+            full_sc  = score_tfidf(picked, arts)
+            conf     = classify_confidence(full_sc, n_user_symptoms=len(picked))
 
-    # Phase 5: Honest fallback banner เมื่อ very_low/low — แสดงก่อน Top-3
-    if confidence["level"] == "very_low":
+            allowed2, _ = check_rate_limit(st.session_state, max_calls=MAX_CALLS,
+                                           counter_key="ai8_call_counter")
+            if not allowed2:
+                st.error("Rate limit ถึงแล้ว · ผลการ score ยังใช้ได้ แต่ไม่มี AI narrate")
+                narration = ""
+            else:
+                try:
+                    # Build a synthetic "initial_text" from picked symptoms for narrate prompt
+                    picked_th = []
+                    for code in picked:
+                        match = sym_dict[sym_dict["symptom_en"] == code]
+                        picked_th.append(match["symptom_th"].iloc[0] if not match.empty else code)
+                    synth_text = "อาการ: " + ", ".join(picked_th)
+                    narration, _ = narrate_result(synth_text, ranked, mapping, api_key, confidence=conf)
+                except Exception as e:
+                    narration = f"*(ไม่สามารถสร้างคำอธิบายได้: {e})*"
+
+        st.session_state.ai8_ranked     = ranked
+        st.session_state.ai8_confidence = conf
+        st.session_state.ai8_narration  = narration
+
+    # Pull from cache
+    ranked    = st.session_state.ai8_ranked
+    conf      = st.session_state.ai8_confidence
+    narration = st.session_state.ai8_narration
+
+    # --- Doctor mascot + confidence ---
+    _color_map = {"high": "🟢", "medium": "🟡", "low": "🔴", "very_low": "🔴"}
+    emoji_conf = _color_map.get(conf["level"], "🔵")
+    render_doctor_mascot(
+        f"สวัสดีค่ะ หนูวิเคราะห์อาการของพี่เสร็จแล้ว {emoji_conf}",
+        sub=f"ความมั่นใจ: {conf['label']} — {conf['reason']}",
+    )
+
+    # Honest fallback banners
+    if conf["level"] == "very_low":
         st.warning(
-            "⚠️ **ระบบไม่สามารถสรุปได้ชัดเจน** — ข้อมูลอาการที่พี่ระบุยังน้อยเกินไป "
-            "ผลด้านล่างเป็นเพียง **reference เท่านั้น** · กรุณาปรึกษาแพทย์ก่อนตัดสินใจ"
+            "⚠️ **ระบบไม่สามารถสรุปได้ชัดเจน** — ข้อมูลอาการยังน้อยเกินไป "
+            "ผลด้านล่างเป็น reference เท่านั้น · กรุณาปรึกษาแพทย์"
         )
-        st.caption(
-            "💡 ลองพิมพ์อาการเพิ่ม (เวลาที่เป็น · ความรุนแรง · ตำแหน่ง · อาการร่วม) "
-            "น้องอุ่นในจะวิเคราะห์ได้แม่นยำกว่านี้"
+    elif conf["level"] == "low":
+        st.info("ℹ️ **ผลด้านล่างใช้เป็น reference ประกอบการตัดสินใจ** — การปรึกษาแพทย์ยังปลอดภัยที่สุด")
+
+    # Basket summary
+    st.markdown(
+        "**อาการที่วิเคราะห์:** " + _tag_html(picked, sym_dict),
+        unsafe_allow_html=True,
+    )
+    st.markdown("")
+
+    # AI narration box
+    if narration:
+        st.markdown(
+            f'<div class="ai-narration">{narration}</div>',
+            unsafe_allow_html=True,
         )
-    elif confidence["level"] == "low":
-        st.info(
-            "ℹ️ **ผลด้านล่างใช้เป็น reference ประกอบการตัดสินใจ** — ระบบยังไม่มั่นใจมาก · "
-            "การปรึกษาแพทย์/เภสัชกรยังเป็นทางเลือกที่ปลอดภัยที่สุด"
-        )
 
-    # Performance badge
-    try:
-        used_model = _resolve_model_name(api_key)
-    except Exception:
-        used_model = "auto"
-    score_ms = ranked.attrs.get("scoring_time_ms", 0)
-    st.caption(
-        f"⚡ Symptoms: {len(initial_codes)} จากการพิมพ์ + {len(extra_codes)} จาก follow-up = **{len(all_codes)} รวม** · "
-        f"score {score_ms:.0f}ms + narrate {t_narr:.0f}ms · model: **{used_model}**"
-    )
-
-    st.divider()
-
-    # Section 2: extracted + extra
-    st.markdown("### 2️⃣ อาการที่ใช้วิเคราะห์ทั้งหมด")
-    sel_df = sym_dict[sym_dict["symptom_en"].isin(all_codes)][
-        ["symptom_th", "ui_label", "body_system"]
-    ].copy()
-    sel_df["source"] = sel_df.index.map(
-        lambda i: "📝 พี่พิมพ์" if sym_dict.iloc[i]["symptom_en"] in initial_codes else "✅ Follow-up"
-    )
-    a, b = st.columns([1, 4])
-    a.metric("รวม", len(all_codes))
-    b.dataframe(
-        sel_df.rename(columns={
-            "symptom_th": "อาการ", "ui_label": "Label",
-            "body_system": "หมวด", "source": "ที่มา",
-        }),
-        use_container_width=True, hide_index=True,
-    )
-
-    st.divider()
-
-    # Section 3: AI narration
-    st.markdown("### 3️⃣ คำอธิบายจาก AI")
-    with st.container(border=True):
-        st.markdown(narration)
-
-    # Section 4: Top-3 cards
-    if not ranked.empty:
-        st.divider()
-        st.markdown("### 4️⃣ ผลลัพธ์ Top-3 (จาก scoring engine)")
+    # --- Top-3 disease cards ---
+    if ranked is not None and not ranked.empty:
         enriched = ranked.merge(mapping, left_on="disease", right_on="disease_en", how="left")
 
-        URGENCY_LABEL = {
+        URGENCY = {
             1: ("🟥 1 — Resuscitation (ฉุกเฉินทันที)", "error"),
             2: ("🟧 2 — Emergent (รีบเข้า รพ.)", "warning"),
             3: ("🟨 3 — Urgent (ภายใน 24 ชม.)", "warning"),
@@ -348,50 +494,55 @@ elif st.session_state.ai_step == "result":
             5: ("🟩 5 — Non-urgent (ไม่เร่งด่วน)", "success"),
         }
 
+        st.markdown("---")
+        st.markdown("#### 🏆 ผลลัพธ์ Top-3 โรคที่ใกล้เคียง")
+
         for i, row in enriched.iterrows():
-            rank = i + 1
-            disease_th = row["disease_th"] if pd.notna(row["disease_th"]) else row["disease"]
-            primary = row.get("primary_specialty") or "—"
-            urg = int(row["urgency_level"]) if pd.notna(row.get("urgency_level")) else 5
+            rank      = i + 1
+            disease_th = row.get("disease_th") or row["disease"]
+            primary   = row.get("primary_specialty") or "—"
+            urg       = int(row["urgency_level"]) if pd.notna(row.get("urgency_level")) else 5
             red_flags = row.get("red_flags") or ""
-            urg_label, urg_kind = URGENCY_LABEL[urg]
+            urg_label, urg_kind = URGENCY[urg]
+            disease_key = row.get("disease_en") if pd.notna(row.get("disease_en")) else row["disease"]
 
             with st.container(border=True):
-                a, b = st.columns([3, 1])
-                with a:
+                c1, c2 = st.columns([3, 1])
+                with c1:
                     st.markdown(f"##### #{rank} · {disease_th}")
-                    st.caption(f"ICD-10: {row.get('icd10_code', '—')}")
-                    st.markdown(f"**แผนกหลัก:** {primary}")
-                with b:
+                    st.caption(f"ICD-10: {row.get('icd10_code', '—')} · แผนกหลัก: {primary}")
+                with c2:
                     getattr(st, urg_kind)(urg_label)
+
                 if red_flags:
                     st.warning(f"⚠ Red flags: {red_flags}")
 
-                # === Phase 6 skeleton: Drug + Hospital info panels ===
-                _drug_df = load_drug_mapping()
-                _hospital_hint_df = load_hospital_hint()
-                _disease_key = row.get("disease_en") if pd.notna(row.get("disease_en")) else row["disease"]
-                render_drug_panel(_disease_key, _drug_df)
-                if primary and primary != "—":
-                    render_hospital_panel(primary, _hospital_hint_df)
+                # Drug panel
+                render_drug_panel(disease_key, drug_df)
 
-    # Buttons
-    st.divider()
-    a, b = st.columns(2)
-    with a:
-        if st.button("🔄 ทดสอบอาการอื่น", type="primary", use_container_width=True):
-            for k in list(DEFAULTS.keys()):
-                st.session_state[k] = DEFAULTS[k]
-            if TEXTAREA_KEY in st.session_state:
-                del st.session_state[TEXTAREA_KEY]
-            st.rerun()
-    with b:
-        with st.expander("Debug info"):
-            tab1, tab2 = st.tabs(["Extracted (JSON)", "Scoring matrix"])
-            with tab1:
-                st.json(extracted.model_dump())
-            with tab2:
+                # Hospital panel (with province filter)
+                if primary and primary != "—":
+                    render_hospital_panel(
+                        primary,
+                        hint_df,
+                        hospitals_df=hosp_df,
+                        keywords_dict=kw_dict,
+                        selected_provinces=selected_prov if selected_prov else None,
+                        key_suffix=f"_ai8_r{rank}_{disease_key}",
+                    )
+
+    # --- Action buttons ---
+    st.markdown("---")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("🔄 เริ่มใหม่", type="primary", use_container_width=True):
+            _reset()
+    with col_b:
+        with st.expander("🔧 Debug info"):
+            if st.session_state.ai8_ranked is not None:
                 cols_show = [c for c in
-                             ["disease", "primary_score", "n_matched", "coverage", "confidence"]
+                             ["disease", "primary_score", "n_matched", "coverage"]
                              if c in ranked.columns]
                 st.dataframe(ranked[cols_show], use_container_width=True, hide_index=True)
+            st.json({"picked": picked, "q_count": st.session_state.ai8_q_count,
+                     "calls": st.session_state.ai8_call_counter})

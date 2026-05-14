@@ -469,8 +469,12 @@ def full_pipeline(
         )
 
 
-def check_rate_limit(session_state, max_calls: int = 20) -> tuple[bool, int]:
-    counter_key = "ai_call_counter"
+def check_rate_limit(
+    session_state,
+    max_calls: int = 20,
+    counter_key: str = "ai_call_counter",   # ← Phase 8: AI Mode ใช้ "ai8_call_counter"
+) -> tuple[bool, int]:
+    """Check and increment rate-limit counter. Returns (allowed, new_count)."""
     n = session_state.get(counter_key, 0)
     if n >= max_calls:
         return False, n
@@ -478,5 +482,5 @@ def check_rate_limit(session_state, max_calls: int = 20) -> tuple[bool, int]:
     return True, n + 1
 
 
-def reset_rate_limit(session_state):
-    session_state["ai_call_counter"] = 0
+def reset_rate_limit(session_state, counter_key: str = "ai_call_counter"):
+    session_state[counter_key] = 0

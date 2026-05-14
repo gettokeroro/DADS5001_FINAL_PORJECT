@@ -1,0 +1,47 @@
+<!-- Kawaii Doctor Mascot — Phase 8 AI Mode (original design · no IP) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 168" width="88" height="124">
+
+  <!-- ── Body (egg / oval · cream) ── -->
+  <ellipse cx="60" cy="96" rx="46" ry="62" fill="#FFF8E7" stroke="#E8D080" stroke-width="1.5"/>
+
+  <!-- ── White coat front panel ── -->
+  <path d="M42 118 L60 136 L78 118 L78 158 Q60 164 42 158 Z"
+        fill="white" stroke="#E0E0E0" stroke-width="1"/>
+  <!-- Coat lapel lines -->
+  <path d="M52 118 L60 128" stroke="#CCC" stroke-width="1" fill="none"/>
+  <path d="M68 118 L60 128" stroke="#CCC" stroke-width="1" fill="none"/>
+
+  <!-- ── Eyes ── -->
+  <circle cx="45" cy="76" r="6" fill="#2D3748"/>
+  <circle cx="75" cy="76" r="6" fill="#2D3748"/>
+  <!-- Sparkle -->
+  <circle cx="47.5" cy="73.5" r="2" fill="white"/>
+  <circle cx="77.5" cy="73.5" r="2" fill="white"/>
+
+  <!-- ── Glasses ── -->
+  <ellipse cx="45" cy="76" rx="10.5" ry="8.5" fill="none" stroke="#5D4037" stroke-width="1.8"/>
+  <ellipse cx="75" cy="76" rx="10.5" ry="8.5" fill="none" stroke="#5D4037" stroke-width="1.8"/>
+  <!-- Bridge -->
+  <line x1="55.5" y1="76" x2="64.5" y2="76" stroke="#5D4037" stroke-width="1.8"/>
+  <!-- Side arms -->
+  <line x1="34.5" y1="73" x2="27" y2="71" stroke="#5D4037" stroke-width="1.5"/>
+  <line x1="85.5" y1="73" x2="93" y2="71" stroke="#5D4037" stroke-width="1.5"/>
+
+  <!-- ── Cheeks ── -->
+  <ellipse cx="35" cy="88" rx="10" ry="6" fill="#FFCCBC" opacity="0.45"/>
+  <ellipse cx="85" cy="88" rx="10" ry="6" fill="#FFCCBC" opacity="0.45"/>
+
+  <!-- ── Smile ── -->
+  <path d="M47 96 Q60 110 73 96" stroke="#2D3748" stroke-width="2.5"
+        fill="none" stroke-linecap="round"/>
+
+  <!-- ── Stethoscope ── -->
+  <!-- Tubing: from chest area curves down -->
+  <path d="M44 114 Q36 126 38 138 Q40 148 50 148 Q58 148 58 140"
+        stroke="#78909C" stroke-width="2.8" fill="none"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Chest piece (circle) -->
+  <circle cx="58" cy="142" r="7" fill="#546E7A" stroke="#263238" stroke-width="1.5"/>
+  <circle cx="58" cy="142" r="3.5" fill="#37474F"/>
+
+</svg>

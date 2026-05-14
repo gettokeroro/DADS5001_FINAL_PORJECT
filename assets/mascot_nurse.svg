@@ -1,0 +1,44 @@
+<!-- Kawaii Nurse Mascot — Phase 8 AI Mode (original design · no IP) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 168" width="88" height="124">
+
+  <!-- ── Body (egg / oval · pink) ── -->
+  <ellipse cx="60" cy="96" rx="46" ry="62" fill="#FBC8D8" stroke="#EC9AB0" stroke-width="1.5"/>
+
+  <!-- ── Nurse cap (white hat on crown) ── -->
+  <!-- Cap brim -->
+  <rect x="28" y="28" width="64" height="10" rx="5" fill="white" stroke="#D0D0D0" stroke-width="1"/>
+  <!-- Cap body -->
+  <rect x="33" y="16" width="54" height="18" rx="5" fill="white" stroke="#D0D0D0" stroke-width="1"/>
+  <!-- Red cross on cap -->
+  <rect x="55" y="19" width="10" height="3.5" rx="1.5" fill="#E53935"/>
+  <rect x="58.5" y="15.5" width="3.5" height="10" rx="1.5" fill="#E53935"/>
+
+  <!-- ── Eyes ── -->
+  <circle cx="45" cy="76" r="6" fill="#2D3748"/>
+  <circle cx="75" cy="76" r="6" fill="#2D3748"/>
+  <!-- Sparkle -->
+  <circle cx="47.5" cy="73.5" r="2" fill="white"/>
+  <circle cx="77.5" cy="73.5" r="2" fill="white"/>
+
+  <!-- ── Cheeks ── -->
+  <ellipse cx="35" cy="88" rx="10" ry="6" fill="#F48FB1" opacity="0.42"/>
+  <ellipse cx="85" cy="88" rx="10" ry="6" fill="#F48FB1" opacity="0.42"/>
+
+  <!-- ── Smile ── -->
+  <path d="M47 96 Q60 110 73 96" stroke="#2D3748" stroke-width="2.5"
+        fill="none" stroke-linecap="round"/>
+
+  <!-- ── Nurse uniform collar (white V) ── -->
+  <path d="M42 120 L60 134 L78 120" fill="white" stroke="#DDD" stroke-width="1.2"/>
+
+  <!-- ── Heart on belly ── -->
+  <path d="M60 148
+           C60 148 48 140 48 132
+           Q48 126 54 126
+           Q57 126 60 130
+           Q63 126 66 126
+           Q72 126 72 132
+           C72 140 60 148 60 148 Z"
+        fill="#E53935"/>
+
+</svg>

@@ -1,13 +1,16 @@
 """
-Global styling injector — Phase 6 polish
-========================================
+Global styling injector — Phase 6 + Phase 8 polish
+===================================================
 
-ใส่ BG_R1 image พร้อม overlay 78%, gradient sidebar (ฟ้าอ่อน → ฟ้ากลาง),
-และ override ตัวอักษรในพื้นที่ขวา (main) ให้เป็นสี navy #02497E ทั้งหมด
+inject_global_css()    — BG_R1 image · sidebar gradient · navy text (ทุก page)
+inject_ai_mode_css()   — Pastel AI Mode theme (2_AI_Mode.py เท่านั้น · เรียกต่อจาก inject_global_css)
+render_nurse_mascot()  — Nurse mascot box + speech (AI Mode Q-screens)
+render_doctor_mascot() — Doctor mascot box + speech (AI Mode diagnosis screen)
 
 วิธีใช้:
-    from utils.styling import inject_global_css
-    inject_global_css()      # call หลัง st.set_page_config() ในทุก page
+    from utils.styling import inject_global_css, inject_ai_mode_css, render_nurse_mascot, render_doctor_mascot
+    inject_global_css()     # ทุก page
+    inject_ai_mode_css()    # เฉพาะ 2_AI_Mode.py
 """
 from __future__ import annotations
 from pathlib import Path
@@ -23,6 +26,20 @@ ACCENT = "#22B7E9"        # primaryColor (link, button)
 PALE = "#EEFEFF"          # secondaryBackgroundColor (sidebar)
 PAGE_BG = "#F8FAFC"       # backgroundColor
 BORDER = "#9DE0E9"        # borders
+
+# ---------------------------------------------------------------------------
+# AI Mode palette (pastel · Phase 8 mockup v4 approved)
+# ---------------------------------------------------------------------------
+AI_BODY_TEXT    = "#042C53"   # navy 900 · body text
+AI_SUB_TEXT     = "#185FA5"   # navy 600 · sub-labels
+AI_BORDER       = "#85B7EB"   # pastel blue border
+AI_SCREEN_BG    = "#F4F8FC"   # light blue tint (question screens)
+AI_DIAG_BG      = "#FDF4F8"   # light pink (diagnosis screen)
+AI_HOVER_BG     = "#D4EDDA"   # pastel green hover
+AI_HOVER_TXT    = "#1B5E20"   # dark green text on hover
+AI_DIAGNOSE_BTN = "#3DAA6D"   # "ขอคำวินิจฉัย" green button
+AI_NARRATION_BG = "rgba(255,255,255,0.85)"
+AI_NARRATION_TXT = "#4B1528"  # maroon on light pink
 
 # Sidebar gradient (5 stops ฟ้าอ่อน → ฟ้ากลาง · เลี่ยง navy เข้มล่างสุด)
 SIDEBAR_GRADIENT = (
@@ -173,3 +190,204 @@ def inject_global_css():
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
+
+
+# ---------------------------------------------------------------------------
+# AI Mode CSS injector (Phase 8 · เรียกหลัง inject_global_css)
+# ---------------------------------------------------------------------------
+def inject_ai_mode_css() -> None:
+    """Inject CSS เพิ่มเติมสำหรับ AI Mode pastel theme.
+
+    ต้องเรียกหลัง inject_global_css() ใน pages/2_AI_Mode.py เท่านั้น
+    เพื่อ override global navy theme ให้เป็น pastel สำหรับหน้านี้โดยเฉพาะ
+    """
+    css = f"""
+    <style>
+    /* ================================================================
+       AI Mode — Pastel theme (Phase 8 · mockup v4 approved)
+       ================================================================ */
+
+    /* Question screen container */
+    .ai-screen {{
+        background: {AI_SCREEN_BG};
+        border: 1.5px solid {AI_BORDER};
+        border-radius: 12px;
+        padding: 22px 26px;
+        margin-bottom: 14px;
+    }}
+    .ai-screen.diagnosis {{
+        background: {AI_DIAG_BG};
+    }}
+
+    /* Body text override — always dark on pastel bg */
+    .ai-screen p,
+    .ai-screen span,
+    .ai-screen label,
+    .ai-screen li,
+    .ai-screen h3,
+    .ai-screen h4 {{
+        color: {AI_BODY_TEXT} !important;
+        font-weight: 500;
+    }}
+    .ai-screen .ai-sub {{
+        color: {AI_SUB_TEXT} !important;
+        font-size: 13px;
+        font-weight: 400;
+    }}
+
+    /* Mascot box (nurse / doctor) */
+    .ai-mascot-box {{
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: rgba(255,255,255,0.72);
+        border: 1.5px solid {AI_BORDER};
+        border-radius: 12px;
+        padding: 12px 18px;
+        margin-bottom: 18px;
+    }}
+    .ai-mascot-box svg {{
+        flex-shrink: 0;
+    }}
+    .ai-mascot-speech {{
+        color: {AI_BODY_TEXT} !important;
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.55;
+    }}
+    .ai-mascot-speech .ai-sub {{
+        display: block;
+        font-weight: 400;
+        font-size: 13px;
+        color: {AI_SUB_TEXT} !important;
+        margin-top: 4px;
+    }}
+
+    /* Symptom basket tags */
+    .ai-tag {{
+        display: inline-block;
+        background: #E3F2FD;
+        border: 1px solid {AI_BORDER};
+        border-radius: 20px;
+        padding: 3px 11px;
+        margin: 3px 4px 3px 0;
+        font-size: 12px;
+        color: {AI_BODY_TEXT} !important;
+        font-weight: 500;
+    }}
+
+    /* Progress step dots */
+    .ai-progress {{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 14px;
+    }}
+    .ai-dot {{
+        width: 9px; height: 9px;
+        border-radius: 50%;
+        background: {AI_BORDER};
+    }}
+    .ai-dot.done  {{ background: #66BB6A; }}
+    .ai-dot.now   {{ background: {AI_SUB_TEXT}; transform: scale(1.4); }}
+
+    /* Doctor narration text box */
+    .ai-narration {{
+        background: {AI_NARRATION_BG};
+        border-left: 4px solid #F48FB1;
+        border-radius: 0 8px 8px 0;
+        padding: 13px 17px;
+        color: {AI_NARRATION_TXT} !important;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.6;
+        margin-bottom: 14px;
+    }}
+
+    /* Streamlit buttons in AI Mode — pastel green hover */
+    [data-testid="stMain"] .stButton > button {{
+        background: white !important;
+        border: 1.5px solid {AI_BORDER} !important;
+        border-radius: 8px !important;
+        color: {AI_BODY_TEXT} !important;
+        font-weight: 500 !important;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }}
+    [data-testid="stMain"] .stButton > button:hover {{
+        background: {AI_HOVER_BG} !important;
+        border-color: #81C784 !important;
+        color: {AI_HOVER_TXT} !important;
+    }}
+    [data-testid="stMain"] .stButton > button:active {{
+        background: #C8E6C9 !important;
+    }}
+
+    /* "ขอคำวินิจฉัย" green button — ใช้ key class diagnose-btn ผ่าน st.markdown */
+    .diagnose-btn button,
+    [data-testid="stMain"] .stButton.diagnose-btn > button {{
+        background: {AI_DIAGNOSE_BTN} !important;
+        border-color: {AI_DIAGNOSE_BTN} !important;
+        color: white !important;
+        font-weight: 600 !important;
+        font-size: 15px !important;
+    }}
+    [data-testid="stMain"] .stButton.diagnose-btn > button:hover {{
+        background: #2E8B57 !important;
+        border-color: #2E8B57 !important;
+        color: white !important;
+    }}
+
+    /* Free-text input */
+    [data-testid="stMain"] .stTextInput input {{
+        background: white !important;
+        border: 1.5px solid {AI_BORDER} !important;
+        border-radius: 8px !important;
+        color: {AI_BODY_TEXT} !important;
+    }}
+    </style>
+    """
+    st.markdown(css, unsafe_allow_html=True)
+
+
+# ---------------------------------------------------------------------------
+# Mascot SVG loader + renderer
+# ---------------------------------------------------------------------------
+def _load_mascot_svg(name: str) -> str:
+    """โหลด SVG จาก assets/mascot_{name}.svg · fallback เป็น emoji placeholder"""
+    p = Path(__file__).resolve().parent.parent / "assets" / f"mascot_{name}.svg"
+    if p.exists():
+        return p.read_text(encoding="utf-8")
+    # Emoji fallback (กรณี SVG ไม่มี)
+    emoji = "🩺" if name == "doctor" else "💊"
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="70" height="70">'
+        f'<circle cx="30" cy="30" r="28" fill="#E0E0E0"/>'
+        f'<text x="30" y="38" text-anchor="middle" font-size="28">{emoji}</text>'
+        f'</svg>'
+    )
+
+
+def render_nurse_mascot(speech: str, sub: str = "") -> None:
+    """แสดงกล่อง nurse mascot พร้อม speech bubble (ใช้ใน Q1-Q3 screens)"""
+    svg = _load_mascot_svg("nurse")
+    sub_html = f'<span class="ai-sub">{sub}</span>' if sub else ""
+    st.markdown(
+        f"""<div class="ai-mascot-box">
+              <div style="width:88px;flex-shrink:0">{svg}</div>
+              <div class="ai-mascot-speech">{speech}{sub_html}</div>
+            </div>""",
+        unsafe_allow_html=True,
+    )
+
+
+def render_doctor_mascot(speech: str, sub: str = "") -> None:
+    """แสดงกล่อง doctor mascot พร้อม speech bubble (ใช้ใน diagnosis screen)"""
+    svg = _load_mascot_svg("doctor")
+    sub_html = f'<span class="ai-sub">{sub}</span>' if sub else ""
+    st.markdown(
+        f"""<div class="ai-mascot-box">
+              <div style="width:88px;flex-shrink:0">{svg}</div>
+              <div class="ai-mascot-speech">{speech}{sub_html}</div>
+            </div>""",
+        unsafe_allow_html=True,
+    )

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Mode Redesign — Mockup v4</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-sans: 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --color-text-primary: #1a1a1a;
+    --color-text-secondary: #5F5E5A;
+    --color-background-secondary: #F1EFE8;
+    --color-border-tertiary: rgba(0,0,0,0.15);
+  }
+  * { box-sizing: border-box; }
+  body { font-family: var(--font-sans); background: #FAFAFA; padding: 24px; max-width: 900px; margin: 0 auto; color: #1a1a1a; line-height: 1.6; }
+  h1 { font-size: 22px; font-weight: 500; margin: 0 0 6px; color: #042C53; }
+  .meta { font-size: 13px; color: #5F5E5A; margin-bottom: 18px; }
+  .aim4 { font-family: var(--font-sans); }
+  .stepper { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .stepper button { padding: 6px 10px; font-size: 12px; border: 1px solid #B5D4F4; background: white; border-radius: var(--border-radius-md); cursor: pointer; color: #185FA5; font-weight: 500; }
+  .stepper button.active { background: #B5D4F4; color: #042C53; border-color: #378ADD; }
+  .screen { background: #F4F8FC; border-radius: var(--border-radius-lg); padding: 18px; min-height: 460px; border: 1px solid #E6F1FB; }
+  .screen.diag { background: #FDF4F8; border-color: #F4C0D1; }
+  .topbar { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; }
+  .qbox { flex: 1; padding: 13px 22px; border: 1.5px solid #85B7EB; border-radius: 999px; background: white; text-align: center; font-size: 14px; color: #042C53; font-weight: 500; }
+  .diag-btn { padding: 11px 16px; background: #C0DD97; color: #173404; border: 1px solid #97C459; border-radius: var(--border-radius-md); font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .diag-btn:hover { background: #97C459; }
+  .content { display: grid; grid-template-columns: 1fr 240px; gap: 14px; }
+  .options { display: flex; flex-direction: column; gap: 8px; }
+  .opt { display: flex; align-items: center; gap: 10px; padding: 11px 14px; background: white; border: 1px solid #E6F1FB; border-radius: var(--border-radius-md); cursor: pointer; text-align: left; font-size: 13px; color: #042C53; font-weight: 500; }
+  .opt:hover { background: #EAF3DE; border-color: #97C459; color: #173404; }
+  .opt:active, .opt:focus { background: #C0DD97; border-color: #639922; color: #173404; outline: none; }
+  .opt:hover .opt-text, .opt:hover .opt-text *, .opt:active .opt-text, .opt:active .opt-text * { color: #173404; }
+  .opt:hover .opt-sub, .opt:active .opt-sub { color: #3B6D11; }
+  .opt-arrow { width: 22px; height: 16px; flex-shrink: 0; }
+  .opt-text { flex: 1; color: #042C53; }
+  .opt-sub { font-size: 11px; color: #185FA5; margin-top: 2px; font-weight: 400; }
+  .character { background: #FBEAF0; border: 1px solid #F4C0D1; border-radius: var(--border-radius-lg); padding: 14px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; height: fit-content; }
+  .char-svg { width: 100%; aspect-ratio: 1/1; background: white; border-radius: var(--border-radius-md); padding: 6px; }
+  .char-desc { font-size: 13px; color: #4B1528; line-height: 1.5; font-weight: 500; }
+  .char-line { font-size: 12px; color: #72243E; font-weight: 400; line-height: 1.5; }
+  .freetext-input { width: 100%; padding: 11px; font-size: 13px; border: 1px solid #B5D4F4; border-radius: var(--border-radius-md); margin-bottom: 8px; color: #042C53; background: white; font-family: inherit; }
+  .freetext-input:focus { outline: 2px solid #85B7EB; outline-offset: -1px; }
+  .match-result { padding: 11px 13px; border-radius: var(--border-radius-md); margin-top: 10px; font-size: 13px; font-weight: 500; }
+  .match-result.ok { background: #E1F5EE; color: #04342C; border: 1px solid #5DCAA5; }
+  .match-result.no { background: #FCEBEB; color: #501313; border: 1px solid #F09595; }
+  .match-result.empty { display: none; }
+  .check-btn { padding: 9px 14px; background: #185FA5; color: white; border: none; border-radius: var(--border-radius-md); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; }
+  .check-btn:hover { background: #042C53; }
+  .continue-btn { display: none; padding: 10px 16px; background: #C0DD97; color: #173404; border: 1px solid #97C459; border-radius: var(--border-radius-md); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; }
+  .continue-btn:hover { background: #97C459; }
+  .continue-btn.show { display: inline-flex; align-items: center; gap: 6px; }
+  .hint { font-size: 12px; color: #042C53; margin-top: 12px; line-height: 1.7; background: white; padding: 10px 12px; border-radius: var(--border-radius-md); border: 1px solid #E6F1FB; }
+  .hint code { background: #F4F8FC; color: #042C53; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+  .picked { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 14px; }
+  .picked-tag { background: #C0DD97; color: #173404; font-size: 11px; padding: 4px 10px; border-radius: 999px; font-weight: 500; }
+  .diag-header { background: #B5D4F4; color: #042C53; padding: 13px 22px; border-radius: var(--border-radius-md); margin-bottom: 14px; text-align: center; font-size: 14px; font-weight: 500; border: 1px solid #85B7EB; }
+  .diag-narrate { background: white; padding: 14px; border-radius: var(--border-radius-md); font-size: 13px; line-height: 1.7; border: 1px solid #F4C0D1; margin-bottom: 10px; color: #042C53; }
+  .diag-narrate h3 { font-size: 14px; margin: 0 0 6px; color: #042C53; font-weight: 500; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .info-card { background: white; padding: 11px 13px; border: 1px solid #E6F1FB; border-radius: var(--border-radius-md); font-size: 12px; color: #042C53; }
+  .info-card-title { font-weight: 500; color: #042C53; margin-bottom: 8px; font-size: 12px; border-bottom: 1px solid #E6F1FB; padding-bottom: 4px; }
+  .info-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; gap: 6px; }
+  .ed-ko { background: #C0DD97; color: #173404; font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 500; }
+  .ed-kho { background: #FAC775; color: #412402; font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 500; }
+  .doc-narrate { display: grid; grid-template-columns: 1fr 240px; gap: 14px; }
+  .character.doctor { background: #E6F1FB; border-color: #85B7EB; }
+  .character.doctor .char-desc { color: #042C53; }
+  .character.doctor .char-line { color: #185FA5; }
+  .nav-back { margin-top: 14px; padding: 7px 14px; font-size: 12px; background: white; border: 1px solid #B5D4F4; border-radius: var(--border-radius-md); cursor: pointer; color: #185FA5; font-weight: 500; font-family: inherit; }
+  .nav-back:hover { background: #E6F1FB; }
+  .small-note { font-size: 11px; color: #185FA5; margin-top: 6px; font-style: italic; }
+</style>
+</head>
+<body>
+<h1>AI Mode redesign — interactive mockup v4</h1>
+<div class="meta">DADS5001 final project · Kade + Getto · 2026-05-10 · standalone HTML — เปิด browser ดูได้เลย ไม่ต้องรัน Streamlit</div>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="nurse-mascot" viewBox="0 0 100 100">
+      <ellipse cx="22" cy="22" rx="6" ry="4" fill="#F4C0D1"/>
+      <ellipse cx="78" cy="22" rx="6" ry="4" fill="#F4C0D1"/>
+      <ellipse cx="50" cy="56" rx="40" ry="38" fill="#F4C0D1"/>
+      <ellipse cx="50" cy="78" rx="26" ry="14" fill="white" opacity="0.45"/>
+      <ellipse cx="38" cy="50" rx="3.5" ry="4.5" fill="#26215C"/>
+      <ellipse cx="62" cy="50" rx="3.5" ry="4.5" fill="#26215C"/>
+      <circle cx="39.5" cy="48" r="1.3" fill="white"/>
+      <circle cx="63.5" cy="48" r="1.3" fill="white"/>
+      <ellipse cx="26" cy="60" rx="5.5" ry="3.5" fill="#ED93B1" opacity="0.7"/>
+      <ellipse cx="74" cy="60" rx="5.5" ry="3.5" fill="#ED93B1" opacity="0.7"/>
+      <path d="M 44 64 Q 50 70 56 64" stroke="#26215C" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <path d="M 50 80 C 47 76 41 78 41 82 C 41 86 50 91 50 91 C 50 91 59 86 59 82 C 59 78 53 76 50 80 Z" fill="#E24B4A" opacity="0.6"/>
+      <ellipse cx="50" cy="20" rx="32" ry="5" fill="white" stroke="#D3D1C7" stroke-width="0.5"/>
+      <path d="M 18 20 Q 50 4 82 20 L 78 10 Q 50 2 22 10 Z" fill="white" stroke="#D3D1C7" stroke-width="0.5"/>
+      <rect x="46" y="11" width="8" height="2.5" fill="#E24B4A"/>
+      <rect x="48.75" y="8.5" width="2.5" height="8" fill="#E24B4A"/>
+    </symbol>
+    <symbol id="doctor-mascot" viewBox="0 0 100 100">
+      <ellipse cx="22" cy="22" rx="6" ry="4" fill="#FAC775"/>
+      <ellipse cx="78" cy="22" rx="6" ry="4" fill="#FAC775"/>
+      <ellipse cx="50" cy="56" rx="40" ry="38" fill="#FAC775"/>
+      <path d="M 18 70 L 26 94 L 74 94 L 82 70 Q 60 78 50 78 Q 40 78 18 70 Z" fill="white" opacity="0.85" stroke="#D3D1C7" stroke-width="0.5"/>
+      <circle cx="34" cy="86" r="3.5" fill="#185FA5"/>
+      <path d="M 34 82 Q 42 70 58 70 Q 64 78 64 90" stroke="#185FA5" stroke-width="1.5" fill="none"/>
+      <circle cx="38" cy="50" r="7" fill="white" stroke="#26215C" stroke-width="1.2"/>
+      <circle cx="62" cy="50" r="7" fill="white" stroke="#26215C" stroke-width="1.2"/>
+      <ellipse cx="38" cy="50" rx="3" ry="4" fill="#26215C"/>
+      <ellipse cx="62" cy="50" rx="3" ry="4" fill="#26215C"/>
+      <circle cx="39" cy="48" r="1.2" fill="white"/>
+      <circle cx="63" cy="48" r="1.2" fill="white"/>
+      <line x1="45" y1="50" x2="55" y2="50" stroke="#26215C" stroke-width="1"/>
+      <ellipse cx="26" cy="62" rx="5" ry="3" fill="#EF9F27" opacity="0.5"/>
+      <ellipse cx="74" cy="62" rx="5" ry="3" fill="#EF9F27" opacity="0.5"/>
+      <path d="M 44 66 Q 50 71 56 66" stroke="#26215C" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <ellipse cx="50" cy="14" rx="20" ry="4" fill="#E6F1FB" stroke="#85B7EB" stroke-width="0.5"/>
+      <rect x="44" y="6" width="12" height="10" rx="2" fill="white" stroke="#85B7EB" stroke-width="0.5"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="aim4">
+  <div class="stepper">
+    <button data-step="1" class="active">1. คำถามแรก</button>
+    <button data-step="2">2. ลึกขึ้น</button>
+    <button data-step="3">3. Co-symptom</button>
+    <button data-step="4">4. Free text</button>
+    <button data-step="5">5. ผลวินิจฉัย</button>
+  </div>
+
+  <div class="screen" data-step="1">
+    <div class="topbar">
+      <div class="qbox">วันนี้คุณเป็นอะไรมาคะ ??</div>
+      <button class="diag-btn" data-go="5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg>ขอคำวินิจฉัย</button>
+    </div>
+    <div class="content">
+      <div class="options">
+        <button class="opt" data-go="2"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">เป็นไข้<div class="opt-sub">high_fever, chills</div></div></button>
+        <button class="opt" data-go="2"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">ไข้หวัด / ภูมิแพ้<div class="opt-sub">cough, runny_nose, sneezing</div></div></button>
+        <button class="opt" data-go="2"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">ปวดหัว<div class="opt-sub">headache, dizziness</div></div></button>
+        <button class="opt" data-go="2"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">ปวดท้อง / ทางเดินอาหาร <span style="font-size:10px;font-weight:400">← demo path</span><div class="opt-sub">stomach_pain, nausea, diarrhoea</div></div></button>
+        <button class="opt" data-go="2"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">ปวดกล้ามเนื้อ / ข้อ<div class="opt-sub">joint_pain, muscle_pain, back_pain</div></div></button>
+        <button class="opt" data-go="2"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">ผื่น / ผิวหนัง<div class="opt-sub">itching, skin_rash, red_spots</div></div></button>
+        <button class="opt" data-go="4"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">อื่นๆ พิมพ์เอง<div class="opt-sub">free text — match กับ symptom dictionary</div></div></button>
+      </div>
+      <div class="character">
+        <svg class="char-svg"><use href="#nurse-mascot"/></svg>
+        <div class="char-desc">คุณพยาบาลใจดี</div>
+        <div class="char-line">"วันนี้เป็นยังไงบ้างคะ"</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" data-step="2" style="display:none">
+    <div class="topbar">
+      <div class="qbox">ปวดท้องลักษณะไหนคะ?</div>
+      <button class="diag-btn" data-go="5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg>ขอคำวินิจฉัย</button>
+    </div>
+    <div class="picked"><span class="picked-tag">ปวดท้อง</span></div>
+    <div class="content">
+      <div class="options">
+        <button class="opt" data-go="3"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">แสบยอดอก / กรดไหลย้อน<div class="opt-sub">acidity</div></div></button>
+        <button class="opt" data-go="3"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">ปวดท้องน้อย<div class="opt-sub">belly_pain</div></div></button>
+        <button class="opt" data-go="3"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">ปวดเสียดท้อง / จุก<div class="opt-sub">indigestion</div></div></button>
+        <button class="opt" data-go="3"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">ท้องเสีย<div class="opt-sub">diarrhoea</div></div></button>
+        <button class="opt" data-go="4"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">อื่นๆ พิมพ์เอง<div class="opt-sub">free text</div></div></button>
+      </div>
+      <div class="character">
+        <svg class="char-svg"><use href="#nurse-mascot"/></svg>
+        <div class="char-desc">คุณพยาบาลใจดี</div>
+        <div class="char-line">"เล่าให้ฟังอีกหน่อยนะคะ"</div>
+      </div>
+    </div>
+    <button class="nav-back" data-go="1">‹ กลับคำถามแรก</button>
+  </div>
+
+  <div class="screen" data-step="3" style="display:none">
+    <div class="topbar">
+      <div class="qbox">มีอาการอื่นๆด้วยไหมคะ?</div>
+      <button class="diag-btn" data-go="5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg>ขอคำวินิจฉัย</button>
+    </div>
+    <div id="picked-step3" class="picked"><span class="picked-tag">ปวดท้อง</span><span class="picked-tag">แสบยอดอก</span></div>
+    <div class="content">
+      <div class="options">
+        <button class="opt" data-go="5"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">คลื่นไส้ / อ้วก<div class="opt-sub">nausea, vomiting</div></div></button>
+        <button class="opt" data-go="5"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">เรอเปรี้ยว<div class="opt-sub">acidity sub-symptom</div></div></button>
+        <button class="opt" data-go="5"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">ถ่ายดำ / ถ่ายเป็นเลือด<div class="opt-sub">bloody_stool</div></div></button>
+        <button class="opt" data-go="5"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">ไม่มีอาการอื่น<div class="opt-sub">skip</div></div></button>
+        <button class="opt" data-go="4"><svg class="opt-arrow" viewBox="0 0 24 18" fill="#185FA5"><path d="M0 5 H14 L14 0 L24 9 L14 18 L14 13 H0 Z"/></svg><div class="opt-text">อื่นๆ พิมพ์เอง<div class="opt-sub">free text</div></div></button>
+      </div>
+      <div class="character">
+        <svg class="char-svg"><use href="#nurse-mascot"/></svg>
+        <div class="char-desc">คุณพยาบาลใจดี</div>
+        <div class="char-line">"นึกอีกนิดนะคะว่ามีอะไรอีก"</div>
+      </div>
+    </div>
+    <button class="nav-back" data-go="2">‹ กลับ</button>
+  </div>
+
+  <div class="screen" data-step="4" style="display:none">
+    <div class="topbar">
+      <div class="qbox">อื่นๆ พิมพ์อาการที่คุณมีค่ะ</div>
+      <button class="diag-btn" data-go="5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg>ขอคำวินิจฉัย</button>
+    </div>
+    <div class="content">
+      <div>
+        <input id="freetext" class="freetext-input" placeholder="พิมพ์อาการ เช่น 'ปวดหัว', 'ขี้ลำบาก'..." />
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <button class="check-btn" id="check-btn">ตรวจสอบกับ dictionary</button>
+          <button class="continue-btn" id="continue-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>ดำเนินการต่อ → คำถามถัดไป</button>
+        </div>
+        <div id="match-result" class="match-result empty"></div>
+        <div class="hint">
+          <strong style="color:#042C53">ลองพิมพ์ดู (mockup ใช้ dict ตัวอย่าง ~80 tokens · ของจริงจะมี ~600+):</strong><br>
+          • <code>ปวดหัว</code>, <code>ปากแห้ง</code>, <code>หัวใจเต้นเร็ว</code>, <code>เหงื่อออก</code> → match<br>
+          • <code>ขี้ลำบาก</code>, <code>พูดเหมือนเมา</code>, <code>เมนส์มาๆ หายๆ</code> → match (Phase 3 batch 2 ใหม่)<br>
+          • <code>ตด</code>, <code>คัน</code>, <code>เวียนหัว</code>, <code>เจ็บคอ</code> → match<br>
+          • <code>หัวจะระเบิด</code> → ไม่ match (test fail case)
+        </div>
+        <div class="small-note">หลัง match → คลิก "ดำเนินการต่อ" เพื่อกลับไปหน้าตอบคำถาม (อาการจะถูกบันทึกในตะกร้า)</div>
+      </div>
+      <div class="character">
+        <svg class="char-svg"><use href="#nurse-mascot"/></svg>
+        <div class="char-desc">คุณพยาบาลใจดี</div>
+        <div class="char-line">"พิมพ์มาเลยค่ะ พยาบาลจะหาให้"</div>
+      </div>
+    </div>
+    <button class="nav-back" data-go="1">‹ กลับคำถามแรก</button>
+  </div>
+
+  <div class="screen diag" data-step="5" style="display:none">
+    <div class="diag-header">คำวินิจฉัยโรคของคุณคือ :</div>
+    <div class="doc-narrate">
+      <div>
+        <div class="diag-narrate">
+          <h3>1. GERD (กรดไหลย้อน) — โอกาส 62%</h3>
+          <div>"จากที่คุณบอกมาว่า <strong>ปวดท้อง + แสบยอดอก + คลื่นไส้</strong> หมอคิดว่าน่าจะเป็นกรดไหลย้อนค่ะ เป็นภาวะที่กรดในกระเพาะไหลย้อนขึ้นมา รักษาได้ด้วยยาลดกรด + ปรับพฤติกรรมการกิน ไม่นอนทันทีหลังกินข้าว"</div>
+        </div>
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="info-card-title">ยาแนะนำ</div>
+            <div class="info-row"><span>Omeprazole 20mg</span><span class="ed-ko">ED ก</span></div>
+            <div class="info-row"><span>Antacid gel</span><span class="ed-ko">ED ก</span></div>
+            <div class="info-row"><span>Domperidone</span><span class="ed-kho">ED ข</span></div>
+          </div>
+          <div class="info-card">
+            <div class="info-card-title">โรงพยาบาลใกล้คุณ</div>
+            <div class="info-row"><span>รพ.จุฬาฯ</span><span style="font-size:10px;color:#185FA5">1500 เตียง</span></div>
+            <div class="info-row"><span>รพ.รามา</span><span style="font-size:10px;color:#185FA5">1300 เตียง</span></div>
+            <div class="info-row"><span>รพ.ศิริราช</span><span style="font-size:10px;color:#185FA5">2200 เตียง</span></div>
+          </div>
+        </div>
+        <div class="diag-narrate" style="margin-top: 10px;">
+          <h3>2. Gastritis (กระเพาะอักเสบ) — โอกาส 24%</h3>
+          <div>"อีกความเป็นไปได้คือกระเพาะอักเสบค่ะ ถ้าอาการ 2 สัปดาห์แล้วยังไม่ดีขึ้น ควรไปพบหมอเพื่อตรวจ endoscopy เพิ่มเติม"</div>
+        </div>
+        <div class="diag-narrate">
+          <h3>3. Peptic ulcer (แผลกระเพาะ) — โอกาส 14%</h3>
+          <div>"แผลในกระเพาะ — เกิดจาก H.pylori หรือยา NSAIDs ถ้ามี<strong>ถ่ายดำ</strong>ต้องรีบพบหมอนะคะ"</div>
+        </div>
+      </div>
+      <div>
+        <div class="character doctor">
+          <svg class="char-svg"><use href="#doctor-mascot"/></svg>
+          <div class="char-desc">คุณหมอใจดี</div>
+          <div class="char-line">"ไม่ต้องกังวลนะคะ มาฟังกัน"</div>
+        </div>
+      </div>
+    </div>
+    <button class="nav-back" data-go="1">‹ ถามใหม่</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const showStep = (n) => {
+    document.querySelectorAll('.aim4 .screen').forEach(s => { s.style.display = (s.dataset.step == n) ? '' : 'none'; });
+    document.querySelectorAll('.aim4 .stepper button').forEach(b => { b.classList.toggle('active', b.dataset.step == n); });
+  };
+  document.querySelectorAll('.aim4 .stepper button').forEach(b => { b.addEventListener('click', () => showStep(b.dataset.step)); });
+  document.querySelectorAll('.aim4 [data-go]').forEach(b => { b.addEventListener('click', () => showStep(b.dataset.go)); });
+
+  const dict = [
+    'ปวดหัว','ปวดท้อง','ปวดท้องน้อย','ปวดเข่า','ปวดคอ','ปวดหลัง','ปวดเมื่อย','ปวดข้อ',
+    'ผื่น','ผื่นแดง','ผด','คัน','ตุ่ม','ผิวลอก','สิว',
+    'ไข้','ไข้สูง','หนาวสั่น','ไอ','น้ำมูก','จาม','เจ็บคอ','คอเจ็บ','เสมหะ',
+    'คลื่นไส้','อ้วก','อาเจียน','ท้องเสีย','ท้องผูก','ขี้แตก','ขี้ลำบาก','ขี้เหลว',
+    'อึเป็นเลือด','ถ่ายดำ','เบื่ออาหาร','ปากแห้ง','แสบยอดอก','เรอเปรี้ยว',
+    'ใจสั่น','หัวใจเต้นเร็ว','หายใจไม่ออก','หายใจไม่อิ่ม','เจ็บหน้าอก','เหนื่อยง่าย','อ่อนเพลีย',
+    'เวียนหัว','หน้ามืด','บ้านหมุน','พูดเหมือนเมา','เดินโซเซ','เดินเซ','แขนขาอ่อนแรง',
+    'ฉี่บ่อย','ฉี่เหลือง','ฉี่เข้ม','แสบฉี่','ฉี่มีเลือด',
+    'ตาเหลือง','ตัวเหลือง','ตามัว','ตาแดง','น้ำตาไหล',
+    'เมนส์ผิดปกติ','เมนส์มาๆ หายๆ','เมนส์ขาด','ประจำเดือน',
+    'ตด','ผายลม','เหงื่อออก','เหงื่อท่วม','กังวล','หงุดหงิด','ซึมเศร้า','สมาธิสั้น',
+    'ขาบวม','มือบวม','คอแข็ง','คอพอก','กล้ามเนื้ออ่อนแรง','ตะคริว'
+  ];
+
+  const btn = document.getElementById('check-btn');
+  const cont = document.getElementById('continue-btn');
+  let lastMatch = null;
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const txt = (document.getElementById('freetext').value || '').trim();
+      const r = document.getElementById('match-result');
+      if (!txt) { r.className = 'match-result empty'; cont.classList.remove('show'); return; }
+      const hit = dict.find(w => w.includes(txt) || txt.includes(w));
+      if (hit) {
+        lastMatch = hit;
+        r.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="vertical-align:middle"><polyline points="20 6 9 17 4 12"/></svg> Match: <strong>' + hit + '</strong> — เพิ่มเข้าตะกร้าอาการแล้ว';
+        r.className = 'match-result ok';
+        cont.classList.add('show');
+      } else {
+        lastMatch = null;
+        r.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="vertical-align:middle"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> ไม่พบ "<strong>' + txt + '</strong>" — ลองพิมพ์ใหม่ หรือเลือกจากตัวเลือก';
+        r.className = 'match-result no';
+        cont.classList.remove('show');
+      }
+    });
+  }
+  if (cont) {
+    cont.addEventListener('click', () => {
+      if (lastMatch) {
+        const p = document.getElementById('picked-step3');
+        if (p && !p.textContent.includes(lastMatch)) {
+          const tag = document.createElement('span');
+          tag.className = 'picked-tag';
+          tag.textContent = lastMatch;
+          p.appendChild(tag);
+        }
+        document.getElementById('freetext').value = '';
+        document.getElementById('match-result').className = 'match-result empty';
+        cont.classList.remove('show');
+        showStep(3);
+      }
+    });
+  }
+  showStep(1);
+})();
+</script>
+</body>
+</html>

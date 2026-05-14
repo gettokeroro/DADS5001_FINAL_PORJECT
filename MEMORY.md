@@ -23,6 +23,7 @@
 | 5 — Honest fallback responses | ⬜ ค้าง | |
 | 6 — Drug + Hospital data | 🟡 in progress | อ่านด้านล่าง |
 | 7 — UI styling sync | 🟡 in progress | batch 1 done (2_AI, 3_Compare) · batch 2 ค้าง 3 หน้า |
+| 8 — AI Mode UX redesign | 🟡 mockup approved | `mockups/ai_mode_redesign_v4.html` · waiting refactor |
 
 ## 📦 Phase 6 — Drug + Hospital integration
 
@@ -158,6 +159,32 @@
 - accent `#22B7E9` (cyan) · navy text `#02497E`
 - BG = `BG_R1.png` + 78% white overlay
 - Sidebar = 5-stop gradient (pale → cyan-mid → blue-deep)
+
+## 🎭 Phase 8 — AI Mode UX redesign
+
+### ✅ Mockup approved (2026-05-10 by Kade + AI iteration v1→v4)
+
+**ไฟล์:**
+- `mockups/ai_mode_redesign_v4.html` — interactive standalone HTML (เปิด browser ดูได้เลย ไม่ต้องรัน Streamlit)
+- `mockups/ai_mode_redesign_decisions.md` — design doc (5 decisions, tree structure, palette, implementation plan)
+
+**Vision:** เปลี่ยน UX จาก textarea-based → button-based question tree + character mascot (nurse + doctor)
+
+**5 decisions ที่ตกลงแล้ว:**
+- (1) Hybrid — symptom tree + Gemma narrate ตอนจบ
+- (2) Q1 chief complaint (6 items + free text): เป็นไข้ · ไข้หวัด · ปวดหัว · ปวดท้อง · ปวดกล้ามเนื้อข้อ · ผื่นผิวหนัง
+- (3) Adaptive depth · soft cap 5-6 questions
+- (4) Free text → match กับ `symptom_dictionary_th` (Phase 3 batch 2 ใช้ตรงนี้พอดี · 600+ tokens)
+- (5) Diagnosis = doctor narrate + drug card (ED tier) + hospital card · structured คล้าย Non-AI · presentation ต่าง
+
+**Palette:** pastel · navy 600/900 text · green hover (`#EAF3DE`) · pink character (nurse) · cream character (doctor)
+
+### 🔧 ยังเหลือ (Getto refactor next session)
+- รื้อ `pages/2_AI_Mode.py` ใหม่ (textarea → button-based flow)
+- สร้าง `utils/symptom_tree.py` (decision tree logic จาก `disease_symptom_long.csv`)
+- ปรับ `utils/ai_engine.py` (Gemma prompt — doctor narrative tone)
+- Reuse `scoring.py` + `data_loader.py` ที่มีอยู่
+- State: `st.session_state["picked_symptoms"]` + `["screen"]` + `["history"]`
 
 ## 🗂 ไฟล์ data ที่อยู่ใน OneDrive
 
