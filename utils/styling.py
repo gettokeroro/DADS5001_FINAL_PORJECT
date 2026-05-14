@@ -350,30 +350,91 @@ def inject_ai_mode_css() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Mascot SVG loader + renderer
+# Mascot SVG — inline (style= attributes override any external CSS)
 # ---------------------------------------------------------------------------
-def _load_mascot_svg(name: str) -> str:
-    """โหลด SVG จาก assets/mascot_{name}.svg · fallback เป็น emoji placeholder"""
-    p = Path(__file__).resolve().parent.parent / "assets" / f"mascot_{name}.svg"
-    if p.exists():
-        return p.read_text(encoding="utf-8")
-    # Emoji fallback (กรณี SVG ไม่มี)
-    emoji = "🩺" if name == "doctor" else "💊"
-    return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="70" height="70">'
-        f'<circle cx="30" cy="30" r="28" fill="#E0E0E0"/>'
-        f'<text x="30" y="38" text-anchor="middle" font-size="28">{emoji}</text>'
-        f'</svg>'
-    )
+_NURSE_SVG = """
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 168" width="88" height="124">
+  <!-- Body -->
+  <ellipse cx="60" cy="96" rx="46" ry="62"
+           style="fill:#FBC8D8;stroke:#EC9AB0;stroke-width:1.5"/>
+  <!-- Nurse cap brim -->
+  <rect x="28" y="28" width="64" height="10" rx="5"
+        style="fill:white;stroke:#D0D0D0;stroke-width:1"/>
+  <!-- Nurse cap body -->
+  <rect x="33" y="16" width="54" height="18" rx="5"
+        style="fill:white;stroke:#D0D0D0;stroke-width:1"/>
+  <!-- Red cross -->
+  <rect x="55" y="19" width="10" height="3.5" rx="1.5" style="fill:#E53935"/>
+  <rect x="58.5" y="15.5" width="3.5" height="10" rx="1.5" style="fill:#E53935"/>
+  <!-- Eyes -->
+  <circle cx="45" cy="76" r="6" style="fill:#2D3748"/>
+  <circle cx="75" cy="76" r="6" style="fill:#2D3748"/>
+  <circle cx="47.5" cy="73.5" r="2" style="fill:white"/>
+  <circle cx="77.5" cy="73.5" r="2" style="fill:white"/>
+  <!-- Cheeks -->
+  <ellipse cx="35" cy="88" rx="10" ry="6" style="fill:#F48FB1;opacity:0.42"/>
+  <ellipse cx="85" cy="88" rx="10" ry="6" style="fill:#F48FB1;opacity:0.42"/>
+  <!-- Smile -->
+  <path d="M47 96 Q60 110 73 96"
+        style="stroke:#2D3748;stroke-width:2.5;fill:none;stroke-linecap:round"/>
+  <!-- Collar -->
+  <path d="M42 120 L60 134 L78 120"
+        style="fill:white;stroke:#DDD;stroke-width:1.2"/>
+  <!-- Heart -->
+  <path d="M60 148 C60 148 48 140 48 132 Q48 126 54 126 Q57 126 60 130
+           Q63 126 66 126 Q72 126 72 132 C72 140 60 148 60 148 Z"
+        style="fill:#E53935"/>
+</svg>
+""".strip()
+
+_DOCTOR_SVG = """
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 168" width="88" height="124">
+  <!-- Body -->
+  <ellipse cx="60" cy="96" rx="46" ry="62"
+           style="fill:#FFF8E7;stroke:#E8D080;stroke-width:1.5"/>
+  <!-- White coat -->
+  <path d="M42 118 L60 136 L78 118 L78 158 Q60 164 42 158 Z"
+        style="fill:white;stroke:#E0E0E0;stroke-width:1"/>
+  <path d="M52 118 L60 128" style="stroke:#CCC;stroke-width:1;fill:none"/>
+  <path d="M68 118 L60 128" style="stroke:#CCC;stroke-width:1;fill:none"/>
+  <!-- Eyes -->
+  <circle cx="45" cy="76" r="6" style="fill:#2D3748"/>
+  <circle cx="75" cy="76" r="6" style="fill:#2D3748"/>
+  <circle cx="47.5" cy="73.5" r="2" style="fill:white"/>
+  <circle cx="77.5" cy="73.5" r="2" style="fill:white"/>
+  <!-- Glasses -->
+  <ellipse cx="45" cy="76" rx="10.5" ry="8.5"
+           style="fill:none;stroke:#5D4037;stroke-width:1.8"/>
+  <ellipse cx="75" cy="76" rx="10.5" ry="8.5"
+           style="fill:none;stroke:#5D4037;stroke-width:1.8"/>
+  <line x1="55.5" y1="76" x2="64.5" y2="76"
+        style="stroke:#5D4037;stroke-width:1.8"/>
+  <line x1="34.5" y1="73" x2="27" y2="71"
+        style="stroke:#5D4037;stroke-width:1.5"/>
+  <line x1="85.5" y1="73" x2="93" y2="71"
+        style="stroke:#5D4037;stroke-width:1.5"/>
+  <!-- Cheeks -->
+  <ellipse cx="35" cy="88" rx="10" ry="6" style="fill:#FFCCBC;opacity:0.45"/>
+  <ellipse cx="85" cy="88" rx="10" ry="6" style="fill:#FFCCBC;opacity:0.45"/>
+  <!-- Smile -->
+  <path d="M47 96 Q60 110 73 96"
+        style="stroke:#2D3748;stroke-width:2.5;fill:none;stroke-linecap:round"/>
+  <!-- Stethoscope tubing -->
+  <path d="M44 114 Q36 126 38 138 Q40 148 50 148 Q58 148 58 140"
+        style="stroke:#78909C;stroke-width:2.8;fill:none;stroke-linecap:round"/>
+  <!-- Stethoscope chest piece -->
+  <circle cx="58" cy="142" r="7" style="fill:#546E7A;stroke:#263238;stroke-width:1.5"/>
+  <circle cx="58" cy="142" r="3.5" style="fill:#37474F"/>
+</svg>
+""".strip()
 
 
 def render_nurse_mascot(speech: str, sub: str = "") -> None:
     """แสดงกล่อง nurse mascot พร้อม speech bubble (ใช้ใน Q1-Q3 screens)"""
-    svg = _load_mascot_svg("nurse")
     sub_html = f'<span class="ai-sub">{sub}</span>' if sub else ""
     st.markdown(
         f"""<div class="ai-mascot-box">
-              <div style="width:88px;flex-shrink:0">{svg}</div>
+              <div style="width:88px;flex-shrink:0;line-height:0">{_NURSE_SVG}</div>
               <div class="ai-mascot-speech">{speech}{sub_html}</div>
             </div>""",
         unsafe_allow_html=True,
@@ -382,11 +443,10 @@ def render_nurse_mascot(speech: str, sub: str = "") -> None:
 
 def render_doctor_mascot(speech: str, sub: str = "") -> None:
     """แสดงกล่อง doctor mascot พร้อม speech bubble (ใช้ใน diagnosis screen)"""
-    svg = _load_mascot_svg("doctor")
     sub_html = f'<span class="ai-sub">{sub}</span>' if sub else ""
     st.markdown(
         f"""<div class="ai-mascot-box">
-              <div style="width:88px;flex-shrink:0">{svg}</div>
+              <div style="width:88px;flex-shrink:0;line-height:0">{_DOCTOR_SVG}</div>
               <div class="ai-mascot-speech">{speech}{sub_html}</div>
             </div>""",
         unsafe_allow_html=True,

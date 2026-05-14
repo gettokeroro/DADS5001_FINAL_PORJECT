@@ -244,30 +244,50 @@ def match_freetext(
     cols = [c for c in ["symptom_th", "symptom_th_alt", "symptom_en", "ui_label"]
             if c in df.columns]
 
+    # Two-pass: exact/substring first, then prefix-overlap fallback (Thai word stems)
+    _MIN_PFX = 4  # minimum prefix length for Thai stem matching (≈ 1-2 Thai chars)
+
+    prefix_candidate: Optional[TreeOption] = None  # best prefix match (used if no exact)
+
     for _, row in df.iterrows():
+        sym_en = str(row.get("symptom_en") or "")
+        label_th = str(row.get("symptom_th") or sym_en)
         for col in cols:
             cell = str(row.get(col) or "").lower()
             if not cell:
                 continue
-            # Direct substring match (mirrors str.contains regex=False)
+            # 1) Direct substring match
             if q in cell:
                 return TreeOption(
-                    symptom_en=row["symptom_en"],
-                    label_th=row.get("symptom_th") or row["symptom_en"],
+                    symptom_en=sym_en,
+                    label_th=label_th,
                     sublabel=f"matched in `{col}`",
                     meta={"matched_column": col, "matched_text": q},
                 )
-            # Also check comma-separated alts piece-by-piece
-            if "," in cell:
-                for piece in cell.split(","):
-                    if q in piece.strip().lower() or piece.strip().lower() in q:
-                        return TreeOption(
-                            symptom_en=row["symptom_en"],
-                            label_th=row.get("symptom_th") or row["symptom_en"],
-                            sublabel=f"matched in `{col}` (alt)",
-                            meta={"matched_column": col, "matched_alt": piece.strip()},
+            # 2) Comma-separated alts — bidirectional check
+            pieces = [p.strip().lower() for p in cell.split(",")] if "," in cell else [cell]
+            for piece in pieces:
+                if not piece:
+                    continue
+                if q in piece or piece in q:
+                    return TreeOption(
+                        symptom_en=sym_en,
+                        label_th=label_th,
+                        sublabel=f"matched in `{col}` (alt)",
+                        meta={"matched_column": col, "matched_alt": piece},
+                    )
+                # 3) Prefix-overlap (Thai word sharing first stem, e.g. หายใจ-)
+                if prefix_candidate is None and len(q) >= _MIN_PFX and len(piece) >= _MIN_PFX:
+                    q_pfx = q[:_MIN_PFX]
+                    if piece.startswith(q_pfx) or q.startswith(piece[:_MIN_PFX]):
+                        prefix_candidate = TreeOption(
+                            symptom_en=sym_en,
+                            label_th=label_th,
+                            sublabel=f"matched in `{col}` (prefix)",
+                            meta={"matched_column": col, "matched_prefix": q_pfx},
                         )
-    return None
+
+    return prefix_candidate  # None if no match at all
 
 
 # -----------------------------------------------------------------------------
