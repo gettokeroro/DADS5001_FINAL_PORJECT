@@ -550,4 +550,38 @@ elif st.session_state.ai8_step == "result":
                 # Drug + Hospital side-by-side (all 3 ranks)
                 c_drug, c_hosp = st.columns(2, gap="small")
                 with c_drug:
-            
+                    render_drug_panel(disease_key, drug_df)
+                with c_hosp:
+                    if primary and primary != "—":
+                        render_hospital_panel(
+                            primary,
+                            hint_df,
+                            hospitals_df=hosp_df,
+                            keywords_dict=kw_dict,
+                            selected_provinces=selected_prov if selected_prov else None,
+                            key_suffix=f"_ai8_r{rank_num}_{disease_key}",
+                        )
+
+                # Urgency badge below each card
+                st.caption(
+                    f"🏥 แผนก: **{primary}** · {URGENCY_LABEL.get(urg, f'ระดับ {urg}')}"
+                )
+
+                if rank_num < 3:
+                    st.markdown("")  # visual spacer between cards
+
+    # ── Bottom: action buttons ───────────────────────────────────────────────
+    st.markdown("---")
+    col_a, col_b = st.columns([1, 2])
+    with col_a:
+        if st.button("← ถามใหม่", use_container_width=True):
+            _reset()
+    with col_b:
+        with st.expander("🔧 Debug"):
+            if st.session_state.ai8_ranked is not None:
+                cols_show = [c for c in
+                             ["disease", "primary_score", "n_matched", "coverage"]
+                             if c in ranked.columns]
+                st.dataframe(ranked[cols_show], use_container_width=True, hide_index=True)
+            st.json({"picked": picked, "q_count": st.session_state.ai8_q_count,
+                     "calls": st.session_state.ai8_call_counter})
