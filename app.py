@@ -72,9 +72,9 @@ with col2:
         """
     )
     a, b = st.columns(2)
-    a.metric("โรคที่รองรับ", "41")
-    b.metric("อาการที่รับ", "121")
-    a.metric("Specialty", "17")
+    a.metric("โรคที่รองรับ", "48")
+    b.metric("อาการที่รับ", "132")
+    a.metric("Specialty", "13")
     b.metric("Urgency", "1–5")
 
     st.markdown("### Persona")
