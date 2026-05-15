@@ -92,7 +92,7 @@ with c1:
     st.markdown(
         """
         #### 1️⃣ ระบุอาการ
-        - **Non-AI mode:** ติ๊ก checkbox จาก 121 อาการ จัดกลุ่มตามระบบร่างกาย
+        - **Non-AI mode:** ติ๊ก checkbox จาก 132 อาการ จัดกลุ่มตามระบบร่างกาย
         - **AI mode:** พิมพ์อาการเป็นภาษาธรรมชาติ ("3 วันมานี้ ไอแห้ง คอเจ็บ...")
         """
     )
@@ -100,7 +100,7 @@ with c2:
     st.markdown(
         """
         #### 2️⃣ ระบบประมวลผล
-        - **Non-AI:** TF-IDF scoring + DuckDB join เทียบกับ 41 โรค
+        - **Non-AI:** TF-IDF scoring + DuckDB join เทียบกับ 48 โรค
         - **AI:** LLM แปลภาษา → match dataset → narrate ผลลัพธ์ + reasoning
         """
     )
