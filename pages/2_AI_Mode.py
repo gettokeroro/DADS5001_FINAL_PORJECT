@@ -253,12 +253,9 @@ elif st.session_state.ai8_step == "q2":
             if opt.symptom_en not in picked:
                 picked.append(opt.symptom_en)
             st.session_state.ai8_seen.add(opt.symptom_en)
-
-            if is_tree_done(picked, arts, st.session_state.ai8_q_count):
-                st.session_state.ai8_step = "result"
-            else:
-                st.session_state.ai8_step = "q3plus"
-                st.session_state.ai8_q_count += 1
+            # Always go to Q3+ — user decides when to stop
+            st.session_state.ai8_step = "q3plus"
+            st.session_state.ai8_q_count += 1
             st.rerun()
 
     # Freetext option
@@ -275,10 +272,7 @@ elif st.session_state.ai8_step == "q2":
                     st.session_state.ai8_seen.add(match.symptom_en)
                     st.session_state.ai8_freetext_prev = "q2"
                     st.session_state.ai8_q_count += 1
-                    if is_tree_done(st.session_state.ai8_picked, arts, st.session_state.ai8_q_count):
-                        st.session_state.ai8_step = "result"
-                    else:
-                        st.session_state.ai8_step = "q3plus"
+                    st.session_state.ai8_step = "q3plus"
                     st.rerun()
                 else:
                     st.warning("ไม่พบอาการที่ตรงกัน — ลองพิมพ์ด้วยคำอื่นนะคะ")
@@ -345,11 +339,8 @@ elif st.session_state.ai8_step == "q3plus":
                     picked.append(opt.symptom_en)
                 st.session_state.ai8_seen.add(opt.symptom_en)
                 st.session_state.ai8_q_count += 1
-
-                if is_tree_done(picked, arts, st.session_state.ai8_q_count):
-                    st.session_state.ai8_step = "result"
-                else:
-                    st.session_state.ai8_step = "q3plus"
+                # Stay in Q3+ — user controls exit via "ไม่มีอาการอื่น" or diagnose button
+                st.session_state.ai8_step = "q3plus"
                 st.rerun()
 
     # Freetext option
@@ -365,8 +356,7 @@ elif st.session_state.ai8_step == "q3plus":
                         picked.append(match.symptom_en)
                     st.session_state.ai8_seen.add(match.symptom_en)
                     st.session_state.ai8_q_count += 1
-                    if is_tree_done(picked, arts, st.session_state.ai8_q_count):
-                        st.session_state.ai8_step = "result"
+                    st.session_state.ai8_step = "q3plus"
                     st.rerun()
                 else:
                     st.warning("ไม่พบอาการที่ตรงกัน — ลองพิมพ์ด้วยคำอื่นนะคะ")
@@ -518,12 +508,17 @@ elif st.session_state.ai8_step == "result":
                 5: "🟩 ระดับ 5 — ไม่เร่งด่วน",
             }
 
+            # Normalize top-3 scores to proportional % (TF-IDF scores are unbounded)
+            _top3_df = enriched.head(3)
+            _raw = [float(_top3_df.iloc[j].get("primary_score", 0) or 0) for j in range(len(_top3_df))]
+            _total = sum(_raw) if sum(_raw) > 0 else 1.0
+            _norm_pcts = [s / _total for s in _raw]
+
             for i, (_, row) in enumerate(enriched.head(3).iterrows()):
                 rank_num   = i + 1
                 disease_th = row.get("disease_th") or row["disease"]
                 disease_en = row.get("disease_en") or row["disease"]
-                score      = float(row.get("primary_score", 0) or 0)
-                pct        = f"{score * 100:.0f}%"
+                pct        = f"{_norm_pcts[i] * 100:.0f}%"
                 narr       = narrations[i] if i < len(narrations) else ""
                 primary    = row.get("primary_specialty") or "—"
                 urg        = int(row["urgency_level"]) if pd.notna(row.get("urgency_level")) else 5

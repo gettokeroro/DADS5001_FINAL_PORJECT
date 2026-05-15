@@ -138,45 +138,78 @@ def inject_ai_mode_css() -> None:
 
 
 _NURSE_SVG = (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 168" width="88" height="124">' +
-    '<ellipse cx="60" cy="96" rx="46" ry="62" style="fill:#FBC8D8;stroke:#EC9AB0;stroke-width:1.5"/>' +
-    '<rect x="28" y="28" width="64" height="10" rx="5" style="fill:white;stroke:#D0D0D0;stroke-width:1"/>' +
-    '<rect x="33" y="16" width="54" height="18" rx="5" style="fill:white;stroke:#D0D0D0;stroke-width:1"/>' +
-    '<rect x="55" y="19" width="10" height="3.5" rx="1.5" style="fill:#E53935"/>' +
-    '<rect x="58.5" y="15.5" width="3.5" height="10" rx="1.5" style="fill:#E53935"/>' +
-    '<circle cx="45" cy="76" r="6" style="fill:#2D3748"/>' +
-    '<circle cx="75" cy="76" r="6" style="fill:#2D3748"/>' +
-    '<circle cx="47.5" cy="73.5" r="2" style="fill:white"/>' +
-    '<circle cx="77.5" cy="73.5" r="2" style="fill:white"/>' +
-    '<ellipse cx="35" cy="88" rx="10" ry="6" style="fill:#F48FB1;opacity:0.42"/>' +
-    '<ellipse cx="85" cy="88" rx="10" ry="6" style="fill:#F48FB1;opacity:0.42"/>' +
-    '<path d="M47 96 Q60 110 73 96" style="stroke:#2D3748;stroke-width:2.5;fill:none;stroke-linecap:round"/>' +
-    '<path d="M42 120 L60 134 L78 120" style="fill:white;stroke:#DDD;stroke-width:1.2"/>' +
-    '<path d="M60 148 C60 148 48 140 48 132 Q48 126 54 126 Q57 126 60 130 Q63 126 66 126 Q72 126 72 132 C72 140 60 148 60 148 Z" style="fill:#E53935"/>' +
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 168" width="88" height="124">'
+    '<defs>'
+    '<radialGradient id="ng_face" cx="42%" cy="36%" r="64%">'
+    '<stop offset="0%" stop-color="#FFF2F6"/>'
+    '<stop offset="100%" stop-color="#F9C4D6"/>'
+    '</radialGradient>'
+    '<radialGradient id="ng_body" cx="40%" cy="28%" r="72%">'
+    '<stop offset="0%" stop-color="#FDE8F0"/>'
+    '<stop offset="100%" stop-color="#F0A8C0"/>'
+    '</radialGradient>'
+    '</defs>'
+    '<ellipse cx="60" cy="114" rx="40" ry="52" fill="url(#ng_body)" stroke="#E0A0B8" stroke-width="1.2"/>'
+    '<path d="M42 102 L60 120 L78 102" fill="white" stroke="#DDD" stroke-width="1"/>'
+    '<circle cx="60" cy="62" r="40" fill="url(#ng_face)" stroke="#EEB4C8" stroke-width="1.5"/>'
+    '<rect x="28" y="26" width="64" height="12" rx="6" fill="white" stroke="#D0D0D0" stroke-width="1"/>'
+    '<rect x="34" y="15" width="52" height="15" rx="6" fill="white" stroke="#D0D0D0" stroke-width="1"/>'
+    '<rect x="57" y="17.5" width="6" height="2.5" rx="1.2" fill="#E53935"/>'
+    '<rect x="59.5" y="15" width="2.5" height="8" rx="1.2" fill="#E53935"/>'
+    '<ellipse cx="45" cy="68" rx="9" ry="10" fill="white" stroke="#E0C0D0" stroke-width="0.8"/>'
+    '<circle cx="45" cy="69" r="6" fill="#2C1B35"/>'
+    '<circle cx="47.5" cy="66" r="2.3" fill="white" opacity="0.9"/>'
+    '<circle cx="42.5" cy="71" r="1.1" fill="white" opacity="0.5"/>'
+    '<ellipse cx="75" cy="68" rx="9" ry="10" fill="white" stroke="#E0C0D0" stroke-width="0.8"/>'
+    '<circle cx="75" cy="69" r="6" fill="#2C1B35"/>'
+    '<circle cx="77.5" cy="66" r="2.3" fill="white" opacity="0.9"/>'
+    '<circle cx="72.5" cy="71" r="1.1" fill="white" opacity="0.5"/>'
+    '<path d="M37 61 Q41 57 46 59.5" stroke="#5B2D60" stroke-width="1.4" fill="none" stroke-linecap="round"/>'
+    '<path d="M74 59.5 Q79 57 83 61" stroke="#5B2D60" stroke-width="1.4" fill="none" stroke-linecap="round"/>'
+    '<ellipse cx="30" cy="80" rx="11" ry="7" fill="#F48FB1" opacity="0.32"/>'
+    '<ellipse cx="90" cy="80" rx="11" ry="7" fill="#F48FB1" opacity="0.32"/>'
+    '<ellipse cx="60" cy="80" rx="2.5" ry="1.8" fill="#E898B0" opacity="0.55"/>'
+    '<path d="M49 91 Q60 103 71 91" stroke="#C04070" stroke-width="2.3" fill="none" stroke-linecap="round"/>'
+    '<path d="M60 135 C60 135 51 127 51 120 Q51 115 56.5 115 Q59 115 60 118 Q61 115 63.5 115 Q69 115 69 120 C69 127 60 135 60 135 Z" fill="#E53935" opacity="0.88"/>'
     '</svg>'
 )
 
 _DOCTOR_SVG = (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 168" width="88" height="124">' +
-    '<ellipse cx="60" cy="96" rx="46" ry="62" style="fill:#FFF8E7;stroke:#E8D080;stroke-width:1.5"/>' +
-    '<path d="M42 118 L60 136 L78 118 L78 158 Q60 164 42 158 Z" style="fill:white;stroke:#E0E0E0;stroke-width:1"/>' +
-    '<path d="M52 118 L60 128" style="stroke:#CCC;stroke-width:1;fill:none"/>' +
-    '<path d="M68 118 L60 128" style="stroke:#CCC;stroke-width:1;fill:none"/>' +
-    '<circle cx="45" cy="76" r="6" style="fill:#2D3748"/>' +
-    '<circle cx="75" cy="76" r="6" style="fill:#2D3748"/>' +
-    '<circle cx="47.5" cy="73.5" r="2" style="fill:white"/>' +
-    '<circle cx="77.5" cy="73.5" r="2" style="fill:white"/>' +
-    '<ellipse cx="45" cy="76" rx="10.5" ry="8.5" style="fill:none;stroke:#5D4037;stroke-width:1.8"/>' +
-    '<ellipse cx="75" cy="76" rx="10.5" ry="8.5" style="fill:none;stroke:#5D4037;stroke-width:1.8"/>' +
-    '<line x1="55.5" y1="76" x2="64.5" y2="76" style="stroke:#5D4037;stroke-width:1.8"/>' +
-    '<line x1="34.5" y1="73" x2="27" y2="71" style="stroke:#5D4037;stroke-width:1.5"/>' +
-    '<line x1="85.5" y1="73" x2="93" y2="71" style="stroke:#5D4037;stroke-width:1.5"/>' +
-    '<ellipse cx="35" cy="88" rx="10" ry="6" style="fill:#FFCCBC;opacity:0.45"/>' +
-    '<ellipse cx="85" cy="88" rx="10" ry="6" style="fill:#FFCCBC;opacity:0.45"/>' +
-    '<path d="M47 96 Q60 110 73 96" style="stroke:#2D3748;stroke-width:2.5;fill:none;stroke-linecap:round"/>' +
-    '<path d="M44 114 Q36 126 38 138 Q40 148 50 148 Q58 148 58 140" style="stroke:#78909C;stroke-width:2.8;fill:none;stroke-linecap:round"/>' +
-    '<circle cx="58" cy="142" r="7" style="fill:#546E7A;stroke:#263238;stroke-width:1.5"/>' +
-    '<circle cx="58" cy="142" r="3.5" style="fill:#37474F"/>' +
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 168" width="88" height="124">'
+    '<defs>'
+    '<radialGradient id="dg_face" cx="42%" cy="36%" r="64%">'
+    '<stop offset="0%" stop-color="#FFF8EE"/>'
+    '<stop offset="100%" stop-color="#F5DDB8"/>'
+    '</radialGradient>'
+    '<radialGradient id="dg_body" cx="40%" cy="28%" r="72%">'
+    '<stop offset="0%" stop-color="#FAFAFA"/>'
+    '<stop offset="100%" stop-color="#E2E2E2"/>'
+    '</radialGradient>'
+    '</defs>'
+    '<ellipse cx="60" cy="114" rx="42" ry="52" fill="url(#dg_body)" stroke="#C8C8C8" stroke-width="1.2"/>'
+    '<path d="M44 102 L60 120 L76 102 L76 160 Q60 166 44 160 Z" fill="white" stroke="#E0E0E0" stroke-width="0.8"/>'
+    '<path d="M52 102 L60 114" stroke="#CCC" stroke-width="0.8" fill="none"/>'
+    '<path d="M68 102 L60 114" stroke="#CCC" stroke-width="0.8" fill="none"/>'
+    '<circle cx="60" cy="60" r="40" fill="url(#dg_face)" stroke="#E0C898" stroke-width="1.5"/>'
+    '<path d="M24 52 Q26 28 60 24 Q94 28 96 52" fill="#5D4037" opacity="0.5"/>'
+    '<ellipse cx="44" cy="64" rx="11.5" ry="10" fill="rgba(255,255,255,0.55)" stroke="#5D4037" stroke-width="1.9"/>'
+    '<ellipse cx="76" cy="64" rx="11.5" ry="10" fill="rgba(255,255,255,0.55)" stroke="#5D4037" stroke-width="1.9"/>'
+    '<line x1="55.5" y1="63" x2="64.5" y2="63" stroke="#5D4037" stroke-width="1.9"/>'
+    '<line x1="32.5" y1="61" x2="25" y2="59" stroke="#5D4037" stroke-width="1.5"/>'
+    '<line x1="87.5" y1="61" x2="95" y2="59" stroke="#5D4037" stroke-width="1.5"/>'
+    '<circle cx="44" cy="65" r="6" fill="#2C1B35"/>'
+    '<circle cx="76" cy="65" r="6" fill="#2C1B35"/>'
+    '<circle cx="46.5" cy="62" r="2.2" fill="white" opacity="0.88"/>'
+    '<circle cx="78.5" cy="62" r="2.2" fill="white" opacity="0.88"/>'
+    '<circle cx="41.5" cy="67" r="1.0" fill="white" opacity="0.5"/>'
+    '<circle cx="73.5" cy="67" r="1.0" fill="white" opacity="0.5"/>'
+    '<ellipse cx="31" cy="78" rx="11" ry="7" fill="#FFCCBC" opacity="0.38"/>'
+    '<ellipse cx="89" cy="78" rx="11" ry="7" fill="#FFCCBC" opacity="0.38"/>'
+    '<ellipse cx="60" cy="77" rx="2.5" ry="1.8" fill="#C4956A" opacity="0.5"/>'
+    '<path d="M48 88 Q60 100 72 88" stroke="#A06040" stroke-width="2.3" fill="none" stroke-linecap="round"/>'
+    '<path d="M44 114 Q36 126 38 140 Q40 150 50 150 Q58 150 58 144" stroke="#78909C" stroke-width="2.8" fill="none" stroke-linecap="round"/>'
+    '<circle cx="58" cy="146" r="7" fill="#546E7A" stroke="#263238" stroke-width="1.5"/>'
+    '<circle cx="58" cy="146" r="3.5" fill="#37474F"/>'
     '</svg>'
 )
 
