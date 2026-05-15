@@ -392,20 +392,18 @@ elif st.session_state.ai8_step == "result":
 
     st.markdown(_progress_dots("result"), unsafe_allow_html=True)
 
-    # Province filter in sidebar
-    with st.sidebar:
-        st.markdown("#### 🏥 กรองโรงพยาบาล")
-        all_provinces = (
-            sorted(hosp_df["province"].dropna().unique().tolist())
-            if not hosp_df.empty else []
-        )
-        selected_prov = st.multiselect(
-            "เลือกจังหวัด",
-            options=all_provinces,
-            default=[],
-            key=st.session_state.ai8_prov_key,
-            placeholder="ทุกจังหวัด (ไม่กรอง)",
-        )
+    # Province filter — in main content so user can find it easily
+    all_provinces = (
+        sorted(hosp_df["province"].dropna().unique().tolist())
+        if not hosp_df.empty else []
+    )
+    selected_prov = st.multiselect(
+        "🏥 กรองจังหวัด (ค้นหาโรงพยาบาลใกล้บ้าน)",
+        options=all_provinces,
+        default=[],
+        key=st.session_state.ai8_prov_key,
+        placeholder="ทุกจังหวัด — เลือกเพื่อดู รพ. ในจังหวัดของคุณ",
+    )
 
     # ── Scoring + card narrations (run once, cache in session_state) ─────────
     if st.session_state.ai8_ranked is None:
