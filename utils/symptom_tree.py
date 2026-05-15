@@ -328,24 +328,4 @@ if __name__ == "__main__":
 
     print("\n=== Free-text matches ===")
     for q in ["ปวดหัว", "ขี้ลำบาก", "พูดเหมือนเมา", "หัวจะระเบิด", "ตด"]:
-        m = match_freetext(q, dict_df)
-        if m:
-            print(f"  '{q}' → {m.symptom_en} ({m.label_th}) [{m.sublabel}]")
-        else:
-            print(f"  '{q}' → NO MATCH")
-
-    print("\n=== Q3+ options (after picking ปวดท้อง + แสบยอดอก) ===")
-    try:
-        from utils.data_loader import get_scoring_artifacts
-        arts = get_scoring_artifacts()
-        opts = get_q3plus_options(["abdominal_pain", "acidity"], arts, dict_df, top_k=5)
-        for o in opts:
-            print(f"  • {o.label_th:30} ({o.symptom_en})  {o.sublabel}")
-
-        print("\n=== is_tree_done ===")
-        for n_picked, n_asked in [(1, 1), (2, 2), (3, 3), (5, 6)]:
-            picks = ["abdominal_pain", "acidity", "nausea", "vomiting", "indigestion"][:n_picked]
-            done = is_tree_done(picks, arts, n_asked)
-            print(f"  picked={n_picked} asked={n_asked} → done={done}")
-    except Exception as e:
-        print(f"  (skipped Q3+ test: {e})")
+        m = match_freet

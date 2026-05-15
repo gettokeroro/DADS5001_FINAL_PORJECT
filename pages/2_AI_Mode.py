@@ -40,6 +40,7 @@ from utils.ai_engine import (
     check_rate_limit,
     list_available_models,
     narrate_result,
+    narrate_cards,
 )
 from utils.scoring import (
     classify_confidence,
@@ -48,6 +49,7 @@ from utils.scoring import (
     suggest_co_symptoms,
 )
 from utils.styling import (
+    _DOCTOR_SVG,
     inject_ai_mode_css,
     inject_global_css,
     render_doctor_mascot,
@@ -386,7 +388,7 @@ elif st.session_state.ai8_step == "q3plus":
 
 
 # ===========================================================================
-# RESULT — Scoring + Gemma narrate + Top-3 + Drug/Hospital
+# RESULT — Scoring + card narrations + Top-3 + Drug/Hospital (mockup v4)
 # ===========================================================================
 elif st.session_state.ai8_step == "result":
     picked = st.session_state.ai8_picked
@@ -400,10 +402,13 @@ elif st.session_state.ai8_step == "result":
 
     st.markdown(_progress_dots("result"), unsafe_allow_html=True)
 
-    # Province filter (top of diagnosis page)
+    # Province filter in sidebar
     with st.sidebar:
         st.markdown("#### 🏥 กรองโรงพยาบาล")
-        all_provinces = sorted(hosp_df["province"].dropna().unique().tolist()) if not hosp_df.empty else []
+        all_provinces = (
+            sorted(hosp_df["province"].dropna().unique().tolist())
+            if not hosp_df.empty else []
+        )
         selected_prov = st.multiselect(
             "เลือกจังหวัด",
             options=all_provinces,
@@ -412,137 +417,137 @@ elif st.session_state.ai8_step == "result":
             placeholder="ทุกจังหวัด (ไม่กรอง)",
         )
 
-    # Run scoring + narrate (only once — cache in session state)
+    # ── Scoring + card narrations (run once, cache in session_state) ─────────
     if st.session_state.ai8_ranked is None:
-        allowed, _ = check_rate_limit(st.session_state, max_calls=MAX_CALLS,
-                                      counter_key="ai8_call_counter")
+        allowed, _ = check_rate_limit(
+            st.session_state, max_calls=MAX_CALLS, counter_key="ai8_call_counter"
+        )
         if not allowed:
             st.error(f"Rate limit ถึงแล้ว ({MAX_CALLS} calls/session) · กด 🔄 เริ่มใหม่ด้านซ้าย")
             st.stop()
 
-        with st.spinner("🏥 หนูกำลังวิเคราะห์อาการของพี่..."):
-            ranked   = predict(picked, arts, method="tfidf", top_k=3)
-            full_sc  = score_tfidf(picked, arts)
-            conf     = classify_confidence(full_sc, n_user_symptoms=len(picked))
+        with st.spinner("🏥 กำลังวิเคราะห์อาการ..."):
+            ranked  = predict(picked, arts, method="tfidf", top_k=3)
+            full_sc = score_tfidf(picked, arts)
+            conf    = classify_confidence(full_sc, n_user_symptoms=len(picked))
 
-            allowed2, _ = check_rate_limit(st.session_state, max_calls=MAX_CALLS,
-                                           counter_key="ai8_call_counter")
-            if not allowed2:
-                st.error("Rate limit ถึงแล้ว · ผลการ score ยังใช้ได้ แต่ไม่มี AI narrate")
-                narration = ""
-            else:
+            # Build Thai symptom labels for narration prompt
+            picked_th = []
+            for code in picked:
+                m = sym_dict[sym_dict["symptom_en"] == code]
+                picked_th.append(m["symptom_th"].iloc[0] if not m.empty else code)
+
+            # Card narrations via Gemma (JSON → list[str])
+            allowed2, _ = check_rate_limit(
+                st.session_state, max_calls=MAX_CALLS, counter_key="ai8_call_counter"
+            )
+            if allowed2:
                 try:
-                    # Build a synthetic "initial_text" from picked symptoms for narrate prompt
-                    picked_th = []
-                    for code in picked:
-                        match = sym_dict[sym_dict["symptom_en"] == code]
-                        picked_th.append(match["symptom_th"].iloc[0] if not match.empty else code)
-                    synth_text = "อาการ: " + ", ".join(picked_th)
-                    narration, _ = narrate_result(synth_text, ranked, mapping, api_key, confidence=conf)
-                except Exception as e:
-                    narration = f"*(ไม่สามารถสร้างคำอธิบายได้: {e})*"
+                    narrations, _ = narrate_cards(picked_th, ranked, mapping, api_key)
+                except Exception:
+                    narrations = ["", "", ""]
+            else:
+                narrations = ["", "", ""]
 
         st.session_state.ai8_ranked     = ranked
         st.session_state.ai8_confidence = conf
-        st.session_state.ai8_narration  = narration
+        st.session_state.ai8_narration  = narrations  # now list[str]
 
     # Pull from cache
-    ranked    = st.session_state.ai8_ranked
-    conf      = st.session_state.ai8_confidence
-    narration = st.session_state.ai8_narration
+    ranked     = st.session_state.ai8_ranked
+    conf       = st.session_state.ai8_confidence
+    narrations = st.session_state.ai8_narration
+    if isinstance(narrations, str):          # backward compat with old string format
+        narrations = [narrations, "", ""]
 
-    # --- Doctor mascot + confidence ---
-    _color_map = {"high": "🟢", "medium": "🟡", "low": "🔴", "very_low": "🔴"}
-    emoji_conf = _color_map.get(conf["level"], "🔵")
-    render_doctor_mascot(
-        f"สวัสดีค่ะ หนูวิเคราะห์อาการของพี่เสร็จแล้ว {emoji_conf}",
-        sub=f"ความมั่นใจ: {conf['label']} — {conf['reason']}",
+    # ── Blue header ──────────────────────────────────────────────────────────
+    st.markdown(
+        '<div class="diag-header">🩺 คำวินิจฉัยโรคของคุณคือ :</div>',
+        unsafe_allow_html=True,
     )
 
-    # Honest fallback banners
-    if conf["level"] == "very_low":
-        st.warning(
-            "⚠️ **ระบบไม่สามารถสรุปได้ชัดเจน** — ข้อมูลอาการยังน้อยเกินไป "
-            "ผลด้านล่างเป็น reference เท่านั้น · กรุณาปรึกษาแพทย์"
-        )
-    elif conf["level"] == "low":
-        st.info("ℹ️ **ผลด้านล่างใช้เป็น reference ประกอบการตัดสินใจ** — การปรึกษาแพทย์ยังปลอดภัยที่สุด")
-
-    # Basket summary
+    # Symptom basket
     st.markdown(
         "**อาการที่วิเคราะห์:** " + _tag_html(picked, sym_dict),
         unsafe_allow_html=True,
     )
-    st.markdown("")
 
-    # AI narration box
-    if narration:
+    # Confidence banners
+    if conf["level"] == "very_low":
+        st.warning(
+            "⚠️ **ระบบไม่สามารถสรุปได้ชัดเจน** — อาการน้อยเกินไป "
+            "ผลด้านล่างใช้เป็น reference เท่านั้น · กรุณาปรึกษาแพทย์"
+        )
+    elif conf["level"] == "low":
+        st.info(
+            "ℹ️ **ผลใช้เป็น reference ประกอบการตัดสินใจ** — ปรึกษาแพทย์เพื่อความแน่ใจ"
+        )
+
+    # ── Two-column layout: disease cards (left) + doctor mascot (right) ──────
+    col_main, col_mascot = st.columns([3, 1], gap="medium")
+
+    # ── RIGHT: Doctor mascot ─────────────────────────────────────────────────
+    with col_mascot:
+        _conf_emoji = {"high": "🟢", "medium": "🟡", "low": "🔴", "very_low": "🔴"}
+        _emoji = _conf_emoji.get(conf["level"], "🔵")
         st.markdown(
-            f'<div class="ai-narration">{narration}</div>',
+            f"""<div class="mascot-col-box">
+                  <div style="line-height:0">{_DOCTOR_SVG}</div>
+                  <div class="mascot-col-name">คุณหมอใจดี</div>
+                  <div class="mascot-col-line">"ไม่ต้องกังวลนะคะ มาฟังกัน"</div>
+                  <div class="mascot-col-line" style="margin-top:4px">
+                    ความมั่นใจ {_emoji} {conf['label']}<br>
+                    <span style="font-size:11px">{conf['reason']}</span>
+                  </div>
+                </div>""",
             unsafe_allow_html=True,
         )
 
-    # --- Top-3 disease cards ---
-    if ranked is not None and not ranked.empty:
-        enriched = ranked.merge(mapping, left_on="disease", right_on="disease_en", how="left")
+    # ── LEFT: Disease narration cards ────────────────────────────────────────
+    with col_main:
+        if ranked is not None and not ranked.empty:
+            enriched = ranked.merge(
+                mapping, left_on="disease", right_on="disease_en", how="left"
+            )
 
-        URGENCY = {
-            1: ("🟥 1 — Resuscitation (ฉุกเฉินทันที)", "error"),
-            2: ("🟧 2 — Emergent (รีบเข้า รพ.)", "warning"),
-            3: ("🟨 3 — Urgent (ภายใน 24 ชม.)", "warning"),
-            4: ("🟦 4 — Less urgent (ตามนัด)", "info"),
-            5: ("🟩 5 — Non-urgent (ไม่เร่งด่วน)", "success"),
-        }
+            URGENCY_LABEL = {
+                1: "🟥 ระดับ 1 — ฉุกเฉินทันที",
+                2: "🟧 ระดับ 2 — รีบเข้า รพ.",
+                3: "🟨 ระดับ 3 — ภายใน 24 ชม.",
+                4: "🟦 ระดับ 4 — นัดตามคิว",
+                5: "🟩 ระดับ 5 — ไม่เร่งด่วน",
+            }
 
-        st.markdown("---")
-        st.markdown("#### 🏆 ผลลัพธ์ Top-3 โรคที่ใกล้เคียง")
+            for i, (_, row) in enumerate(enriched.head(3).iterrows()):
+                rank_num   = i + 1
+                disease_th = row.get("disease_th") or row["disease"]
+                disease_en = row.get("disease_en") or row["disease"]
+                score      = float(row.get("primary_score", 0) or 0)
+                pct        = f"{score * 100:.0f}%"
+                narr       = narrations[i] if i < len(narrations) else ""
+                primary    = row.get("primary_specialty") or "—"
+                urg        = int(row["urgency_level"]) if pd.notna(row.get("urgency_level")) else 5
+                red_flags  = row.get("red_flags") or ""
+                disease_key = disease_en
 
-        for i, row in enriched.iterrows():
-            rank      = i + 1
-            disease_th = row.get("disease_th") or row["disease"]
-            primary   = row.get("primary_specialty") or "—"
-            urg       = int(row["urgency_level"]) if pd.notna(row.get("urgency_level")) else 5
-            red_flags = row.get("red_flags") or ""
-            urg_label, urg_kind = URGENCY[urg]
-            disease_key = row.get("disease_en") if pd.notna(row.get("disease_en")) else row["disease"]
+                # Narration card HTML
+                narr_html = (
+                    f'<div class="diag-quote">"{narr}"</div>' if narr
+                    else ""
+                )
+                st.markdown(
+                    f"""<div class="diag-narrate">
+                          <h3>{rank_num}. {disease_th} — โอกาส {pct}</h3>
+                          {narr_html}
+                        </div>""",
+                    unsafe_allow_html=True,
+                )
 
-            with st.container(border=True):
-                c1, c2 = st.columns([3, 1])
-                with c1:
-                    st.markdown(f"##### #{rank} · {disease_th}")
-                    st.caption(f"ICD-10: {row.get('icd10_code', '—')} · แผนกหลัก: {primary}")
-                with c2:
-                    getattr(st, urg_kind)(urg_label)
-
+                # Red flags warning
                 if red_flags:
-                    st.warning(f"⚠ Red flags: {red_flags}")
+                    st.warning(f"⚠ Red flags: {red_flags}", icon="⚠️")
 
-                # Drug panel
-                render_drug_panel(disease_key, drug_df)
-
-                # Hospital panel (with province filter)
-                if primary and primary != "—":
-                    render_hospital_panel(
-                        primary,
-                        hint_df,
-                        hospitals_df=hosp_df,
-                        keywords_dict=kw_dict,
-                        selected_provinces=selected_prov if selected_prov else None,
-                        key_suffix=f"_ai8_r{rank}_{disease_key}",
-                    )
-
-    # --- Action buttons ---
-    st.markdown("---")
-    col_a, col_b = st.columns(2)
-    with col_a:
-        if st.button("🔄 เริ่มใหม่", type="primary", use_container_width=True):
-            _reset()
-    with col_b:
-        with st.expander("🔧 Debug info"):
-            if st.session_state.ai8_ranked is not None:
-                cols_show = [c for c in
-                             ["disease", "primary_score", "n_matched", "coverage"]
-                             if c in ranked.columns]
-                st.dataframe(ranked[cols_show], use_container_width=True, hide_index=True)
-            st.json({"picked": picked, "q_count": st.session_state.ai8_q_count,
-                     "calls": st.session_state.ai8_call_counter})
+                # Drug + Hospital side-by-side (all 3 ranks)
+                c_drug, c_hosp = st.columns(2, gap="small")
+                with c_drug:
+            
