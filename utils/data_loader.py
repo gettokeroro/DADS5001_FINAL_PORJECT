@@ -370,29 +370,37 @@ def render_drug_panel(disease_en, drug_df):
             "ห้ามซื้อยา/ใช้ยาเอง · "
             "ยาเหล่านี้ต้องได้รับการสั่งโดยแพทย์/เภสัชกรเท่านั้น"
         )
-        for _, d in drugs.iterrows():
-            with st.container(border=True):
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.markdown(f"**{d.get(drug_name_col, '?')}** · {d.get('drug_th', '')}")
-                    if pd.notna(d.get('indication_th')):
-                        st.caption(f"📋 ข้อบ่งใช้: {d['indication_th']}")
-                    if pd.notna(d.get(dose_col)):
-                        st.caption(f"📏 ขนาดอ้างอิง: {d[dose_col]}")
-                    if is_v2 and pd.notna(d.get('reimbursement_note')):
-                        st.caption(f"💰 เบิก: {d['reimbursement_note']}")
-                    if is_v2 and pd.notna(d.get('prescription_tier')):
-                        if str(d['prescription_tier']).lower() == "strict":
-                            st.caption("🔒 ต้องสั่งโดยแพทย์เฉพาะทาง")
-                with col2:
-                    cat_val = d.get(cat_col)
-                    st.markdown(f"บัญชี **{cat_val if pd.notna(cat_val) else '—'}**")
-                    if is_v2:
-                        badge = drug_payment_badge(cat_val)
-                        st.markdown(
-                            f"{badge['emoji']} **{badge['label']}**"
-                        )
-                        st.caption(badge["sub_label"])
+        # v2 (2026-05-15): scroll ถ้ายา ≥5 รายการ — ไม่ดัน layout ยาว
+        scroll_h = 400 if len(drugs) >= 5 else None
+        scroll_ct = (
+            st.container(height=scroll_h)
+            if scroll_h
+            else st.container()
+        )
+        with scroll_ct:
+            for _, d in drugs.iterrows():
+                with st.container(border=True):
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        st.markdown(f"**{d.get(drug_name_col, '?')}** · {d.get('drug_th', '')}")
+                        if pd.notna(d.get('indication_th')):
+                            st.caption(f"📋 ข้อบ่งใช้: {d['indication_th']}")
+                        if pd.notna(d.get(dose_col)):
+                            st.caption(f"📏 ขนาดอ้างอิง: {d[dose_col]}")
+                        if is_v2 and pd.notna(d.get('reimbursement_note')):
+                            st.caption(f"💰 เบิก: {d['reimbursement_note']}")
+                        if is_v2 and pd.notna(d.get('prescription_tier')):
+                            if str(d['prescription_tier']).lower() == "strict":
+                                st.caption("🔒 ต้องสั่งโดยแพทย์เฉพาะทาง")
+                    with col2:
+                        cat_val = d.get(cat_col)
+                        st.markdown(f"บัญชี **{cat_val if pd.notna(cat_val) else '—'}**")
+                        if is_v2:
+                            badge = drug_payment_badge(cat_val)
+                            st.markdown(
+                                f"{badge['emoji']} **{badge['label']}**"
+                            )
+                            st.caption(badge["sub_label"])
 
 
 def render_hospital_panel(specialty, hint_df, hospitals_df=None, keywords_dict=None,

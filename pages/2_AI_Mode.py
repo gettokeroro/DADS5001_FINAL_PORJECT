@@ -540,20 +540,17 @@ elif st.session_state.ai8_step == "result":
                 if red_flags:
                     st.warning(f"⚠ Red flags: {red_flags}", icon="⚠️")
 
-                # Drug + Hospital side-by-side (all 3 ranks)
-                c_drug, c_hosp = st.columns(2, gap="small")
-                with c_drug:
-                    render_drug_panel(disease_key, drug_df)
-                with c_hosp:
-                    if primary and primary != "—":
-                        render_hospital_panel(
-                            primary,
-                            hint_df,
-                            hospitals_df=hosp_df,
-                            keywords_dict=kw_dict,
-                            selected_provinces=selected_prov if selected_prov else None,
-                            key_suffix=f"_ai8_r{rank_num}_{disease_key}",
-                        )
+                # Drug + Hospital — stacked vertically (minimal · easier to read when expanded)
+                render_drug_panel(disease_key, drug_df)
+                if primary and primary != "—":
+                    render_hospital_panel(
+                        primary,
+                        hint_df,
+                        hospitals_df=hosp_df,
+                        keywords_dict=kw_dict,
+                        selected_provinces=selected_prov if selected_prov else None,
+                        key_suffix=f"_ai8_r{rank_num}_{disease_key}",
+                    )
 
                 # Urgency badge below each card
                 st.caption(
