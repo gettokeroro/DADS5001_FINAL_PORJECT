@@ -453,33 +453,42 @@ def render_hospital_panel(specialty, hint_df, hospitals_df=None, keywords_dict=N
     with st.expander(label + suffix):
         if hint_row is not None and pd.notna(hint_row.get("note")):
             st.caption(f"💡 {hint_row['note']}")
-        for _, r in sub.iterrows():
-            with st.container(border=True):
-                c1, c2 = st.columns([3, 1])
-                with c1:
-                    st.markdown(f"**{r['hospital_th']}**  \n*{r.get('hospital_en', '')}*")
-                    st.caption(
-                        f"📍 {r['province']} · "
-                        f"{r.get('hospital_type', '—')} · "
-                        f"{r.get('affiliation', '—')}"
-                    )
-                    note = r.get("specialty_note")
-                    if pd.notna(note) and str(note).strip():
-                        s = str(note)
-                        display = s[:200] + ("..." if len(s) > 200 else "")
-                        st.markdown(f"🩺 {display}")
-                    # Google Maps link — ใส่จังหวัดเพื่อให้ Google resolve แม่นยำ
-                    maps_url = google_maps_url(
-                        r["hospital_th"], r.get("province")
-                    )
-                    st.markdown(
-                        f"📞 [โทร · ดูแผนที่บน Google Maps]({maps_url})"
-                    )
-                with c2:
-                    # Insurance badge — replaces former 'beds' metric
-                    badge = hospital_insurance_badge(r.get("affiliation"))
-                    st.markdown(
-                        f"{badge['emoji']} **สิทธิที่รับ**"
-                    )
-                    st.caption(badge["label"])
-                    st.caption(f"H Code: {r.get('h_code', '—')}")
+        # v2 (2026-05-15): scrollable container — กล่อง รพ.ยาวเกินดัน layout
+        # ใช้ height=500 เฉพาะเมื่อมี รพ. ≥3 แห่ง (≤2 ไม่ scroll เปลือง)
+        scroll_height = 500 if len(sub) >= 3 else None
+        scroll_container = (
+            st.container(height=scroll_height)
+            if scroll_height
+            else st.container()
+        )
+        with scroll_container:
+            for _, r in sub.iterrows():
+                with st.container(border=True):
+                    c1, c2 = st.columns([3, 1])
+                    with c1:
+                        st.markdown(f"**{r['hospital_th']}**  \n*{r.get('hospital_en', '')}*")
+                        st.caption(
+                            f"📍 {r['province']} · "
+                            f"{r.get('hospital_type', '—')} · "
+                            f"{r.get('affiliation', '—')}"
+                        )
+                        note = r.get("specialty_note")
+                        if pd.notna(note) and str(note).strip():
+                            s = str(note)
+                            display = s[:200] + ("..." if len(s) > 200 else "")
+                            st.markdown(f"🩺 {display}")
+                        # Google Maps link — ใส่จังหวัดเพื่อให้ Google resolve แม่นยำ
+                        maps_url = google_maps_url(
+                            r["hospital_th"], r.get("province")
+                        )
+                        st.markdown(
+                            f"📞 [โทร · ดูแผนที่บน Google Maps]({maps_url})"
+                        )
+                    with c2:
+                        # Insurance badge — replaces former 'beds' metric
+                        badge = hospital_insurance_badge(r.get("affiliation"))
+                        st.markdown(
+                            f"{badge['emoji']} **สิทธิที่รับ**"
+                        )
+                        st.caption(badge["label"])
+                        st.caption(f"H Code: {r.get('h_code', '—')}")

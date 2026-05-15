@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Character Mockup v2 — Chansey-true</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Noto Sans Thai', sans-serif; background: #FAFAFA; padding: 24px; max-width: 1100px; margin: 0 auto; color: #1a1a1a; line-height: 1.6; }
+  h1 { font-size: 22px; font-weight: 500; margin: 0 0 6px; color: #042C53; }
+  .meta { font-size: 13px; color: #5F5E5A; margin-bottom: 24px; }
+  .note { background: #FFF9C4; border: 1px solid #FBC02D; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #5D4037; margin-bottom: 24px; }
+  .note b { color: #BF360C; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-bottom: 28px; }
+  .card { background: white; border: 1px solid #E0E0E0; border-radius: 14px; padding: 20px; }
+  .card h2 { font-size: 17px; margin: 0 0 4px; color: #042C53; font-weight: 600; }
+  .card .sub { font-size: 12px; color: #5F5E5A; margin-bottom: 14px; }
+  .mascot-frame { background: #FBEAF0; border: 1.5px solid #F4C0D1; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+  .mascot-frame.doctor { background: #FFF7DE; border-color: #F8D898; }
+  .name { font-size: 15px; font-weight: 700; color: #4B1528; }
+  .doctor .name { color: #6B5028; }
+  .line { font-size: 13px; color: #72243E; font-style: italic; line-height: 1.5; max-width: 240px; }
+  .doctor .line { color: #6B5028; }
+
+  .row-sizes { display: flex; gap: 12px; justify-content: center; align-items: flex-end; margin: 10px 0; }
+  .size-label { font-size: 11px; color: #5F5E5A; margin-top: 4px; }
+
+  .compare-section { background: #F4F8FC; border: 1px solid #B5D4F4; border-radius: 12px; padding: 16px 18px; margin-top: 16px; }
+  .compare-section h3 { font-size: 14px; margin: 0 0 10px; color: #042C53; }
+  ul.feat { margin: 0 0 0 18px; padding: 0; font-size: 13px; color: #042C53; }
+  ul.feat li { margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<h1>🎨 Character v2 — Chansey-true (ตัวเดียวกลม + หมอใส่แว่น)</h1>
+<div class="meta">DADS5001 · 2026-05-15 · แก้จาก v1 ที่ "หัว/ตัวแยกกัน" → v2 ออกแบบใหม่ ตัวกลมต่อเนื่อง ไม่มี neck</div>
+
+<div class="note">
+  <b>ความเปลี่ยนแปลงจาก v1:</b><br>
+  ① ใช้ <b>egg-shaped blob เดียว</b> ไม่แยกหัว+ตัว (v1 มี ellipse 2 ตัวซ้อนกันทำให้ดูเหมือนหัวลอย)<br>
+  ② น้องอุ่นใน: เพิ่ม <b>hair curls บนหัว</b> แบบ chansey signature + พุงขาว<br>
+  ③ หมอใจดี: <b>สีเหลืองพาสเทล</b> ใส่แว่นกลมใหญ่ มี stethoscope พาดตัว
+</div>
+
+<div class="grid">
+  <!-- น้องอุ่นใน -->
+  <div class="card">
+    <h2>👶 น้องอุ่นใน (Chansey-true)</h2>
+    <div class="sub">สีชมพูพาสเทล · egg-shape ตัวเดียว · หมวกพยาบาล + heart pill</div>
+    <div class="mascot-frame">
+      <svg viewBox="0 0 140 170" width="160" height="195">
+        <defs>
+          <radialGradient id="N_body" cx="38%" cy="28%" r="78%">
+            <stop offset="0%" stop-color="#FFF0F6"/>
+            <stop offset="55%" stop-color="#FFC8DD"/>
+            <stop offset="100%" stop-color="#FF8FB5"/>
+          </radialGradient>
+          <radialGradient id="N_iris" cx="30%" cy="28%" r="72%">
+            <stop offset="0%" stop-color="#7C3996"/>
+            <stop offset="100%" stop-color="#2C1050"/>
+          </radialGradient>
+        </defs>
+
+        <!-- One unified egg body (slightly taller than wide) -->
+        <ellipse cx="70" cy="92" rx="56" ry="66" fill="url(#N_body)" stroke="#FF80A8" stroke-width="2"/>
+
+        <!-- White belly patch (pouch) -->
+        <ellipse cx="70" cy="125" rx="34" ry="25" fill="white" opacity="0.75" stroke="#FFAAC4" stroke-width="0.6"/>
+
+        <!-- Tiny stub arms (chansey flippers) -->
+        <ellipse cx="18" cy="98" rx="9" ry="15" fill="url(#N_body)" stroke="#FF80A8" stroke-width="1.5" transform="rotate(-12 18 98)"/>
+        <ellipse cx="122" cy="98" rx="9" ry="15" fill="url(#N_body)" stroke="#FF80A8" stroke-width="1.5" transform="rotate(12 122 98)"/>
+
+        <!-- Hair curls on top (chansey signature: 3 little tufts) -->
+        <path d="M 48 30 Q 44 18 52 20 Q 54 14 58 22" fill="url(#N_body)" stroke="#FF80A8" stroke-width="1.4" stroke-linejoin="round"/>
+        <path d="M 64 28 Q 60 14 68 16 Q 72 8 76 18 Q 80 14 78 26" fill="url(#N_body)" stroke="#FF80A8" stroke-width="1.4" stroke-linejoin="round"/>
+        <path d="M 82 30 Q 84 18 92 22 Q 96 16 96 28" fill="url(#N_body)" stroke="#FF80A8" stroke-width="1.4" stroke-linejoin="round"/>
+
+        <!-- Nurse cap (sits on hair) -->
+        <ellipse cx="70" cy="20" rx="26" ry="6" fill="white" stroke="#E0D0DB" stroke-width="0.8"/>
+        <rect x="55" y="12" width="30" height="11" rx="4" fill="white" stroke="#E0D0DB" stroke-width="0.8"/>
+        <rect x="66" y="14" width="8" height="2.5" rx="0.5" fill="#E53935"/>
+        <rect x="68.5" y="11.5" width="3" height="7.5" rx="0.5" fill="#E53935"/>
+
+        <!-- Eyes: chansey-style small but expressive ovals with big sparkle -->
+        <ellipse cx="48" cy="78" rx="6.5" ry="9" fill="url(#N_iris)"/>
+        <ellipse cx="92" cy="78" rx="6.5" ry="9" fill="url(#N_iris)"/>
+        <circle cx="48" cy="80" r="4" fill="#0C0418"/>
+        <circle cx="92" cy="80" r="4" fill="#0C0418"/>
+        <circle cx="51" cy="74" r="2.8" fill="white"/>
+        <circle cx="95" cy="74" r="2.8" fill="white"/>
+        <circle cx="45" cy="82" r="1.2" fill="white" opacity="0.7"/>
+        <circle cx="89" cy="82" r="1.2" fill="white" opacity="0.7"/>
+
+        <!-- Tiny eyebrows -->
+        <path d="M 40 64 Q 48 60 56 64" stroke="#7C3996" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.6"/>
+        <path d="M 84 64 Q 92 60 100 64" stroke="#7C3996" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.6"/>
+
+        <!-- Blush cheeks -->
+        <ellipse cx="28" cy="95" rx="10" ry="6" fill="#FF6090" opacity="0.35"/>
+        <ellipse cx="112" cy="95" rx="10" ry="6" fill="#FF6090" opacity="0.35"/>
+
+        <!-- Mouth: smile -->
+        <path d="M 58 100 Q 70 110 82 100" stroke="#E03060" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="70" cy="105" rx="6" ry="3" fill="#FFAAC4" opacity="0.5"/>
+
+        <!-- Heart pill on belly -->
+        <path d="M 70 138 C 70 138 62 130 62 124 Q 62 119 67 119 Q 70 120 70 123 Q 70 120 73 119 Q 78 119 78 124 C 78 130 70 138 70 138 Z" fill="#E53935"/>
+        <path d="M 65 124 Q 66 121 68 121" stroke="white" stroke-width="1.2" fill="none" opacity="0.7"/>
+      </svg>
+      <div class="name">น้องอุ่นใน 💕</div>
+      <div class="line">"สวัสดีค่ะ หนูชื่อ น้องอุ่นใน 😊 วันนี้พี่มีอาการอะไรมาคะ?"</div>
+    </div>
+  </div>
+
+  <!-- หมอใจดี -->
+  <div class="card">
+    <h2>👓 หมอใจดี (Yellow pastel + glasses)</h2>
+    <div class="sub">สีเหลืองพาสเทล · egg-shape · แว่นกลม · stethoscope พาดตัว</div>
+    <div class="mascot-frame doctor">
+      <svg viewBox="0 0 140 170" width="160" height="195">
+        <defs>
+          <radialGradient id="D_body" cx="38%" cy="28%" r="78%">
+            <stop offset="0%" stop-color="#FFFCEF"/>
+            <stop offset="55%" stop-color="#FFE9A8"/>
+            <stop offset="100%" stop-color="#F4CD6B"/>
+          </radialGradient>
+          <radialGradient id="D_iris" cx="30%" cy="28%" r="72%">
+            <stop offset="0%" stop-color="#3478A3"/>
+            <stop offset="100%" stop-color="#0A2540"/>
+          </radialGradient>
+        </defs>
+
+        <!-- One unified egg body, yellow pastel -->
+        <ellipse cx="70" cy="92" rx="56" ry="66" fill="url(#D_body)" stroke="#E8B66E" stroke-width="2"/>
+
+        <!-- White doctor coat lapel (curved V opening at bottom) -->
+        <path d="M 30 120 Q 50 158 70 158 Q 90 158 110 120 L 105 156 L 35 156 Z" fill="white" opacity="0.85" stroke="#E0E0E0" stroke-width="0.7"/>
+        <line x1="55" y1="130" x2="70" y2="148" stroke="#D0D0D0" stroke-width="0.8"/>
+        <line x1="85" y1="130" x2="70" y2="148" stroke="#D0D0D0" stroke-width="0.8"/>
+        <!-- Buttons -->
+        <circle cx="70" cy="135" r="1.3" fill="#B0B0B0"/>
+        <circle cx="70" cy="143" r="1.3" fill="#B0B0B0"/>
+
+        <!-- Tiny stub arms -->
+        <ellipse cx="18" cy="98" rx="9" ry="15" fill="url(#D_body)" stroke="#E8B66E" stroke-width="1.5" transform="rotate(-12 18 98)"/>
+        <ellipse cx="122" cy="98" rx="9" ry="15" fill="url(#D_body)" stroke="#E8B66E" stroke-width="1.5" transform="rotate(12 122 98)"/>
+
+        <!-- Brown hair tuft on top (single curl) -->
+        <path d="M 60 28 Q 56 14 66 18 Q 70 8 76 18 Q 84 14 80 30" fill="#8D6E63" stroke="#5D4037" stroke-width="1" stroke-linejoin="round"/>
+        <path d="M 64 22 Q 70 14 76 22" stroke="#5D4037" stroke-width="0.8" fill="none" opacity="0.4"/>
+
+        <!-- Round glasses (cute big) -->
+        <circle cx="48" cy="80" r="15" fill="rgba(255,255,255,0.55)" stroke="#5D4037" stroke-width="2.6"/>
+        <circle cx="92" cy="80" r="15" fill="rgba(255,255,255,0.55)" stroke="#5D4037" stroke-width="2.6"/>
+        <path d="M 63 80 Q 70 76 77 80" stroke="#5D4037" stroke-width="2.4" fill="none"/>
+        <!-- Glasses temples -->
+        <line x1="33" y1="76" x2="22" y2="74" stroke="#5D4037" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="107" y1="76" x2="118" y2="74" stroke="#5D4037" stroke-width="1.8" stroke-linecap="round"/>
+
+        <!-- Eyes inside glasses -->
+        <ellipse cx="48" cy="82" rx="5" ry="6.5" fill="url(#D_iris)"/>
+        <ellipse cx="92" cy="82" rx="5" ry="6.5" fill="url(#D_iris)"/>
+        <circle cx="48" cy="83" r="2.8" fill="#050E20"/>
+        <circle cx="92" cy="83" r="2.8" fill="#050E20"/>
+        <circle cx="51" cy="78" r="2.2" fill="white"/>
+        <circle cx="95" cy="78" r="2.2" fill="white"/>
+
+        <!-- Blush -->
+        <ellipse cx="26" cy="102" rx="10" ry="6" fill="#FFAA88" opacity="0.32"/>
+        <ellipse cx="114" cy="102" rx="10" ry="6" fill="#FFAA88" opacity="0.32"/>
+
+        <!-- Gentle smile -->
+        <path d="M 58 104 Q 70 113 82 104" stroke="#A06040" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="70" cy="108" rx="6" ry="2.5" fill="#E8B66E" opacity="0.45"/>
+
+        <!-- Stethoscope draped over body -->
+        <path d="M 50 118 Q 30 124 28 140 Q 26 154 38 154" stroke="#37474F" stroke-width="2.4" fill="none"/>
+        <path d="M 90 118 Q 110 124 112 140" stroke="#37474F" stroke-width="2.4" fill="none"/>
+        <circle cx="38" cy="154" r="6.5" fill="#546E7A" stroke="#263238" stroke-width="1.3"/>
+        <circle cx="38" cy="154" r="3.2" fill="#37474F"/>
+        <circle cx="38" cy="154" r="1.2" fill="#B0BEC5"/>
+      </svg>
+      <div class="name">หมอใจดี 🩺</div>
+      <div class="line">"ไม่ต้องกังวลนะคะ มาฟังกัน — ผมจะอธิบายให้ละเอียดเลยค่ะ"</div>
+    </div>
+  </div>
+</div>
+
+<!-- Size preview -->
+<div class="compare-section">
+  <h3>📏 Preview ขนาดที่จะใช้จริงใน Streamlit (vertical card layout)</h3>
+  <div class="row-sizes">
+    <div style="text-align:center">
+      <div class="mascot-frame" style="width: 200px; padding: 14px;">
+        <svg viewBox="0 0 140 170" width="120" height="146">
+          <use href="#nurse_small_def"/>
+          <ellipse cx="70" cy="92" rx="56" ry="66" fill="#FFC8DD" stroke="#FF80A8" stroke-width="2"/>
+          <ellipse cx="70" cy="125" rx="34" ry="25" fill="white" opacity="0.75"/>
+          <ellipse cx="70" cy="20" rx="26" ry="6" fill="white" stroke="#E0D0DB" stroke-width="0.8"/>
+          <rect x="55" y="12" width="30" height="11" rx="4" fill="white" stroke="#E0D0DB" stroke-width="0.8"/>
+          <rect x="66" y="14" width="8" height="2.5" fill="#E53935"/>
+          <rect x="68.5" y="11.5" width="3" height="7.5" fill="#E53935"/>
+          <circle cx="48" cy="78" r="6.5" fill="#2C1050"/>
+          <circle cx="92" cy="78" r="6.5" fill="#2C1050"/>
+          <circle cx="51" cy="74" r="2.8" fill="white"/>
+          <circle cx="95" cy="74" r="2.8" fill="white"/>
+          <ellipse cx="28" cy="95" rx="10" ry="6" fill="#FF6090" opacity="0.35"/>
+          <ellipse cx="112" cy="95" rx="10" ry="6" fill="#FF6090" opacity="0.35"/>
+          <path d="M 58 100 Q 70 110 82 100" stroke="#E03060" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <path d="M 70 138 C 70 138 62 130 62 124 Q 62 119 67 119 Q 70 120 70 123 Q 70 120 73 119 Q 78 119 78 124 C 78 130 70 138 70 138 Z" fill="#E53935"/>
+        </svg>
+        <div class="name">น้องอุ่นใน</div>
+        <div class="line" style="font-size:11px">"สวัสดีค่ะ"</div>
+      </div>
+      <div class="size-label">size ใน sidebar column (200px wide)</div>
+    </div>
+
+    <div style="text-align:center">
+      <div class="mascot-frame doctor" style="width: 200px; padding: 14px;">
+        <svg viewBox="0 0 140 170" width="120" height="146">
+          <ellipse cx="70" cy="92" rx="56" ry="66" fill="#FFE9A8" stroke="#E8B66E" stroke-width="2"/>
+          <path d="M 30 120 Q 50 158 70 158 Q 90 158 110 120 L 105 156 L 35 156 Z" fill="white" opacity="0.85"/>
+          <circle cx="48" cy="80" r="15" fill="rgba(255,255,255,0.55)" stroke="#5D4037" stroke-width="2.6"/>
+          <circle cx="92" cy="80" r="15" fill="rgba(255,255,255,0.55)" stroke="#5D4037" stroke-width="2.6"/>
+          <path d="M 63 80 Q 70 76 77 80" stroke="#5D4037" stroke-width="2.4" fill="none"/>
+          <circle cx="48" cy="83" r="2.8" fill="#050E20"/>
+          <circle cx="92" cy="83" r="2.8" fill="#050E20"/>
+          <circle cx="51" cy="78" r="2.2" fill="white"/>
+          <circle cx="95" cy="78" r="2.2" fill="white"/>
+          <path d="M 58 104 Q 70 113 82 104" stroke="#A06040" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div class="name">หมอใจดี</div>
+        <div class="line" style="font-size:11px">"ไม่ต้องกังวลนะคะ"</div>
+      </div>
+      <div class="size-label">size ใน sidebar column (200px wide)</div>
+    </div>
+  </div>
+</div>
+
+<div class="compare-section" style="background:#E8F5E9;border-color:#A5D6A7;">
+  <h3>✅ ฟีเจอร์ที่ปรับใน v2</h3>
+  <ul class="feat">
+    <li><b>ตัวเดียวกลม</b> — ใช้ ellipse เดียว (rx=56, ry=66) ไม่มี neck/หัวลอย</li>
+    <li><b>Chansey signature</b> — น้องอุ่นในมี 3 hair curls บนหัว + พุงขาว + flipper arms ทั้ง 2 ข้าง</li>
+    <li><b>หมอใจดีโทนใหม่</b> — สีเหลืองพาสเทล (#FFE9A8 → #F4CD6B gradient) + แว่นกลมใหญ่สีน้ำตาล + stethoscope พาดทั้งตัว</li>
+    <li><b>ตา + sparkle</b> — ตาใหญ่ขึ้น มี sparkle 2 จุด (highlight + secondary dot) ดูมีชีวิตชีวา</li>
+    <li><b>หมอใจดีใส่เสื้อกาวน์</b> — มี V-neck + 2 กระดุม ดูเป็นแพทย์</li>
+  </ul>
+</div>
+
+</body>
+</html>

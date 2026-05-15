@@ -110,8 +110,17 @@ def inject_ai_mode_css() -> None:
         f".ai-screen .ai-sub{{color:{AI_SUB_TEXT} !important;font-size:13px;font-weight:400;}}",
         f".ai-mascot-box{{display:flex;align-items:center;gap:16px;background:rgba(255,255,255,0.72);border:1.5px solid {AI_BORDER};border-radius:12px;padding:12px 18px;margin-bottom:18px;}}",
         ".ai-mascot-box svg{flex-shrink:0;}",
-        f".ai-mascot-speech{{color:{AI_BODY_TEXT} !important;font-size:15px;font-weight:600;line-height:1.55;}}",
+        f".ai-mascot-speech{{color:{AI_BODY_TEXT} !important;font-weight:600;line-height:1.55;}}",
         f".ai-mascot-speech .ai-sub{{display:block;font-weight:400;font-size:13px;color:{AI_SUB_TEXT} !important;margin-top:4px;}}",
+        # v2 vertical card layout (mascot ด้านบน · ชื่อ · คำพูด)
+        ".ai-mascot-vcard{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;background:rgba(255,248,251,0.85);border:1.5px solid #F4C0D1;border-radius:14px;padding:16px 20px;margin:0 auto 18px;max-width:420px;}",
+        ".ai-mascot-vcard.doctor{background:rgba(255,252,232,0.85);border-color:#F8D898;}",
+        ".ai-mascot-vcard svg{display:block;width:130px;height:auto;}",
+        f".ai-mascot-vcard .vc-name{{font-size:15px;font-weight:700;color:#4B1528;letter-spacing:0.2px;}}",
+        ".ai-mascot-vcard.doctor .vc-name{color:#6B5028;}",
+        f".ai-mascot-vcard .vc-speech{{font-size:14px;font-weight:500;line-height:1.6;color:#4B1528;max-width:340px;}}",
+        ".ai-mascot-vcard.doctor .vc-speech{color:#6B5028;}",
+        f".ai-mascot-vcard .ai-sub{{display:block;font-size:12px;font-weight:400;font-style:italic;color:{AI_SUB_TEXT} !important;margin-top:6px;}}",
         f".ai-tag{{display:inline-block;background:#E3F2FD;border:1px solid {AI_BORDER};border-radius:20px;padding:3px 11px;margin:3px 4px 3px 0;font-size:12px;color:{AI_BODY_TEXT} !important;font-weight:500;}}",
         f".ai-progress{{display:flex;align-items:center;gap:8px;margin-bottom:14px;}}",
         f".ai-dot{{width:9px;height:9px;border-radius:50%;background:{AI_BORDER};}}",
@@ -138,113 +147,140 @@ def inject_ai_mode_css() -> None:
 
 
 _NURSE_SVG = (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 168" width="96" height="134">'
+    # v2 (2026-05-15): Chansey-true — egg-shape blob เดียว ไม่แยก head/body
+    # · hair curls 3 จุดแบบ chansey signature · พุงขาว · flipper arms · หมวก + heart pill
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 170" width="140" height="170">'
     '<defs>'
-    '<radialGradient id="nc_face" cx="38%" cy="32%" r="66%">'
-    '<stop offset="0%" stop-color="#FFF5F8"/>'
-    '<stop offset="100%" stop-color="#FFBACF"/>'
-    '</radialGradient>'
-    '<radialGradient id="nc_body" cx="40%" cy="20%" r="80%">'
-    '<stop offset="0%" stop-color="#FFDAEC"/>'
+    '<radialGradient id="nv2_body" cx="38%" cy="28%" r="78%">'
+    '<stop offset="0%" stop-color="#FFF0F6"/>'
+    '<stop offset="55%" stop-color="#FFC8DD"/>'
     '<stop offset="100%" stop-color="#FF8FB5"/>'
     '</radialGradient>'
-    '<radialGradient id="nc_iris" cx="30%" cy="28%" r="72%">'
-    '<stop offset="0%" stop-color="#9B59B6"/>'
+    '<radialGradient id="nv2_iris" cx="30%" cy="28%" r="72%">'
+    '<stop offset="0%" stop-color="#7C3996"/>'
     '<stop offset="100%" stop-color="#2C1050"/>'
     '</radialGradient>'
     '</defs>'
-    '<ellipse cx="60" cy="148" rx="26" ry="18" fill="url(#nc_body)" stroke="#FF80A8" stroke-width="1.2"/>'
-    '<path d="M48 134 L60 144 L72 134" fill="white" stroke="#FFAAC4" stroke-width="0.8" opacity="0.85"/>'
-    '<circle cx="60" cy="57" r="48" fill="url(#nc_face)" stroke="#FFC0D8" stroke-width="1.5"/>'
-    '<ellipse cx="60" cy="13" rx="26" ry="7" fill="white" stroke="#E0D0DB" stroke-width="0.8"/>'
-    '<rect x="46" y="7" width="28" height="10" rx="5" fill="white" stroke="#E0D0DB" stroke-width="0.8"/>'
-    '<rect x="57.5" y="8.5" width="5" height="2" rx="1" fill="#E53935"/>'
-    '<rect x="59.5" y="6.5" width="2" height="6" rx="1" fill="#E53935"/>'
-    '<ellipse cx="41" cy="61" rx="13" ry="15" fill="white" stroke="#F0D0E0" stroke-width="0.6"/>'
-    '<circle cx="41" cy="62.5" r="10" fill="url(#nc_iris)"/>'
-    '<circle cx="41" cy="64" r="5.8" fill="#0C0418"/>'
-    '<circle cx="46" cy="56.5" r="3.8" fill="white" opacity="0.95"/>'
-    '<circle cx="36.5" cy="65.5" r="1.8" fill="white" opacity="0.7"/>'
-    '<circle cx="44.5" cy="69.5" r="1.1" fill="white" opacity="0.55"/>'
-    '<ellipse cx="79" cy="61" rx="13" ry="15" fill="white" stroke="#F0D0E0" stroke-width="0.6"/>'
-    '<circle cx="79" cy="62.5" r="10" fill="url(#nc_iris)"/>'
-    '<circle cx="79" cy="64" r="5.8" fill="#0C0418"/>'
-    '<circle cx="84" cy="56.5" r="3.8" fill="white" opacity="0.95"/>'
-    '<circle cx="74.5" cy="65.5" r="1.8" fill="white" opacity="0.7"/>'
-    '<circle cx="82.5" cy="69.5" r="1.1" fill="white" opacity="0.55"/>'
-    '<path d="M29 53 Q35 46 42 50" stroke="#4A1870" stroke-width="1.6" fill="none" stroke-linecap="round"/>'
-    '<path d="M78 50 Q85 46 91 53" stroke="#4A1870" stroke-width="1.6" fill="none" stroke-linecap="round"/>'
-    '<ellipse cx="24" cy="75" rx="11" ry="7" fill="#FF6090" opacity="0.25"/>'
-    '<ellipse cx="96" cy="75" rx="11" ry="7" fill="#FF6090" opacity="0.25"/>'
-    '<circle cx="60" cy="80" r="1.8" fill="#FFAAC0" opacity="0.65"/>'
-    '<path d="M46 88 Q60 104 74 88" stroke="#E03060" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
-    '<path d="M52 99 Q60 103 68 99" stroke="#E03060" stroke-width="1.3" fill="#FFD0E0" opacity="0.6"/>'
-    '<path d="M60 158 C60 158 53 151 53 146 Q53 142 57 142 Q59.5 142 60 145 Q60.5 142 63 142 Q67 142 67 146 C67 151 60 158 60 158 Z" fill="#E53935"/>'
+    # Unified egg body
+    '<ellipse cx="70" cy="92" rx="56" ry="66" fill="url(#nv2_body)" stroke="#FF80A8" stroke-width="2"/>'
+    # White belly patch
+    '<ellipse cx="70" cy="125" rx="34" ry="25" fill="white" opacity="0.75" stroke="#FFAAC4" stroke-width="0.6"/>'
+    # Stub flipper arms
+    '<ellipse cx="18" cy="98" rx="9" ry="15" fill="url(#nv2_body)" stroke="#FF80A8" stroke-width="1.5" transform="rotate(-12 18 98)"/>'
+    '<ellipse cx="122" cy="98" rx="9" ry="15" fill="url(#nv2_body)" stroke="#FF80A8" stroke-width="1.5" transform="rotate(12 122 98)"/>'
+    # Hair curls (chansey signature, 3 tufts)
+    '<path d="M 48 30 Q 44 18 52 20 Q 54 14 58 22" fill="url(#nv2_body)" stroke="#FF80A8" stroke-width="1.4" stroke-linejoin="round"/>'
+    '<path d="M 64 28 Q 60 14 68 16 Q 72 8 76 18 Q 80 14 78 26" fill="url(#nv2_body)" stroke="#FF80A8" stroke-width="1.4" stroke-linejoin="round"/>'
+    '<path d="M 82 30 Q 84 18 92 22 Q 96 16 96 28" fill="url(#nv2_body)" stroke="#FF80A8" stroke-width="1.4" stroke-linejoin="round"/>'
+    # Nurse cap
+    '<ellipse cx="70" cy="20" rx="26" ry="6" fill="white" stroke="#E0D0DB" stroke-width="0.8"/>'
+    '<rect x="55" y="12" width="30" height="11" rx="4" fill="white" stroke="#E0D0DB" stroke-width="0.8"/>'
+    '<rect x="66" y="14" width="8" height="2.5" rx="0.5" fill="#E53935"/>'
+    '<rect x="68.5" y="11.5" width="3" height="7.5" rx="0.5" fill="#E53935"/>'
+    # Eyes
+    '<ellipse cx="48" cy="78" rx="6.5" ry="9" fill="url(#nv2_iris)"/>'
+    '<ellipse cx="92" cy="78" rx="6.5" ry="9" fill="url(#nv2_iris)"/>'
+    '<circle cx="48" cy="80" r="4" fill="#0C0418"/>'
+    '<circle cx="92" cy="80" r="4" fill="#0C0418"/>'
+    '<circle cx="51" cy="74" r="2.8" fill="white"/>'
+    '<circle cx="95" cy="74" r="2.8" fill="white"/>'
+    '<circle cx="45" cy="82" r="1.2" fill="white" opacity="0.7"/>'
+    '<circle cx="89" cy="82" r="1.2" fill="white" opacity="0.7"/>'
+    # Eyebrows
+    '<path d="M 40 64 Q 48 60 56 64" stroke="#7C3996" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.6"/>'
+    '<path d="M 84 64 Q 92 60 100 64" stroke="#7C3996" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.6"/>'
+    # Blush
+    '<ellipse cx="28" cy="95" rx="10" ry="6" fill="#FF6090" opacity="0.35"/>'
+    '<ellipse cx="112" cy="95" rx="10" ry="6" fill="#FF6090" opacity="0.35"/>'
+    # Mouth
+    '<path d="M 58 100 Q 70 110 82 100" stroke="#E03060" stroke-width="2.2" fill="none" stroke-linecap="round"/>'
+    '<ellipse cx="70" cy="105" rx="6" ry="3" fill="#FFAAC4" opacity="0.5"/>'
+    # Heart pill on belly
+    '<path d="M 70 138 C 70 138 62 130 62 124 Q 62 119 67 119 Q 70 120 70 123 Q 70 120 73 119 Q 78 119 78 124 C 78 130 70 138 70 138 Z" fill="#E53935"/>'
+    '<path d="M 65 124 Q 66 121 68 121" stroke="white" stroke-width="1.2" fill="none" opacity="0.7"/>'
     '</svg>'
 )
 
 _DOCTOR_SVG = (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 168" width="96" height="134">'
+    # v2 (2026-05-15): เหลืองพาสเทล egg-shape · แว่นกลมใหญ่ · stethoscope พาดตัว · กาวน์ขาว V-neck
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 170" width="140" height="170">'
     '<defs>'
-    '<radialGradient id="dc_face" cx="38%" cy="32%" r="66%">'
-    '<stop offset="0%" stop-color="#FFF9EE"/>'
-    '<stop offset="100%" stop-color="#F8D898"/>'
+    '<radialGradient id="dv2_body" cx="38%" cy="28%" r="78%">'
+    '<stop offset="0%" stop-color="#FFFCEF"/>'
+    '<stop offset="55%" stop-color="#FFE9A8"/>'
+    '<stop offset="100%" stop-color="#F4CD6B"/>'
     '</radialGradient>'
-    '<radialGradient id="dc_body" cx="40%" cy="20%" r="80%">'
-    '<stop offset="0%" stop-color="#F8F8F8"/>'
-    '<stop offset="100%" stop-color="#DCDCDC"/>'
-    '</radialGradient>'
-    '<radialGradient id="dc_iris" cx="30%" cy="28%" r="72%">'
-    '<stop offset="0%" stop-color="#2E86AB"/>'
+    '<radialGradient id="dv2_iris" cx="30%" cy="28%" r="72%">'
+    '<stop offset="0%" stop-color="#3478A3"/>'
     '<stop offset="100%" stop-color="#0A2540"/>'
     '</radialGradient>'
     '</defs>'
-    '<ellipse cx="60" cy="148" rx="28" ry="19" fill="url(#dc_body)" stroke="#C8C8C8" stroke-width="1.2"/>'
-    '<path d="M48 134 L60 145 L72 134" fill="white" stroke="#E0E0E0" stroke-width="0.8"/>'
-    '<path d="M54 134 L60 142" stroke="#CCC" stroke-width="0.7" fill="none"/>'
-    '<path d="M66 134 L60 142" stroke="#CCC" stroke-width="0.7" fill="none"/>'
-    '<circle cx="60" cy="57" r="48" fill="url(#dc_face)" stroke="#EED898" stroke-width="1.5"/>'
-    '<path d="M16 50 Q18 22 60 18 Q102 22 104 50" fill="#5D4037" opacity="0.48"/>'
-    '<circle cx="42" cy="64" r="13" fill="rgba(255,255,255,0.6)" stroke="#5D4037" stroke-width="2.2"/>'
-    '<circle cx="78" cy="64" r="13" fill="rgba(255,255,255,0.6)" stroke="#5D4037" stroke-width="2.2"/>'
-    '<line x1="55" y1="63" x2="65" y2="63" stroke="#5D4037" stroke-width="2.2"/>'
-    '<line x1="29" y1="59" x2="21" y2="57" stroke="#5D4037" stroke-width="1.7"/>'
-    '<line x1="91" y1="59" x2="99" y2="57" stroke="#5D4037" stroke-width="1.7"/>'
-    '<circle cx="42" cy="65" r="9" fill="url(#dc_iris)"/>'
-    '<circle cx="42" cy="66.5" r="5.2" fill="#050E20"/>'
-    '<circle cx="46.5" cy="60" r="3.2" fill="white" opacity="0.92"/>'
-    '<circle cx="38" cy="68.5" r="1.5" fill="white" opacity="0.65"/>'
-    '<circle cx="78" cy="65" r="9" fill="url(#dc_iris)"/>'
-    '<circle cx="78" cy="66.5" r="5.2" fill="#050E20"/>'
-    '<circle cx="82.5" cy="60" r="3.2" fill="white" opacity="0.92"/>'
-    '<circle cx="74" cy="68.5" r="1.5" fill="white" opacity="0.65"/>'
-    '<ellipse cx="24" cy="78" rx="11" ry="7" fill="#FFAA88" opacity="0.26"/>'
-    '<ellipse cx="96" cy="78" rx="11" ry="7" fill="#FFAA88" opacity="0.26"/>'
-    '<circle cx="60" cy="81" r="1.8" fill="#C8906A" opacity="0.58"/>'
-    '<path d="M46 90 Q60 106 74 90" stroke="#A06040" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
-    '<path d="M52 101 Q60 105 68 101" stroke="#A06040" stroke-width="1.3" fill="#FFDDB0" opacity="0.6"/>'
-    '<path d="M44 138 Q36 148 38 157 Q40 163 46 163 Q52 163 52 158" stroke="#78909C" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
-    '<circle cx="52" cy="159" r="5.5" fill="#546E7A" stroke="#263238" stroke-width="1.2"/>'
-    '<circle cx="52" cy="159" r="2.8" fill="#37474F"/>'
+    # Unified yellow-pastel egg body
+    '<ellipse cx="70" cy="92" rx="56" ry="66" fill="url(#dv2_body)" stroke="#E8B66E" stroke-width="2"/>'
+    # White doctor coat lapel
+    '<path d="M30 120 Q50 158 70 158 Q90 158 110 120 L105 156 L35 156 Z" fill="white" opacity="0.85" stroke="#E0E0E0" stroke-width="0.7"/>'
+    '<line x1="55" y1="130" x2="70" y2="148" stroke="#D0D0D0" stroke-width="0.8"/>'
+    '<line x1="85" y1="130" x2="70" y2="148" stroke="#D0D0D0" stroke-width="0.8"/>'
+    # Buttons
+    '<circle cx="70" cy="135" r="1.3" fill="#B0B0B0"/>'
+    '<circle cx="70" cy="143" r="1.3" fill="#B0B0B0"/>'
+    # Stub flipper arms
+    '<ellipse cx="18" cy="98" rx="9" ry="15" fill="url(#dv2_body)" stroke="#E8B66E" stroke-width="1.5" transform="rotate(-12 18 98)"/>'
+    '<ellipse cx="122" cy="98" rx="9" ry="15" fill="url(#dv2_body)" stroke="#E8B66E" stroke-width="1.5" transform="rotate(12 122 98)"/>'
+    # Brown hair tuft on top
+    '<path d="M60 28 Q56 14 66 18 Q70 8 76 18 Q84 14 80 30" fill="#8D6E63" stroke="#5D4037" stroke-width="1" stroke-linejoin="round"/>'
+    '<path d="M64 22 Q70 14 76 22" stroke="#5D4037" stroke-width="0.8" fill="none" opacity="0.4"/>'
+    # Round glasses
+    '<circle cx="48" cy="80" r="15" fill="rgba(255,255,255,0.55)" stroke="#5D4037" stroke-width="2.6"/>'
+    '<circle cx="92" cy="80" r="15" fill="rgba(255,255,255,0.55)" stroke="#5D4037" stroke-width="2.6"/>'
+    '<path d="M63 80 Q70 76 77 80" stroke="#5D4037" stroke-width="2.4" fill="none"/>'
+    # Glasses temples
+    '<line x1="33" y1="76" x2="22" y2="74" stroke="#5D4037" stroke-width="1.8" stroke-linecap="round"/>'
+    '<line x1="107" y1="76" x2="118" y2="74" stroke="#5D4037" stroke-width="1.8" stroke-linecap="round"/>'
+    # Eyes inside glasses
+    '<ellipse cx="48" cy="82" rx="5" ry="6.5" fill="url(#dv2_iris)"/>'
+    '<ellipse cx="92" cy="82" rx="5" ry="6.5" fill="url(#dv2_iris)"/>'
+    '<circle cx="48" cy="83" r="2.8" fill="#050E20"/>'
+    '<circle cx="92" cy="83" r="2.8" fill="#050E20"/>'
+    '<circle cx="51" cy="78" r="2.2" fill="white"/>'
+    '<circle cx="95" cy="78" r="2.2" fill="white"/>'
+    # Blush
+    '<ellipse cx="26" cy="102" rx="10" ry="6" fill="#FFAA88" opacity="0.32"/>'
+    '<ellipse cx="114" cy="102" rx="10" ry="6" fill="#FFAA88" opacity="0.32"/>'
+    # Gentle smile
+    '<path d="M58 104 Q70 113 82 104" stroke="#A06040" stroke-width="2.2" fill="none" stroke-linecap="round"/>'
+    '<ellipse cx="70" cy="108" rx="6" ry="2.5" fill="#E8B66E" opacity="0.45"/>'
+    # Stethoscope
+    '<path d="M50 118 Q30 124 28 140 Q26 154 38 154" stroke="#37474F" stroke-width="2.4" fill="none"/>'
+    '<path d="M90 118 Q110 124 112 140" stroke="#37474F" stroke-width="2.4" fill="none"/>'
+    '<circle cx="38" cy="154" r="6.5" fill="#546E7A" stroke="#263238" stroke-width="1.3"/>'
+    '<circle cx="38" cy="154" r="3.2" fill="#37474F"/>'
+    '<circle cx="38" cy="154" r="1.2" fill="#B0BEC5"/>'
     '</svg>'
 )
 
 
-def render_nurse_mascot(speech: str, sub: str = "") -> None:
+def render_nurse_mascot(speech: str, sub: str = "", name: str = "น้องอุ่นใน 💕") -> None:
+    """Vertical card layout — SVG ด้านบน · ชื่อ · คำพูดด้านล่าง"""
     sub_html = f'<span class="ai-sub">{sub}</span>' if sub else ""
     st.markdown(
-        f'<div class="ai-mascot-box"><div style="width:88px;flex-shrink:0;line-height:0">' +
+        '<div class="ai-mascot-vcard">' +
         _NURSE_SVG +
-        f'</div><div class="ai-mascot-speech">{speech}{sub_html}</div></div>',
+        f'<div class="vc-name">{name}</div>' +
+        f'<div class="vc-speech">{speech}{sub_html}</div>' +
+        '</div>',
         unsafe_allow_html=True,
     )
 
 
-def render_doctor_mascot(speech: str, sub: str = "") -> None:
+def render_doctor_mascot(speech: str, sub: str = "", name: str = "หมอใจดี 🩺") -> None:
+    """Vertical card layout — SVG ด้านบน · ชื่อ · คำพูดด้านล่าง"""
     sub_html = f'<span class="ai-sub">{sub}</span>' if sub else ""
     st.markdown(
-        f'<div class="ai-mascot-box"><div style="width:88px;flex-shrink:0;line-height:0">' +
+        '<div class="ai-mascot-vcard doctor">' +
         _DOCTOR_SVG +
-        f'</div><div class="ai-mascot-speech">{speech}{sub_html}</div></div>',
+        f'<div class="vc-name">{name}</div>' +
+        f'<div class="vc-speech">{speech}{sub_html}</div>' +
+        '</div>',
         unsafe_allow_html=True,
     )
