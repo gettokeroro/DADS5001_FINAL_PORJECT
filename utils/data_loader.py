@@ -15,7 +15,9 @@ Usage:
 from __future__ import annotations
 from pathlib import Path
 import re
+import warnings as _warnings
 from math import log
+from typing import Optional
 from urllib.parse import quote_plus
 import pandas as pd
 import streamlit as st
@@ -32,12 +34,110 @@ DATA = _project_root() / "data"
 
 
 # ---------------------------------------------------------------------------
+# Phase 9 — Snowflake helpers (ข้อ 3 spec · cloud-first with CSV fallback)
+# Silent fallback: if cloud unreachable/no secrets/no connector, log warning
+# and let the caller fall back to local CSV. Pages never see an exception.
+# ---------------------------------------------------------------------------
+_SNOWFLAKE_WARNED: set = set()
+_SNOWFLAKE_REQUIRED_KEYS = {
+    "account", "user", "password", "warehouse", "database", "schema",
+}
+
+
+def _warn_snowflake_once(reason: str) -> None:
+    """Emit a one-time warning per (reason) per process · avoids log spam."""
+    if reason in _SNOWFLAKE_WARNED:
+        return
+    _SNOWFLAKE_WARNED.add(reason)
+    _warnings.warn(
+        f"[data_loader] Snowflake → CSV fallback: {reason}",
+        RuntimeWarning,
+        stacklevel=2,
+    )
+
+
+@st.cache_resource(show_spinner="Connecting to Snowflake...")
+def get_snowflake_conn():
+    """Return a singleton Snowflake connection · None if unavailable.
+
+    Reads credentials from st.secrets["snowflake"]. Returns None silently
+    (with a one-time warning) if connector missing, secrets missing,
+    keys incomplete, or connect raises. Callers should treat None as
+    "fall back to CSV".
+    """
+    try:
+        import snowflake.connector  # lazy import (optional dep)
+    except ImportError:
+        _warn_snowflake_once("snowflake-connector-python not installed")
+        return None
+
+    try:
+        creds = dict(st.secrets.get("snowflake", {}))
+    except Exception as e:  # st.secrets file missing entirely
+        _warn_snowflake_once(f"secrets read error: {type(e).__name__}")
+        return None
+
+    if not creds:
+        _warn_snowflake_once("[snowflake] section missing in secrets")
+        return None
+
+    missing = _SNOWFLAKE_REQUIRED_KEYS - set(creds.keys())
+    if missing:
+        _warn_snowflake_once(f"missing keys in [snowflake]: {sorted(missing)}")
+        return None
+
+    try:
+        return snowflake.connector.connect(
+            account=creds["account"],
+            user=creds["user"],
+            password=creds["password"],
+            warehouse=creds["warehouse"],
+            database=creds["database"],
+            schema=creds["schema"],
+        )
+    except Exception as e:
+        _warn_snowflake_once(f"connect error: {type(e).__name__}")
+        return None
+
+
+def _load_from_snowflake(table: str) -> Optional[pd.DataFrame]:
+    """SELECT * FROM <table> · returns DataFrame or None on any failure.
+
+    Lowercase any all-UPPERCASE column names so callers see the same
+    column names as the CSV (Snowflake uppercases unquoted identifiers;
+    quoted identifiers in TRAIN_MATRIX already preserve original case).
+    """
+    conn = get_snowflake_conn()
+    if conn is None:
+        return None
+    try:
+        cur = conn.cursor()
+        try:
+            cur.execute(f"SELECT * FROM {table}")
+            df = cur.fetch_pandas_all()
+        finally:
+            cur.close()
+    except Exception as e:
+        _warn_snowflake_once(f"{table} query failed: {type(e).__name__}")
+        return None
+
+    df.columns = [c.lower() if c.isupper() else c for c in df.columns]
+    return df
+
+
+# ---------------------------------------------------------------------------
 # @st.cache_data — DataFrames (re-loaded only if file changes)
 # ---------------------------------------------------------------------------
 @st.cache_data(show_spinner="Loading itachi training data...")
 def load_itachi_train() -> pd.DataFrame:
-    """Load disease-symptom binary matrix (4920 × 132+1)."""
-    df = pd.read_csv(DATA / "raw" / "itachi_train.csv")
+    """Load disease-symptom binary matrix (5620 × 132+1) · cloud-first.
+
+    Phase 9: tries Snowflake TRAIN_MATRIX, falls back to local CSV.
+    DuckDB / scoring artifacts still read CSV directly (perf-critical).
+    """
+    df = _load_from_snowflake("TRAIN_MATRIX")
+    if df is None:
+        df = pd.read_csv(DATA / "raw" / "itachi_train.csv")
     df = df.loc[:, ~df.columns.str.match(r"^Unnamed")]
     return df
 
@@ -151,8 +251,15 @@ def render_disclaimer_sidebar():
 
 @st.cache_data(show_spinner="Loading drug mapping...")
 def load_drug_mapping() -> pd.DataFrame:
-    """Load disease → drug mapping. Prefer v2 (109 drugs · 48 diseases · ED category)
-    over skeleton v1 (15 drugs · 11 diseases) if available."""
+    """Load disease → drug mapping (109 rows · 48 diseases) · cloud-first.
+
+    Phase 9: tries Snowflake DISEASE_DRUG, falls back to local CSV.
+    CSV fallback: prefer v2_ed (with ED category) over v1 skeleton.
+    """
+    df = _load_from_snowflake("DISEASE_DRUG")
+    if df is not None:
+        return df
+    # CSV fallback
     v2 = DATA / "processed" / "disease_drug_mapping_v2_ed.csv"
     v1 = DATA / "processed" / "disease_drug_mapping.csv"
     p = v2 if v2.exists() else v1
@@ -181,12 +288,17 @@ def _strip_html(s) -> str:
 
 @st.cache_data(show_spinner="Loading hospitals master...")
 def load_hospitals_master() -> pd.DataFrame:
-    """Load hospitals_thailand.csv (UTF-8) · strip HTML in specialty_note.
-    Phase 6 real — ใช้แทน specialty_hospital_hint เมื่อต้องกรองตามจังหวัด."""
-    p = DATA / "processed" / "hospitals_thailand.csv"
-    if not p.exists():
-        return pd.DataFrame()
-    df = pd.read_csv(p)
+    """Load hospitals master (1581 rows · 77 provinces) · cloud-first.
+
+    Phase 9: tries Snowflake HOSPITALS, falls back to local CSV.
+    HTML strip on specialty_note runs in both paths (data has <br /> tags).
+    """
+    df = _load_from_snowflake("HOSPITALS")
+    if df is None:
+        p = DATA / "processed" / "hospitals_thailand.csv"
+        if not p.exists():
+            return pd.DataFrame()
+        df = pd.read_csv(p)
     if "specialty_note" in df.columns:
         df["specialty_note"] = df["specialty_note"].apply(_strip_html)
     return df

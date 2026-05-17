@@ -523,16 +523,11 @@ elif st.session_state.ai8_step == "result":
                 red_flags  = row.get("red_flags") or ""
                 disease_key = disease_en
 
-                # Narration card HTML
-                narr_html = (
-                    f'<div class="diag-quote">"{narr}"</div>' if narr
-                    else ""
-                )
+                # Narration card HTML — single-line to prevent Streamlit Markdown
+                # from treating indented </div> as a code block when narr is empty.
+                narr_html = f'<div class="diag-quote">"{narr}"</div>' if narr else ""
                 st.markdown(
-                    f"""<div class="diag-narrate">
-                          <h3>{rank_num}. {disease_th} — โอกาส {pct}</h3>
-                          {narr_html}
-                        </div>""",
+                    f'<div class="diag-narrate"><h3>{rank_num}. {disease_th} — โอกาส {pct}</h3>{narr_html}</div>',
                     unsafe_allow_html=True,
                 )
 
