@@ -21,7 +21,7 @@ pydantic>=2.5,<3.0              # structured output validation
 # Cloud storage (Phase 9 — ข้อ 3 spec)
 snowflake-connector-python>=3.7,<4.0       # Snowflake: TRAIN_MATRIX + DISEASE_DRUG + HOSPITALS
 tomli>=2.0,<3.0 ; python_version < "3.11"  # TOML parser for migrate_to_snowflake.py (stdlib in 3.11+)
-# pymongo>=4.6,<5.0                        # MongoDB Atlas (Phase 9b — uncomment when integrated)
+pymongo>=4.6,<5.0                          # MongoDB Atlas (Phase 9b — symptom_dict + disease_prev + ai_sessions)
 
 # Dev (optional — comment out on Streamlit Cloud to speed up cold start)
 # jupyter>=1.0,<2.0

@@ -126,6 +126,125 @@ def _load_from_snowflake(table: str) -> Optional[pd.DataFrame]:
 
 
 # ---------------------------------------------------------------------------
+# Phase 9b — MongoDB Atlas helpers (ข้อ 3 spec · second cloud)
+# Mirrors Snowflake pattern: silent fallback, one-time warning, cache_resource.
+# ---------------------------------------------------------------------------
+_MONGO_WARNED: set = set()
+
+
+def _warn_mongo_once(reason: str) -> None:
+    """Emit a one-time warning per reason · avoids log spam."""
+    if reason in _MONGO_WARNED:
+        return
+    _MONGO_WARNED.add(reason)
+    _warnings.warn(
+        f"[data_loader] MongoDB → CSV fallback: {reason}",
+        RuntimeWarning,
+        stacklevel=2,
+    )
+
+
+@st.cache_resource(show_spinner="Connecting to MongoDB Atlas...")
+def get_mongo_client():
+    """Return a singleton pymongo MongoClient · None if unavailable.
+
+    Reads uri from st.secrets["mongodb"]["uri"]. Returns None silently
+    (with one-time warning) if pymongo missing, secrets absent, uri
+    empty, or ping fails. Callers should treat None as "fall back to CSV".
+    """
+    try:
+        from pymongo import MongoClient  # lazy import (optional dep)
+    except ImportError:
+        _warn_mongo_once("pymongo not installed")
+        return None
+
+    try:
+        creds = dict(st.secrets.get("mongodb", {}))
+    except Exception as e:
+        _warn_mongo_once(f"secrets read error: {type(e).__name__}")
+        return None
+
+    uri = creds.get("uri", "").strip()
+    if not uri:
+        _warn_mongo_once("[mongodb].uri missing in secrets")
+        return None
+
+    try:
+        from pymongo import MongoClient  # noqa: F811 (re-import for clarity)
+        client = MongoClient(uri, serverSelectionTimeoutMS=5_000)
+        client.admin.command("ping")   # fast connectivity check
+        return client
+    except Exception as e:
+        _warn_mongo_once(f"connect error: {type(e).__name__}")
+        return None
+
+
+def _get_mongo_db():
+    """Return the MongoDB database object · None if client unavailable.
+
+    Reads db_name from st.secrets["mongodb"]["db_name"] (default: dads5001).
+    Not cached itself — relies on get_mongo_client() being cache_resource.
+    """
+    client = get_mongo_client()
+    if client is None:
+        return None
+    try:
+        db_name = st.secrets.get("mongodb", {}).get("db_name", "dads5001")
+    except Exception:
+        db_name = "dads5001"
+    return client[db_name]
+
+
+def log_ai_session(
+    symptoms: list,
+    ranked_df,
+    confidence: dict,
+) -> bool:
+    """Write one AI session document to MongoDB collection 'ai_sessions'.
+
+    Called from pages/2_AI_Mode.py after diagnosis is computed.
+    Fire-and-forget: never raises · returns True if write succeeded.
+
+    Document schema:
+        timestamp        : datetime UTC
+        symptoms         : list[str]   — symptom_en codes
+        n_symptoms       : int
+        top_disease      : str         — disease_en of rank-1
+        top_score        : float       — TF-IDF score of rank-1
+        confidence_level : str         — high / medium / low / very_low
+        confidence_label : str         — Thai label
+    """
+    import datetime  # stdlib · always available
+
+    db = _get_mongo_db()
+    if db is None:
+        return False
+
+    try:
+        top_disease = ""
+        top_score = 0.0
+        if ranked_df is not None and not ranked_df.empty:
+            top_row = ranked_df.iloc[0]
+            top_disease = str(top_row.get("disease", ""))
+            top_score = float(top_row.get("primary_score", 0) or 0)
+
+        doc = {
+            "timestamp":        datetime.datetime.utcnow(),
+            "symptoms":         list(symptoms) if symptoms else [],
+            "n_symptoms":       len(symptoms) if symptoms else 0,
+            "top_disease":      top_disease,
+            "top_score":        round(top_score, 4),
+            "confidence_level": confidence.get("level", ""),
+            "confidence_label": confidence.get("label", ""),
+        }
+        db["ai_sessions"].insert_one(doc)
+        return True
+    except Exception as e:
+        _warn_mongo_once(f"log_ai_session failed: {type(e).__name__}")
+        return False
+
+
+# ---------------------------------------------------------------------------
 # @st.cache_data — DataFrames (re-loaded only if file changes)
 # ---------------------------------------------------------------------------
 @st.cache_data(show_spinner="Loading itachi training data...")
@@ -153,11 +272,45 @@ def load_specialty_mapping() -> pd.DataFrame:
 
 @st.cache_data(show_spinner="Loading Thai symptom dictionary...")
 def load_symptom_dict() -> pd.DataFrame:
-    """Load Thai symptom dictionary (132 rows)."""
+    """Load Thai symptom dictionary (132 rows) · cloud-first.
+
+    Phase 9b: tries MongoDB Atlas collection 'symptom_dictionary',
+    falls back to local CSV if cloud unavailable.
+    """
+    db = _get_mongo_db()
+    if db is not None:
+        try:
+            docs = list(db["symptom_dictionary"].find({}, {"_id": 0}))
+            if docs:
+                return pd.DataFrame(docs)
+        except Exception as e:
+            _warn_mongo_once(f"symptom_dictionary query failed: {type(e).__name__}")
+    # CSV fallback
     return pd.read_csv(
         DATA / "processed" / "symptom_dictionary_th.csv",
         encoding="utf-8-sig",
     )
+
+
+@st.cache_data(show_spinner="Loading disease prevalence...")
+def load_disease_prevalence() -> pd.DataFrame:
+    """Load disease prevalence weights (48 rows) · cloud-first.
+
+    Phase 9b: tries MongoDB Atlas collection 'disease_prevalence',
+    falls back to local CSV. Scoring engine reads CSV directly;
+    this loader is for pages that need to display prevalence data.
+    """
+    db = _get_mongo_db()
+    if db is not None:
+        try:
+            docs = list(db["disease_prevalence"].find({}, {"_id": 0}))
+            if docs:
+                return pd.DataFrame(docs)
+        except Exception as e:
+            _warn_mongo_once(f"disease_prevalence query failed: {type(e).__name__}")
+    # CSV fallback
+    p = DATA / "processed" / "disease_prevalence.csv"
+    return pd.read_csv(p, encoding="utf-8-sig") if p.exists() else pd.DataFrame()
 
 
 @st.cache_data(show_spinner="Loading symptom specificity (IDF)...")

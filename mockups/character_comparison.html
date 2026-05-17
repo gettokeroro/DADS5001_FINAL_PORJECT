@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Character Comparison — น้องอุ่นใน + หมอใจดี</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Noto Sans Thai', sans-serif; background: #FAFAFA; padding: 24px; max-width: 1100px; margin: 0 auto; color: #1a1a1a; line-height: 1.6; }
+  h1 { font-size: 22px; font-weight: 500; margin: 0 0 6px; color: #042C53; }
+  .meta { font-size: 13px; color: #5F5E5A; margin-bottom: 24px; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+  .opt-card { background: white; border: 1px solid #E0E0E0; border-radius: 14px; padding: 18px; }
+  .opt-card h2 { font-size: 17px; margin: 0 0 4px; color: #042C53; font-weight: 600; }
+  .opt-card .desc { font-size: 12px; color: #5F5E5A; margin-bottom: 14px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .mascot-box { background: #FBEAF0; border: 1.5px solid #F4C0D1; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; min-height: 230px; }
+  .mascot-box.doctor { background: #E6F1FB; border-color: #85B7EB; }
+  .mascot-name { font-size: 13px; font-weight: 600; color: #4B1528; }
+  .doctor .mascot-name { color: #042C53; }
+  .mascot-line { font-size: 12px; color: #72243E; font-style: italic; line-height: 1.5; }
+  .doctor .mascot-line { color: #185FA5; }
+  /* --- Style B: emoji + gradient --- */
+  .emoji-mascot { width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 56px; box-shadow: inset 0 -8px 18px rgba(0,0,0,0.08), 0 4px 14px rgba(0,0,0,0.08); position: relative; }
+  .emoji-mascot.nurse { background: radial-gradient(circle at 35% 30%, #FFE0EC 0%, #FFB6CB 60%, #FF8FB5 100%); border: 2px solid #FFC0D8; }
+  .emoji-mascot.doctor { background: radial-gradient(circle at 35% 30%, #FFF9EE 0%, #F8D898 60%, #E8B66E 100%); border: 2px solid #EED898; }
+  .emoji-mascot .hat { position: absolute; top: -10px; font-size: 28px; }
+  .pill-badge { width: 28px; height: 16px; border-radius: 999px; background: linear-gradient(90deg, #FF8FB5 50%, #B5D4F4 50%); border: 1px solid white; margin-top: -6px; box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+  /* --- summary table --- */
+  .summary { background: #F4F8FC; border: 1px solid #B5D4F4; border-radius: 12px; padding: 16px; }
+  .summary h3 { font-size: 14px; margin: 0 0 10px; color: #042C53; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #E6F1FB; vertical-align: top; }
+  th { background: #E6F1FB; color: #042C53; font-weight: 600; }
+  td.pros { color: #173404; }
+  td.cons { color: #501313; }
+  .pick { background: #FFF9C4; border: 1px solid #FBC02D; border-radius: 10px; padding: 14px; margin-top: 24px; font-size: 14px; color: #5D4037; }
+  .pick b { color: #BF360C; }
+</style>
+</head>
+<body>
+<h1>เลือก Character Style — น้องอุ่นใน + หมอใจดี</h1>
+<div class="meta">DADS5001 · 2026-05-15 · เปรียบเทียบ 2 แบบก่อนเลือก implement ลง pages/2_AI_Mode.py</div>
+
+<div class="compare-grid">
+  <!-- Option A: SVG Chansey-style --->
+  <div class="opt-card">
+    <h2>แบบ A — SVG Chansey-style (เหมือน mockup v4)</h2>
+    <div class="desc">วาด vector ทั้งตัว ตากลมโต ใส่หมวกพยาบาล/ปกแพทย์ มี blush สีพีช ฟ้องว่าอ้วน fluffy</div>
+    <div class="row">
+      <div class="mascot-box">
+        <svg viewBox="0 0 120 168" width="100" height="140">
+          <defs>
+            <radialGradient id="A_nc_face" cx="38%" cy="32%" r="66%">
+              <stop offset="0%" stop-color="#FFF5F8"/><stop offset="100%" stop-color="#FFBACF"/>
+            </radialGradient>
+            <radialGradient id="A_nc_body" cx="40%" cy="20%" r="80%">
+              <stop offset="0%" stop-color="#FFDAEC"/><stop offset="100%" stop-color="#FF8FB5"/>
+            </radialGradient>
+            <radialGradient id="A_nc_iris" cx="30%" cy="28%" r="72%">
+              <stop offset="0%" stop-color="#9B59B6"/><stop offset="100%" stop-color="#2C1050"/>
+            </radialGradient>
+          </defs>
+          <ellipse cx="60" cy="148" rx="26" ry="18" fill="url(#A_nc_body)" stroke="#FF80A8" stroke-width="1.2"/>
+          <path d="M48 134 L60 144 L72 134" fill="white" stroke="#FFAAC4" stroke-width="0.8" opacity="0.85"/>
+          <circle cx="60" cy="57" r="48" fill="url(#A_nc_face)" stroke="#FFC0D8" stroke-width="1.5"/>
+          <ellipse cx="60" cy="13" rx="26" ry="7" fill="white" stroke="#E0D0DB" stroke-width="0.8"/>
+          <rect x="46" y="7" width="28" height="10" rx="5" fill="white" stroke="#E0D0DB" stroke-width="0.8"/>
+          <rect x="57.5" y="8.5" width="5" height="2" rx="1" fill="#E53935"/>
+          <rect x="59.5" y="6.5" width="2" height="6" rx="1" fill="#E53935"/>
+          <ellipse cx="41" cy="61" rx="13" ry="15" fill="white" stroke="#F0D0E0" stroke-width="0.6"/>
+          <circle cx="41" cy="62.5" r="10" fill="url(#A_nc_iris)"/>
+          <circle cx="41" cy="64" r="5.8" fill="#0C0418"/>
+          <circle cx="46" cy="56.5" r="3.8" fill="white" opacity="0.95"/>
+          <circle cx="36.5" cy="65.5" r="1.8" fill="white" opacity="0.7"/>
+          <ellipse cx="79" cy="61" rx="13" ry="15" fill="white" stroke="#F0D0E0" stroke-width="0.6"/>
+          <circle cx="79" cy="62.5" r="10" fill="url(#A_nc_iris)"/>
+          <circle cx="79" cy="64" r="5.8" fill="#0C0418"/>
+          <circle cx="84" cy="56.5" r="3.8" fill="white" opacity="0.95"/>
+          <circle cx="74.5" cy="65.5" r="1.8" fill="white" opacity="0.7"/>
+          <path d="M29 53 Q35 46 42 50" stroke="#4A1870" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          <path d="M78 50 Q85 46 91 53" stroke="#4A1870" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          <ellipse cx="24" cy="75" rx="11" ry="7" fill="#FF6090" opacity="0.25"/>
+          <ellipse cx="96" cy="75" rx="11" ry="7" fill="#FF6090" opacity="0.25"/>
+          <path d="M46 88 Q60 104 74 88" stroke="#E03060" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <path d="M52 99 Q60 103 68 99" stroke="#E03060" stroke-width="1.3" fill="#FFD0E0" opacity="0.6"/>
+          <path d="M60 158 C60 158 53 151 53 146 Q53 142 57 142 Q59.5 142 60 145 Q60.5 142 63 142 Q67 142 67 146 C67 151 60 158 60 158 Z" fill="#E53935"/>
+        </svg>
+        <div class="mascot-name">น้องอุ่นใน</div>
+        <div class="mascot-line">"วันนี้พี่มีอาการอะไรมาคะ?"</div>
+      </div>
+      <div class="mascot-box doctor">
+        <svg viewBox="0 0 120 168" width="100" height="140">
+          <defs>
+            <radialGradient id="A_dc_face" cx="38%" cy="32%" r="66%">
+              <stop offset="0%" stop-color="#FFF9EE"/><stop offset="100%" stop-color="#F8D898"/>
+            </radialGradient>
+            <radialGradient id="A_dc_body" cx="40%" cy="20%" r="80%">
+              <stop offset="0%" stop-color="#F8F8F8"/><stop offset="100%" stop-color="#DCDCDC"/>
+            </radialGradient>
+            <radialGradient id="A_dc_iris" cx="30%" cy="28%" r="72%">
+              <stop offset="0%" stop-color="#2E86AB"/><stop offset="100%" stop-color="#0A2540"/>
+            </radialGradient>
+          </defs>
+          <ellipse cx="60" cy="148" rx="28" ry="19" fill="url(#A_dc_body)" stroke="#C8C8C8" stroke-width="1.2"/>
+          <path d="M48 134 L60 145 L72 134" fill="white" stroke="#E0E0E0" stroke-width="0.8"/>
+          <circle cx="60" cy="57" r="48" fill="url(#A_dc_face)" stroke="#EED898" stroke-width="1.5"/>
+          <path d="M16 50 Q18 22 60 18 Q102 22 104 50" fill="#5D4037" opacity="0.48"/>
+          <circle cx="42" cy="64" r="13" fill="rgba(255,255,255,0.6)" stroke="#5D4037" stroke-width="2.2"/>
+          <circle cx="78" cy="64" r="13" fill="rgba(255,255,255,0.6)" stroke="#5D4037" stroke-width="2.2"/>
+          <line x1="55" y1="63" x2="65" y2="63" stroke="#5D4037" stroke-width="2.2"/>
+          <line x1="29" y1="59" x2="21" y2="57" stroke="#5D4037" stroke-width="1.7"/>
+          <line x1="91" y1="59" x2="99" y2="57" stroke="#5D4037" stroke-width="1.7"/>
+          <circle cx="42" cy="65" r="9" fill="url(#A_dc_iris)"/>
+          <circle cx="42" cy="66.5" r="5.2" fill="#050E20"/>
+          <circle cx="46.5" cy="60" r="3.2" fill="white" opacity="0.92"/>
+          <circle cx="78" cy="65" r="9" fill="url(#A_dc_iris)"/>
+          <circle cx="78" cy="66.5" r="5.2" fill="#050E20"/>
+          <circle cx="82.5" cy="60" r="3.2" fill="white" opacity="0.92"/>
+          <ellipse cx="24" cy="78" rx="11" ry="7" fill="#FFAA88" opacity="0.26"/>
+          <ellipse cx="96" cy="78" rx="11" ry="7" fill="#FFAA88" opacity="0.26"/>
+          <path d="M46 90 Q60 106 74 90" stroke="#A06040" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <path d="M44 138 Q36 148 38 157 Q40 163 46 163 Q52 163 52 158" stroke="#78909C" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <circle cx="52" cy="159" r="5.5" fill="#546E7A" stroke="#263238" stroke-width="1.2"/>
+          <circle cx="52" cy="159" r="2.8" fill="#37474F"/>
+        </svg>
+        <div class="mascot-name">คุณหมอใจดี</div>
+        <div class="mascot-line">"ไม่ต้องกังวลนะคะ มาฟังกัน"</div>
+      </div>
+    </div>
+    <div style="font-size: 11px; color: #5F5E5A; text-align: center;">↑ ดูใหญ่ ฟูฟ่อง chansey เด็กๆ น่ารักสะใจ</div>
+  </div>
+
+  <!-- Option B: emoji + gradient --->
+  <div class="opt-card">
+    <h2>แบบ B — Emoji + Gradient circle</h2>
+    <div class="desc">ใช้ emoji ผสม (🥚🩺💗) บนวงกลม gradient สีพีช/พาสเทล เน้นเรียบ น้ำหนักโค้ดต่ำ</div>
+    <div class="row">
+      <div class="mascot-box">
+        <div class="emoji-mascot nurse">
+          <span class="hat">🧑‍⚕️</span>
+          <span style="margin-top:14px">🥚</span>
+        </div>
+        <div class="pill-badge"></div>
+        <div class="mascot-name">น้องอุ่นใน</div>
+        <div class="mascot-line">"วันนี้พี่มีอาการอะไรมาคะ?"</div>
+      </div>
+      <div class="mascot-box doctor">
+        <div class="emoji-mascot doctor">
+          <span class="hat">👨‍⚕️</span>
+          <span style="margin-top:14px">🥚</span>
+        </div>
+        <div class="pill-badge" style="background: linear-gradient(90deg,#85B7EB 50%,#FFB6CB 50%)"></div>
+        <div class="mascot-name">คุณหมอใจดี</div>
+        <div class="mascot-line">"ไม่ต้องกังวลนะคะ มาฟังกัน"</div>
+      </div>
+    </div>
+    <div style="font-size: 11px; color: #5F5E5A; text-align: center;">↑ เรียบ สบายตา แต่หน้าตาคงเส้นคงวาน้อยกว่า (ขึ้นกับ emoji ของแต่ละ OS)</div>
+  </div>
+</div>
+
+<div class="summary">
+  <h3>เปรียบเทียบสรุป</h3>
+  <table>
+    <thead><tr><th>ประเด็น</th><th>แบบ A — SVG Chansey</th><th>แบบ B — Emoji + Gradient</th></tr></thead>
+    <tbody>
+      <tr><td>หน้าตา</td><td class="pros">วาดทั้งตัว ตา 2 ตา หมวก ปก fluffy — ดูเหมือน chansey ที่ user อยาก ref</td><td class="cons">หน้า fallback เป็น emoji แต่ละ OS แสดงต่างกัน (iOS vs Windows)</td></tr>
+      <tr><td>Code</td><td class="cons">SVG ยาว ~50 บรรทัด/ตัว → 100 บรรทัดรวม</td><td class="pros">CSS + emoji สั้น ~20 บรรทัด</td></tr>
+      <tr><td>ปรับแก้ภายหลัง</td><td class="cons">แก้ SVG ต้องเข้าใจ vector path</td><td class="pros">เปลี่ยน emoji ได้ทันที</td></tr>
+      <tr><td>ทำงานใน Streamlit</td><td class="pros">มีอยู่แล้วใน styling.py แต่ user รู้สึกหน้าตาดูแปลก</td><td class="pros">ง่าย เพราะแค่ inline HTML</td></tr>
+      <tr><td>เหมาะกับ ref Chansey</td><td class="pros"><b>ใกล้เคียงที่สุด</b> — เพราะ chansey คือ vector ตัวกลม ตาโต ใส่หมวก</td><td class="cons">ไกลกว่าเพราะ emoji ไม่ chansey-fluffy</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="pick">
+  <b>คำแนะนำของผม:</b> ใช้ <b>แบบ A (SVG Chansey-style)</b> เพราะใกล้กับ ref Chansey ของพี่มากที่สุด และโค้ดมีอยู่ใน <code>utils/styling.py</code> อยู่แล้ว — แค่ปรับ <code>render_nurse_mascot</code>/<code>render_doctor_mascot</code> ให้แสดงในกล่อง pink/blue ที่มีชื่อ + คำพูดข้างใต้ (เหมือนใน mockup v4)
+  <br><br>
+  <b>ถ้าใน Streamlit หน้าตาดูแปลก</b> อาจเป็นเพราะ:
+  <ul style="margin: 4px 0 4px 18px; padding: 0;">
+    <li>SVG ปัจจุบันถูกใส่เข้าไปแบบ horizontal layout (mascot อยู่ซ้าย speech อยู่ขวา) ทำให้ดูไม่ค่อยเด่น</li>
+    <li>ขนาด SVG เล็กไป (88px) — mockup v4 ใช้ ~140px แล้วใส่ใน card pink มี border</li>
+  </ul>
+  <b>วิธีแก้:</b> เปลี่ยน layout ของ <code>render_nurse_mascot</code> เป็น <b>vertical card</b> (mascot บน, ชื่อกลาง, คำพูดล่าง) แบบเดียวกับ mockup v4 column ขวา
+</div>
+
+</body>
+</html>

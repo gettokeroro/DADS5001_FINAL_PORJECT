@@ -29,6 +29,7 @@ from utils.data_loader import (
     load_specialty_keywords,
     load_specialty_mapping,
     load_symptom_dict,
+    log_ai_session,
     render_disclaimer_sidebar,
     render_drug_panel,
     render_hospital_panel,
@@ -440,6 +441,14 @@ elif st.session_state.ai8_step == "result":
         st.session_state.ai8_ranked     = ranked
         st.session_state.ai8_confidence = conf
         st.session_state.ai8_narration  = narrations  # now list[str]
+
+        # Phase 9b — log session to MongoDB Atlas (fire-and-forget)
+        try:
+            _logged = log_ai_session(picked, ranked, conf)
+            if _logged:
+                st.toast("🗄️ บันทึกลง MongoDB Atlas แล้วค่ะ", icon="✅")
+        except Exception:
+            pass  # never crash the diagnosis page on logging failure
 
     # Pull from cache
     ranked     = st.session_state.ai8_ranked

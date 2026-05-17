@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadmap Snapshot · DADS5001 · 2026-05-09</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#fafaf7;--card:#fff;--ink:#1a1a1a;--muted:#6b7280;--line:#e5e7eb;
+    --done-bg:#dcfce7;--done-border:#22c55e;--done-text:#14532d;
+    --wip-bg:#fef3c7;--wip-border:#f59e0b;--wip-text:#78350f;
+    --todo-bg:#f3f4f6;--todo-border:#9ca3af;--todo-text:#374151;
+    --info-bg:#dbeafe;--info-border:#3b82f6;--info-text:#1e3a8a;
+  }
+  body{font-family:'Sukhumvit Set','Noto Sans Thai',system-ui,-apple-system,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6;padding:28px 18px;max-width:1080px;margin:0 auto}
+  header{margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid var(--line)}
+  h1{font-size:26px;font-weight:700;letter-spacing:-0.01em}
+  .sub{color:var(--muted);font-size:14px;margin-top:6px}
+  .meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--muted)}
+  .meta b{color:var(--ink)}
+  .progress-wrap{margin:18px 0;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:10px}
+  .progress-bar{height:10px;background:#e5e7eb;border-radius:6px;overflow:hidden;margin-top:8px}
+  .progress-bar .fill{height:100%;background:linear-gradient(90deg,#22c55e,#10b981);transition:width .4s}
+  .progress-text{font-weight:600;font-size:14px;display:flex;justify-content:space-between}
+  section{margin:22px 0}
+  h2{font-size:18px;font-weight:700;margin-bottom:10px;padding-bottom:4px;border-bottom:1px dashed var(--line)}
+  .phase{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+  .phase-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+  .phase-title{font-weight:600;font-size:15px}
+  .badge{display:inline-block;padding:3px 10px;border-radius:14px;font-size:11px;font-weight:600;letter-spacing:0.02em}
+  .badge.done{background:var(--done-bg);color:var(--done-text);border:1px solid var(--done-border)}
+  .badge.wip{background:var(--wip-bg);color:var(--wip-text);border:1px solid var(--wip-border)}
+  .badge.todo{background:var(--todo-bg);color:var(--todo-text);border:1px solid var(--todo-border)}
+  .phase-desc{font-size:13px;color:var(--muted);margin-top:4px}
+  ul.tasks{list-style:none;margin-top:8px;padding-left:4px}
+  ul.tasks li{font-size:13px;padding:3px 0;color:#374151}
+  ul.tasks li::before{content:"";display:inline-block;width:14px;margin-right:6px}
+  ul.tasks li.d::before{content:"✅"}
+  ul.tasks li.w::before{content:"🟡"}
+  ul.tasks li.t::before{content:"⬜"}
+  .info{background:var(--info-bg);border-left:4px solid var(--info-border);color:var(--info-text);
+    padding:10px 14px;border-radius:6px;font-size:13px;margin-top:14px}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f9fafb;font-weight:600;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em}
+  code{background:#f3f4f6;padding:1px 6px;border-radius:3px;font-size:12px;font-family:ui-monospace,monospace}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:4px}
+  .next{margin-top:20px;padding:16px 18px;background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);
+    border-radius:10px;border:1px solid var(--wip-border)}
+  .next h3{font-size:15px;color:var(--wip-text);margin-bottom:8px}
+  .next ol{margin-left:20px;font-size:13px;color:var(--wip-text)}
+  .next ol li{padding:3px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>🩺 Roadmap Snapshot · Symptom-to-Specialty Triage</h1>
+  <div class="sub">DADS5001 Final Project · ฉบับอัปเดต <b>2026-05-09</b></div>
+  <div class="meta">
+    <span>📦 <b>48</b> โรค</span>
+    <span>🔬 <b>132</b> อาการ</span>
+    <span>🏥 <b>77</b> จังหวัด</span>
+    <span>💊 <b>86</b> ยา (v2 ed)</span>
+    <span>📄 <b>7</b> pages</span>
+    <span>👥 ทีม 3-5 คน</span>
+  </div>
+  <div class="legend">
+    <span>✅ เสร็จแล้ว</span>
+    <span>🟡 กำลังทำ / wire ไม่ครบ</span>
+    <span>⬜ ยังไม่เริ่ม</span>
+  </div>
+</header>
+
+<div class="progress-wrap">
+  <div class="progress-text"><span>ความคืบหน้ารวม</span><span>10/13 features (77%)</span></div>
+  <div class="progress-bar"><div class="fill" style="width:77%"></div></div>
+</div>
+
+<section>
+  <h2>📊 Phase ที่เสร็จแล้ว ✅</h2>
+
+  <div class="phase">
+    <div class="phase-head"><span class="phase-title">Phase 1 · Population prevalence weighting</span><span class="badge done">DONE</span></div>
+    <div class="phase-desc">ใส่ prevalence_weight + tier (very_common→very_rare) อิง Top OPD Thai 2564 → กัน Dengue/Malaria แย่ง Top-1 จาก Common Cold</div>
+    <ul class="tasks"><li class="d"><code>data/processed/disease_prevalence.csv</code> · 48 rows</li>
+    <li class="d">TF-IDF formula: score × POWER(GREATEST(prev,0.5),0.25)</li></ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="phase-title">Phase 1.5 · Interactive co-symptom follow-up (AI)</span><span class="badge done">DONE</span></div>
+    <div class="phase-desc">AI mode 2-step state machine: ถ้า extracted &lt; 4 → suggest 5 co-symptoms (pure TF-IDF · ไม่มี prevalence) → ผู้ใช้ติ๊กเพิ่ม → ค่อย rank</div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="phase-title">Phase 2 · Confidence classification</span><span class="badge done">DONE</span></div>
+    <div class="phase-desc"><code>classify_confidence(ranked_df, n_user_symptoms)</code> → high/medium/low/<b>very_low</b> badge</div>
+    <ul class="tasks"><li class="d">high: top_score &gt; 5 AND (coverage &gt; 30% OR gap &gt; 50%)</li>
+    <li class="d">very_low: n_symptoms ≤ 2 AND top_score &lt; 1.5 (TF-IDF)</li></ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="phase-title">Phase 4 · Add 7 common diseases (7/7) 🎉</span><span class="badge done">DONE</span></div>
+    <div class="phase-desc">เพิ่มโรคใหม่ครบทุกไฟล์ (raw + 4 processed) · scripts ครบใน <code>scripts/</code> · ~700 rows ลง itachi_train.csv</div>
+    <ul class="tasks">
+      <li class="d">Influenza (J11 · GP/Pulmo)</li>
+      <li class="d">Dehydration (E86 · GP/ER)</li>
+      <li class="d">Pharyngitis (J02 · ENT)</li>
+      <li class="d">Conjunctivitis (H10 · Ophthalmology · specialty ใหม่)</li>
+      <li class="d">Acute bronchitis (J20 · Pulmo)</li>
+      <li class="d">Electrolyte imbalance (E87 · ER)</li>
+      <li class="d">Vitamin deficiency (E56.9 · GP/Endo)</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="phase-title">Phase 4 UX · Search box + on_change callback refactor</span><span class="badge done">DONE</span></div>
+    <div class="phase-desc">เปลี่ยน loop append → on_change pattern · single source of truth (<code>selected_symptoms</code>) + auto-expand + header badges (🔍 N + ✅ N) → แก้ bug "ติ๊กในรอบก่อนหายเมื่อ search รอบใหม่"</div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="phase-title">Phase 5 · Honest Fallback</span><span class="badge done">DONE</span></div>
+    <div class="phase-desc">tier <code>very_low</code> · banner เด่นใน Page 1 + Page 2 · AI VERY LOW branch สั่ง AI ตอบสั้น 3-4 บรรทัด ห้ามวิเคราะห์ Top-3</div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="phase-title">Phase 6 (Page 1) · Drug + Hospital + Province filter</span><span class="badge done">DONE</span></div>
+    <div class="phase-desc">expander ใต้ Top-3 · 86 ยา/48 โรค · hospital province multiselect (77 จว.) · keyword matching ผ่าน <code>specialty_keywords.csv</code></div>
+    <ul class="tasks">
+      <li class="d"><code>data/processed/disease_drug_mapping_v2_ed.csv</code></li>
+      <li class="d"><code>data/processed/hospitals_thailand.csv</code></li>
+      <li class="d"><code>data/processed/specialty_keywords.csv</code></li>
+      <li class="d"><code>load_hospitals_master()</code> + <code>render_hospital_panel(...selected_provinces)</code></li>
+      <li class="d"><code>utils/styling.py · inject_global_css()</code> + sidebar gradient + navy theme</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="phase-title">Phase 3 · Casual Thai slang — Top 30 priority (2026-05-09) 🆕</span><span class="badge done">DONE</span></div>
+    <div class="phase-desc">ขยาย slang ใน <code>symptom_dictionary_th.csv</code> สำหรับ 30 อาการที่คนไทยค้นบ่อย · ~60→~150 alts (avg 2.0→5.0/row) · slang level moderate (รวม "อ้วก/ขี้แตก/กาก/ฉี่/อึ" · ไม่รวม "เยี่ยว/ตด")</div>
+    <ul class="tasks">
+      <li class="d">A. ไข้หวัด/ภูมิแพ้ (8): headache, high_fever, mild_fever, chills, cough, continuous_sneezing, runny_nose, throat_irritation</li>
+      <li class="d">B. ทางเดินอาหาร (6): stomach_pain, nausea, vomiting, diarrhoea, constipation, loss_of_appetite</li>
+      <li class="d">C. ผิวหนัง (3): itching, skin_rash, red_spots_over_body · "กาก, กากขึ้น"</li>
+      <li class="d">D. ปวดเมื่อย (4): joint_pain, muscle_pain, back_pain, fatigue · "ลุกไม่ไหว, ไม่มีแรง"</li>
+      <li class="d">E. หัวใจ/หายใจ (3): chest_pain, breathlessness, palpitations</li>
+      <li class="d">F. ทั่วไป/neuro (3): dizziness, malaise, dehydration</li>
+      <li class="d">G. ทางเดินปัสสาวะ (2): burning_micturition, polyuria</li>
+      <li class="d">H. จิตใจ (1): anxiety</li>
+      <li class="d">Smoke test: 7/7 ประโยคพี่เคด + 30/30 drafted sentences match ✅</li>
+      <li class="d">Backup: <code>data/processed/symptom_dictionary_th.bak.csv</code> · md5 ตรง original</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>🟡 กำลังทำ / wire ไม่ครบ</h2>
+
+  <div class="phase">
+    <div class="phase-head"><span class="phase-title">Phase 6 (Page 2 · AI mode) · wire province filter</span><span class="badge wip">WIRE PARTIAL</span></div>
+    <div class="phase-desc">มี <code>inject_global_css()</code> แล้ว · แต่ <code>render_hospital_panel(primary, _hospital_hint_df)</code> ที่ line 376 ยังไม่ส่ง <code>selected_provinces</code> + <code>hospitals_df</code> + <code>keywords_dict</code></div>
+    <ul class="tasks">
+      <li class="t">เพิ่ม province multiselect ใน Page 2 (อาจ sync กับ Page 1 ผ่าน session_state)</li>
+      <li class="t">ส่ง 3 args ใหม่ใน render_hospital_panel — copy pattern จาก Page 1</li>
+      <li class="t">user มีแผนปรับ UX ก่อน → ต้อง <b>discuss ก่อน implement</b></li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>⬜ ยังไม่เริ่ม</h2>
+
+  <div class="phase">
+    <div class="phase-head"><span class="phase-title">Phase 3 (rest) · ขยาย slang อีก 102 rows ที่เหลือ</span><span class="badge wip">PARTIAL</span></div>
+    <div class="phase-desc">Top 30 เสร็จแล้ว · เหลืออีก 102 อาการ — ทำเป็น batch ทีละ body_system หรือรอ user feedback หลัง deploy แล้วค่อยเพิ่ม slang ที่ค้นจริง</div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="phase-title">Page 3 · Compare Non-AI vs AI</span><span class="badge todo">STUB</span></div>
+    <div class="phase-desc">หน้าหลักของ presentation — แสดงให้เห็นว่า AI mode เพิ่มอะไรจาก Non-AI · ตอนนี้เป็น mock-up · ต้อง wire run ทั้ง 2 modes บนอาการเดียวกัน + เปรียบเทียบ Top-3 + reasoning + latency</div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="phase-title">Page 4 · Disease Landscape (data.go.th)</span><span class="badge todo">STUB</span></div>
+    <div class="phase-desc">4 tabs · trend 8 ปี · top OPD vs IPD · choropleth map · เฝ้าระวัง 2567 · ต้อง download dataset + clean (ตอนนี้ไฟล์ ha_aod_001-2.csv อยู่ใน datago/ TIS-620)</div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="phase-title">Page 5 · Cost Estimator (Phase 7 · Feature B)</span><span class="badge todo">STUB</span></div>
+    <div class="phase-desc">ราคาประมาณการ + เปรียบเทียบรัฐ/เอกชน · ยังไม่มี data sources (HITAP / สปสช. DRG / ราคากลาง / พ.ร.บ.ค่ารักษา)</div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="phase-title">Misc · Update count ใน <code>app.py</code></span><span class="badge todo">QUICK FIX</span></div>
+    <div class="phase-desc">line ~75: <code>"41 โรค" / "121 อาการ"</code> → ของจริง <b>48 / 132</b> · หลังเพิ่ม Phase 4 ทั้ง 7 โรค</div>
+  </div>
+</section>
+
+<section>
+  <h2>📁 Tech stack snapshot</h2>
+  <table>
+    <tr><th>Layer</th><th>เทคโนโลยี</th><th>หมายเหตุ</th></tr>
+    <tr><td>UI</td><td>Streamlit multi-pages (7 pages)</td><td>app.py + 6 pages</td></tr>
+    <tr><td>SQL engine</td><td>DuckDB (in-memory)</td><td>TF-IDF + Bayes scoring</td></tr>
+    <tr><td>Cache</td><td>cache_data + cache_resource + session_state</td><td>3 ชนิดตามโจทย์</td></tr>
+    <tr><td>LLM</td><td>Gemini Flash (auto-resolve)</td><td>secret <code>GOOGLE_API_KEY</code></td></tr>
+    <tr><td>Deploy</td><td>Streamlit Cloud auto-deploy</td><td>git push → rebuild ~30-60s</td></tr>
+    <tr><td>AI persona</td><td>"น้องอุ่นใน (Aoon-nai)"</td><td>เรียก user ว่า "พี่"</td></tr>
+  </table>
+</section>
+
+<div class="next">
+  <h3>🎯 ลำดับงานที่แนะนำต่อไป (priority)</h3>
+  <ol>
+    <li><b>Git housekeeping (วันนี้):</b> push Phase 3 commit + commit MEMORY.md + decide ว่าจะ commit หรือ ignore <code>symptom_dictionary_th.bak.csv</code> (ตอนนี้ <code>.gitignore</code> มีแค่ <code>*.bak</code> ไม่ match <code>.bak.csv</code>)</li>
+    <li><b>Quick fix:</b> update count ใน <code>app.py</code> (41→48 / 121→132) — 1 นาที</li>
+    <li><b>Phase 6 AI</b> · discuss UX กับ user แล้ว wire province filter ใน Page 2 (สร้าง parity กับ Page 1)</li>
+    <li><b>Page 3 Compare</b> · พระเอกของการ present · ลำดับสำคัญที่สุดถ้าต้องโชว์อาจารย์</li>
+    <li><b>Phase 3 (rest)</b> · slang ของ 102 rows ที่เหลือ — ทำคู่ขนานได้ ไม่ block อะไร</li>
+    <li><b>Page 4</b> Disease Landscape · ใช้ data.go.th ที่ download มาแล้วใน <code>data/raw/datago/</code></li>
+    <li><b>Page 5</b> Cost · ทำท้ายสุด เพราะเป็น Feature B (เสริม) · ต้องหา source ข้อมูลก่อน</li>
+  </ol>
+</div>
+
+<p style="text-align:center;color:var(--muted);font-size:11px;margin-top:24px;padding-top:14px;border-top:1px solid var(--line)">
+Generated 2026-05-09 · ให้ใช้ <code>roadmap-mindmap.html</code> เป็น live tracker (มี checkbox + localStorage) · ไฟล์นี้เป็น snapshot static
+</p>
+</body>
+</html>
