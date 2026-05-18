@@ -3,12 +3,12 @@ Page 4 · Disease Landscape
 แหล่งข้อมูล:
   - ha_aod_001-2.csv  (TIS-620) → top-disease mentions จาก รพ.ทั่วประเทศ
   - disease_specialty_mapping.csv → ความครอบคลุมของ app (48 โรค × 13 สาขา)
-  - disease_drug_mapping_v2_ed.csv → drug tier distribution
   - hospitals_thailand.csv       → hospital count per province / health region
   - MongoDB ai_sessions           → real user analytics (top diseases, symptoms, confidence)
 """
 import re
 import sys
+import hashlib
 from collections import Counter
 from pathlib import Path
 
@@ -24,26 +24,26 @@ from utils.data_loader import (
     render_disclaimer_sidebar,
 )
 
-# ---------------------------------------------------------------------------
-# Page config
-# ---------------------------------------------------------------------------
 st.set_page_config(page_title="Disease Landscape", page_icon="🗺️", layout="wide")
 init_session_state()
 render_disclaimer_sidebar()
 
+st.markdown("""<style>
+[data-testid="stMetricDelta"] > div {font-size:10.5px !important;white-space:normal !important;overflow:visible !important;line-height:1.3 !important;}
+[data-testid="stMetricValue"] {font-size:1.35rem !important;}
+[data-testid="stMetricLabel"] {font-size:13px !important;white-space:normal !important;overflow:visible !important;}
+</style>""", unsafe_allow_html=True)
+
 DATA = Path(__file__).resolve().parent.parent / "data"
 
-# ---------------------------------------------------------------------------
-# Plotly theme helpers
-# ---------------------------------------------------------------------------
-NAVY   = "#0a2342"
-TEAL   = "#1B9AAA"
-PINK   = "#E84C8B"
-AMBER  = "#F7B731"
-GREEN  = "#26de81"
+NAVY  = "#0a2342"
+TEAL  = "#1B9AAA"
+PINK  = "#E84C8B"
+AMBER = "#F7B731"
+GREEN = "#26de81"
 
 
-def _fig_style(fig: go.Figure) -> go.Figure:
+def _fig_style(fig):
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
@@ -53,76 +53,186 @@ def _fig_style(fig: go.Figure) -> go.Figure:
     return fig
 
 
-# ---------------------------------------------------------------------------
-# Cached data loaders
-# ---------------------------------------------------------------------------
+DISEASE_THAI_MAP = {
+    "Sepsis":         "ภาวะพิษเลือด",
+    "HT":             "ความดันโลหิตสูง",
+    "Stroke":         "โรคหลอดเลือดสมอง",
+    "STEMI":          "กล้ามเนื้อหัวใจตายเฉียบพลัน",
+    "COPD":           "ถุงลมโป่งพอง",
+    "TB":             "วัณโรค",
+    "DM":             "เบาหวาน",
+    "CKD":            "ไตเรื้อรัง",
+    "DHF":            "ไข้เลือดออก",
+    "HIV":            "เอชไอวี/เอดส์",
+    "PPH":            "ตกเลือดหลังคลอด",
+    "Trauma":         "บาดเจ็บ/อุบัติเหตุ",
+    "Pneumonia":      "ปอดบวม",
+    "Asthma":         "หอบหืด",
+    "PIH":            "ความดันในครรภ์",
+    "Head injury":    "บาดเจ็บศีรษะ",
+    "HI":             "บาดเจ็บศีรษะ",
+    "ACS":            "กล้ามเนื้อหัวใจขาดเลือด",
+    "AMI":            "กล้ามเนื้อหัวใจตาย",
+    "Birth asphyxia": "ทารกขาดออกซิเจนแรกเกิด",
+    "Appendicitis":   "ไส้ติ่งอักเสบ",
+    "COVID-19":       "โควิด-19",
+    "Dengue":         "ไข้เลือดออก",
+}
+
+DISEASE_TOP_SYMPTOMS = {
+    "HT":        ["ปวดศีรษะ", "เวียนศีรษะ", "ใจสั่น", "เหนื่อยง่าย", "มองเห็นผิดปกติ"],
+    "Stroke":    ["แขนขาอ่อนแรงซีกเดียว", "พูดไม่ชัด", "เดินเซ", "ปวดศีรษะรุนแรง", "หมดสติ"],
+    "STEMI":     ["เจ็บหน้าอก", "เหนื่อยหอบ", "เหงื่อออกมาก", "คลื่นไส้", "ใจสั่น"],
+    "COPD":      ["ไอเรื้อรัง", "เหนื่อยหอบ", "มีเสมหะ", "แน่นหน้าอก", "เหนื่อยง่าย"],
+    "TB":        ["ไอเรื้อรัง", "ไข้ต่ำආ", "น้ำหนักลด", "เหงื่อออกกลางคืน", "อ่อนเพลีย"],
+    "DM":        ["ปัสสาวะบ่อย", "กระหายน้ำมาก", "หิวบ่อย", "น้ำหนักลด", "อ่อนเพลีย"],
+    "CKD":       ["บวมขา", "ความดันสูง", "ปัสสาวะน้อย", "อ่อนเพลีย", "คลื่นไส้"],
+    "DHF":       ["ไข้สูงเฉียบพลัน", "ปวดศีรษะ", "ปวดกล้ามเนื้อ", "มีผื่น", "คลื่นไส้"],
+    "HIV":       ["ไข้", "อ่อนเพลีย", "ต่อมน้ำเหลืองโต", "น้ำหนักลด", "ไอ"],
+    "Pneumonia": ["ไข้", "ไอ", "เหนื่อยหอบ", "เจ็บหน้าอก", "เสมหะ"],
+    "Asthma":    ["หายใจมีเสียงหวีด", "หอบ", "ไอ", "แน่นหน้าอก", "เหนื่อยง่าย"],
+    "Sepsis":    ["ไข้สูง/ต่ำผิดปกติ", "ใจสั่นเร็ว", "หายใจเร็ว", "ความดันต่ำ", "ซึม"],
+}
+
+PROVINCE_CENTROIDS = {
+    "กรุงเทพมหานคร": (13.754, 100.501),
+    "กระบี่": (8.085, 98.906),
+    "กาญจนบุรี": (14.018, 99.534),
+    "กาฬสินธุ์": (16.432, 103.506),
+    "กำแพงเพชร": (16.483, 99.522),
+    "ขอนแก่น": (16.432, 102.836),
+    "จันทบุรี": (12.610, 102.104),
+    "ฉะเชิงเทรา": (13.689, 101.078),
+    "ชลบุรี": (13.361, 100.985),
+    "ชัยนาท": (15.186, 100.125),
+    "ชัยภูมิ": (15.806, 102.032),
+    "ชุมพร": (10.494, 99.180),
+    "เชียงราย": (19.911, 99.840),
+    "เชียงใหม่": (18.787, 98.993),
+    "ตรัง": (7.560, 99.624),
+    "ตราด": (12.244, 102.513),
+    "ตาก": (16.879, 99.126),
+    "นครนายก": (14.201, 101.215),
+    "นครปฐม": (13.820, 100.054),
+    "นครพนม": (17.392, 104.769),
+    "นครราชสีมา": (14.980, 102.098),
+    "นครศรีธรรมราช": (8.432, 99.960),
+    "นครสวรรค์": (15.705, 100.137),
+    "นนทบุรี": (13.859, 100.525),
+    "นราธิวาส": (6.426, 101.824),
+    "น่าน": (18.774, 100.777),
+    "บึงกาฬ": (18.361, 103.646),
+    "บุรีรัมย์": (14.993, 103.102),
+    "ปทุมธานี": (14.013, 100.529),
+    "ประจวบคีรีขันธ์": (11.813, 99.797),
+    "ปราจีนบุรี": (14.052, 101.366),
+    "ปัตตานี": (6.869, 101.250),
+    "พระนครศรีอยุธยา": (14.357, 100.587),
+    "พะเยา": (19.163, 99.901),
+    "พังงา": (8.451, 98.526),
+    "พัทลุง": (7.617, 100.075),
+    "พิจิตร": (16.441, 100.349),
+    "พิษณโลก": (16.829, 100.265),
+    "เพชรบุรี": (13.112, 99.939),
+    "เพชรบูรณ์": (16.419, 101.160),
+    "แพร่": (18.145, 100.140),
+    "ภูเก็ต": (7.890, 98.398),
+    "มาหาสารคาม": (16.185, 103.301),
+    "มุกดาหาร": (16.543, 104.724),
+    "แม่ฮ่องสอน": (19.301, 97.966),
+    "ยโสธร": (15.792, 104.145),
+    "ยะลา": (6.544, 101.281),
+    "ระนอง": (9.958, 98.635),
+    "ระยอง": (12.683, 101.281),
+    "ราชบุรี": (13.536, 99.818),
+    "ร้อยเอ็ด": (16.054, 103.652),
+    "ลพบุรี": (14.799, 100.653),
+    "ลำปาง": (18.292, 99.491),
+    "ลำพูน": (18.574, 98.986),
+    "เลย": (17.486, 101.722),
+    "ศรีสะเกษ": (15.117, 104.322),
+    "สกลนคร": (17.155, 104.148),
+    "สงขลา": (7.190, 100.595),
+    "สตูล": (6.615, 100.068),
+    "สมุทรปราการ": (13.599, 100.600),
+    "สมุทรสงคราม": (13.412, 100.002),
+    "สมุทรสาคร": (13.547, 100.274),
+    "สระแก้ว": (13.824, 102.065),
+    "สระบุรี": (14.530, 100.910),
+    "สิงห์บุรี": (14.891, 100.397),
+    "สุโขทัย": (17.007, 99.826),
+    "สุพรรณบุรี": (14.472, 100.128),
+    "สุราษฎ์ธานี": (9.140, 99.330),
+    "สุรินทร์": (14.882, 103.494),
+    "หนองคาย": (17.877, 102.743),
+    "หนองบัวลำภู": (17.204, 102.443),
+    "อ่างทอง": (14.590, 100.455),
+    "อำนาจเจริญ": (15.866, 104.625),
+    "อุดรธานี": (17.416, 102.787),
+    "อุตรดิตถ์": (17.620, 100.099),
+    "อุทัยธานี": (15.380, 100.024),
+    "อุบลราชธานี": (15.245, 104.847),
+}
+
+
 @st.cache_data(show_spinner=False)
-def _load_hospital_disease_mentions() -> pd.DataFrame:
-    """Parse กลุ่มผู้ป่วยโรคสำคัญ free-text from ha_aod_001-2.csv (cp874).
-    Returns DataFrame[disease, count] top-25 sorted descending.
-    """
+def _load_hospital_disease_mentions():
     raw_path = DATA / "raw" / "datago" / "ha_aod_001-2.csv"
     try:
         df = pd.read_csv(raw_path, encoding="cp874", low_memory=False, header=0)
-        # Last column (index 19) = กลุ่มผู้ป่วยโรคสำคัญ
         disease_col = df.iloc[:, 19].dropna().astype(str)
-        counts: Counter = Counter()
+        counts = Counter()
         for text in disease_col:
-            parts = re.split(r"[,/\\\n;·•]+", text)
+            parts = re.split(r"[,/\\\n;\xb7\x95]+", text)
             for p in parts:
                 p = p.strip().strip('"').strip("'").strip()
-                if len(p) >= 2 and p.lower() not in ("nan", "", "-", "null", "none"):
+                if (len(p) >= 2
+                        and p.lower() not in ("nan", "", "-", "null", "none")
+                        and "<" not in p and ">" not in p
+                        and "br" not in p.lower()):
                     counts[p] += 1
         if not counts:
-            return pd.DataFrame(columns=["disease", "count"])
-        return pd.DataFrame(counts.most_common(25), columns=["disease", "count"])
+            return pd.DataFrame(columns=["disease", "disease_th", "count", "label"])
+        result = pd.DataFrame(counts.most_common(25), columns=["disease", "count"])
+        result["disease_th"] = result["disease"].map(DISEASE_THAI_MAP)
+        result["label"] = result.apply(
+            lambda r: f"{r['disease_th']}\n({r['disease']})" if pd.notna(r["disease_th"]) else r["disease"],
+            axis=1,
+        )
+        return result
     except Exception:
-        return pd.DataFrame(columns=["disease", "count"])
+        return pd.DataFrame(columns=["disease", "disease_th", "count", "label"])
 
 
 @st.cache_data(show_spinner=False)
-def _load_specialty_counts() -> pd.DataFrame:
-    """Count diseases per primary_specialty from disease_specialty_mapping.csv."""
+def _load_disease_specialty_pivot():
     path = DATA / "processed" / "disease_specialty_mapping.csv"
     try:
         df = pd.read_csv(path)
-        return (
-            df.groupby("primary_specialty")
-            .size()
-            .reset_index(name="n_diseases")
-            .sort_values("n_diseases", ascending=False)
-        )
+        all_specs = sorted(set(df["primary_specialty"].dropna().unique()))
+        def _short(s):
+            return re.sub(r"\s*\(.*?\)", "", s).strip()
+        short_specs = {s: _short(s) for s in all_specs}
+        cols = [short_specs[s] for s in all_specs]
+        rows = []
+        for _, row in df.iterrows():
+            vec = {c: 0 for c in cols}
+            ps = short_specs.get(row["primary_specialty"], "")
+            ss_raw = str(row.get("secondary_specialty", ""))
+            ss = short_specs.get(ss_raw, "")
+            if ps in vec:
+                vec[ps] = 2
+            if ss and ss in vec:
+                vec[ss] = max(vec[ss], 1)
+            rows.append({"disease": row["disease_th"], **vec})
+        pivot = pd.DataFrame(rows).set_index("disease")
+        return pivot
     except Exception:
-        return pd.DataFrame(columns=["primary_specialty", "n_diseases"])
+        return pd.DataFrame()
 
 
 @st.cache_data(show_spinner=False)
-def _load_drug_tier_counts() -> pd.DataFrame:
-    """Count unique drugs per prescription_tier."""
-    path = DATA / "processed" / "disease_drug_mapping_v2_ed.csv"
-    try:
-        df = pd.read_csv(path)
-        counts = (
-            df.drop_duplicates(subset=["drug_generic"])
-            .groupby("prescription_tier")
-            .size()
-            .reset_index(name="n_drugs")
-            .sort_values("n_drugs", ascending=False)
-        )
-        label_map = {
-            "otc":      "ซื้อเองได้ (OTC)",
-            "pharmacy": "เภสัชกรแนะนำ",
-            "doctor":   "ต้องใบสั่งแพทย์",
-        }
-        counts["tier_label"] = counts["prescription_tier"].map(label_map).fillna(counts["prescription_tier"])
-        return counts
-    except Exception:
-        return pd.DataFrame(columns=["prescription_tier", "n_drugs", "tier_label"])
-
-
-@st.cache_data(show_spinner=False)
-def _load_hospital_province() -> pd.DataFrame:
-    """Count hospitals per province + health_region."""
+def _load_hospital_province():
     path = DATA / "processed" / "hospitals_thailand.csv"
     try:
         df = pd.read_csv(path)
@@ -136,16 +246,21 @@ def _load_hospital_province() -> pd.DataFrame:
         return pd.DataFrame(columns=["health_region", "province", "n_hospitals"])
 
 
+@st.cache_data(show_spinner=False)
+def _load_hospital_raw():
+    path = DATA / "processed" / "hospitals_thailand.csv"
+    try:
+        return pd.read_csv(path)
+    except Exception:
+        return pd.DataFrame()
+
+
 @st.cache_data(ttl=300, show_spinner=False)
-def _load_ai_sessions_analytics() -> dict:
-    """Query MongoDB ai_sessions → aggregated analytics. TTL=300 s.
-    Returns dict with status key: 'ok' | 'unavailable' | 'empty' | 'error'.
-    """
+def _load_ai_sessions_analytics():
     try:
         db = _get_mongo_db()
         if db is None:
             return {"status": "unavailable"}
-
         docs = list(db["ai_sessions"].find(
             {},
             {"_id": 0, "timestamp": 1, "symptoms": 1, "top_disease": 1,
@@ -153,17 +268,12 @@ def _load_ai_sessions_analytics() -> dict:
         ))
         if not docs:
             return {"status": "empty"}
-
         df = pd.DataFrame(docs)
-
-        # top diseases
         disease_counts = (
             df["top_disease"].value_counts().head(15)
             .reset_index().rename(columns={"top_disease": "disease", "count": "n"})
         )
-
-        # top symptoms (flatten list)
-        all_sym: list = []
+        all_sym = []
         for row in df["symptoms"].dropna():
             if isinstance(row, list):
                 all_sym.extend(row)
@@ -171,233 +281,323 @@ def _load_ai_sessions_analytics() -> dict:
             pd.DataFrame(Counter(all_sym).most_common(15), columns=["symptom", "n"])
             if all_sym else pd.DataFrame(columns=["symptom", "n"])
         )
-
-        # confidence distribution
         conf_counts = (
             df["confidence_level"].value_counts()
             .reset_index().rename(columns={"confidence_level": "level", "count": "n"})
         )
-        lbl = {"high": "มั่นใจสูง", "medium": "มั่นใจปานกลาง",
-               "low": "มั่นใจต่ำ", "very_low": "มั่นใจต่ำมาก"}
+        lbl = {"high": "\xe0\xb8\xa1\xe0\xb8\xb1\xe0\xb9\x88\xe0\xb9\x83\xe0\xb8\x88\xe0\xb8\xaa\xe0\xb8\xb9\xe0\xb8\x87",
+               "medium": "\xe0\xb8\xa1\xe0\xb8\xb1\xe0\xb9\x88\xe0\xb9\x83\xe0\xb8\x88\xe0\xb8\x9b\xe0\xb8\xb2\xe0\xb8\x99\xe0\xb8\x81\xe0\xb8\xa5\xe0\xb8\xb2\xe0\xb8\x87",
+               "low": "\xe0\xb8\xa1\xe0\xb8\xb1\xe0\xb9\x88\xe0\xb9\x83\xe0\xb8\x88\xe0\xb8\x95\xe0\xb9\x88\xe0\xb8\xb3",
+               "very_low": "\xe0\xb8\xa1\xe0\xb8\xb1\xe0\xb9\x88\xe0\xb9\x83\xe0\xb8\x88\xe0\xb8\x95\xe0\xb9\x88\xe0\xb8\xb3\xe0\xb8\xa1\xe0\xb8\xb2\xe0\xb8\x81"}
         conf_counts["label"] = conf_counts["level"].map(lbl).fillna(conf_counts["level"])
-
-        # daily trend
         df["date"] = pd.to_datetime(df["timestamp"]).dt.date
         daily = df.groupby("date").size().reset_index(name="sessions")
         daily["date"] = pd.to_datetime(daily["date"])
-
         return {
-            "status":          "ok",
-            "total":           len(df),
-            "top_diseases":    disease_counts,
-            "top_symptoms":    symptom_df,
-            "confidence_dist": conf_counts,
-            "daily_trend":     daily,
+            "status": "ok", "total": len(df),
+            "top_diseases": disease_counts, "top_symptoms": symptom_df,
+            "confidence_dist": conf_counts, "daily_trend": daily,
         }
     except Exception as e:
         return {"status": "error", "msg": str(e)}
 
 
+
 # ---------------------------------------------------------------------------
 # Page header
 # ---------------------------------------------------------------------------
-st.title("🗺️ Disease Landscape Thailand")
-st.markdown("##### ภาพรวมโรคในประเทศไทย · ข้อมูลจากโรงพยาบาลจริง + MongoDB User Analytics")
+st.title("\U0001f5fa\ufe0f Disease Landscape Thailand")
+st.markdown("##### \u0e20\u0e32\u0e1e\u0e23\u0e27\u0e21\u0e42\u0e23\u0e04\u0e43\u0e19\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28\u0e44\u0e17\u0e22 \xb7 \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e32\u0e01\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e08\u0e23\u0e34\u0e07 + MongoDB User Analytics")
 st.divider()
 
-# ---------------------------------------------------------------------------
-# External reference stats row (DDC / WHO / IDF 2024–2025)
-# ---------------------------------------------------------------------------
-with st.expander("📌 สถิติโรคไทย 2024–2025 (อ้างอิงจาก DDC · WHO · IDF)", expanded=True):
+with st.expander("\U0001f4cc \u0e2a\u0e16\u0e34\u0e15\u0e34\u0e42\u0e23\u0e04\u0e44\u0e17\u0e22 2024\u20132025 (\u0e2d\u0e49\u0e32\u0e07\u0e2d\u0e34\u0e07\u0e08\u0e32\u0e01 DDC \xb7 WHO \xb7 IDF)", expanded=True):
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("💀 เสียชีวิตจาก NCDs/ปี", "~420,000 คน", "74% ของการเสียชีวิตทั้งหมด")
-    c2.metric("🩸 ผู้ป่วยเบาหวาน", "6.36 ล้านคน", "อันดับ 4 Western Pacific · ปี 2024")
-    c3.metric("❤️ ผู้ป่วยความดันโลหิตสูง", "~13.7 ล้านคน", "เพิ่มขึ้นต่อเนื่องทุกปี")
-    c4.metric("🏥 ภาระโรค NCDs รวม", "~14 ล้านคน", "เบาหวาน · ความดัน · หัวใจ · ไต")
-    st.caption("Source: กรมควบคุมโรค (DDC) · WHO Thailand 2025 · IDF Diabetes Atlas 2024 · สสส. 2568")
+    c1.metric("\U0001f480 \u0e40\u0e2a\u0e35\u0e22\u0e0a\u0e35\u0e27\u0e34\u0e15\u0e08\u0e32\u0e01 NCDs/\u0e1b\u0e35", "~420,000 \u0e04\u0e19", "74% \u0e02\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e40\u0e2a\u0e35\u0e22\u0e0a\u0e35\u0e27\u0e34\u0e15\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14")
+    c2.metric("\U0001f9b8 \u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e40\u0e1a\u0e32\u0e2b\u0e27\u0e32\u0e19", "6.36 \u0e25\u0e49\u0e32\u0e19\u0e04\u0e19", "\u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a 4 Western Pacific \xb7 \u0e1b\u0e35 2024")
+    c3.metric("\u2764\ufe0f \u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e04\u0e27\u0e32\u0e21\u0e14\u0e31\u0e19\u0e42\u0e25\u0e2b\u0e34\u0e15\u0e2a\u0e39\u0e07", "~13.7 \u0e25\u0e49\u0e32\u0e19\u0e04\u0e19", "\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e02\u0e36\u0e49\u0e19\u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07\u0e17\u0e38\u0e01\u0e1b\u0e35")
+    c4.metric("\U0001f3e5 \u0e20\u0e32\u0e23\u0e30\u0e42\u0e23\u0e04 NCDs \u0e23\u0e27\u0e21", "~14 \u0e25\u0e49\u0e32\u0e19\u0e04\u0e19", "\u0e40\u0e1a\u0e32\u0e2b\u0e27\u0e32\u0e19 \xb7 \u0e04\u0e27\u0e32\u0e21\u0e14\u0e31\u0e19 \xb7 \u0e2b\u0e31\u0e27\u0e43\u0e08 \xb7 \u0e44\u0e15")
+    st.caption("Source: \u0e01\u0e23\u0e21\u0e04\u0e27\u0e1a\u0e04\u0e38\u0e21\u0e42\u0e23\u0e04 (DDC) \xb7 WHO Thailand 2025 \xb7 IDF Diabetes Atlas 2024 \xb7 \u0e2a\u0e2a\u0e2a. 2568")
 
 st.divider()
 
-# ---------------------------------------------------------------------------
-# Tabs
-# ---------------------------------------------------------------------------
 tab1, tab2, tab3, tab4 = st.tabs([
-    "🏥 โรคใน รพ.ไทย",
-    "🧬 ความครอบคลุม App",
-    "📍 แผนที่โรงพยาบาล",
-    "📊 User Analytics",
+    "\U0001f3e5 \u0e42\u0e23\u0e04\u0e43\u0e19 \u0e23\u0e1e.\u0e44\u0e17\u0e22",
+    "\U0001f9ec \u0e04\u0e27\u0e32\u0e21\u0e04\u0e23\u0e2d\u0e1a\u0e04\u0e25\u0e38\u0e21 App",
+    "\U0001f4cd \u0e41\u0e1c\u0e19\u0e17\u0e35\u0e48\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25",
+    "\U0001f4ca User Analytics",
 ])
 
-
 # ==========================================================================
-# Tab 1 — Hospital disease mentions
+# Tab 1
 # ==========================================================================
 with tab1:
-    st.markdown("### 🏥 โรคที่โรงพยาบาลไทยรายงานว่าพบบ่อย")
-    st.caption("Source: ข้อมูลโรงพยาบาลสังกัดกระทรวงสาธารณสุข (ha_aod_001-2) · กลุ่มผู้ป่วยโรคสำคัญ — 437 รพ. ทั่วประเทศ")
+    st.markdown("### \U0001f3e5 \u0e42\u0e23\u0e04\u0e17\u0e35\u0e48\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e44\u0e17\u0e22\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e27\u0e48\u0e32\u0e1e\u0e1a\u0e1a\u0e48\u0e2d\u0e22")
+    st.caption("Source: \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e2a\u0e31\u0e07\u0e01\u0e31\u0e14 \u0e2a\u0e18. (ha_aod_001-2) \xb7 \u0e01\u0e25\u0e38\u0e48\u0e21\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e42\u0e23\u0e04\u0e2a\u0e33\u0e04\u0e31\u0e0d \u2014 437 \u0e23\u0e1e. \u0e17\u0e31\u0e48\u0e27\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28")
 
-    with st.spinner("กำลังวิเคราะห์ข้อมูล..."):
+    with st.spinner("\u0e01\u0e33\u0e25\u0e31\u0e07\u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25..."):
         mentions_df = _load_hospital_disease_mentions()
 
     if mentions_df.empty:
-        st.warning("ไม่พบข้อมูล — ตรวจสอบไฟล์ `data/raw/datago/ha_aod_001-2.csv`")
+        st.warning("\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 \u2014 \u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e44\u0e1f\u0e25\u0e4c ha_aod_001-2.csv")
     else:
-        col_chart, col_stat = st.columns([3, 1])
+        col_chart, col_sym = st.columns([3, 2])
 
         with col_chart:
             fig = px.bar(
                 mentions_df.sort_values("count"),
-                x="count", y="disease", orientation="h",
+                x="count", y="label", orientation="h",
                 color="count",
                 color_continuous_scale=[[0, "#c7ecf7"], [1, TEAL]],
-                title="Top 25 โรคที่รพ.ไทยรายงานในกลุ่มผู้ป่วยสำคัญ",
-                labels={"count": "จำนวนโรงพยาบาลที่รายงาน", "disease": "โรค"},
+                text="count",
+                title="Top 25 \u0e42\u0e23\u0e04\u0e17\u0e35\u0e48\u0e23\u0e1e.\u0e44\u0e17\u0e22\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e43\u0e19\u0e01\u0e25\u0e38\u0e48\u0e21\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e2a\u0e33\u0e04\u0e31\u0e0d",
+                labels={"count": "\u0e08\u0e33\u0e19\u0e27\u0e19\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e17\u0e35\u0e48\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19", "label": "\u0e42\u0e23\u0e04"},
             )
+            fig.update_traces(texttemplate="%{text:,}", textposition="outside")
             fig.update_coloraxes(showscale=False)
-            fig.update_layout(yaxis=dict(tickfont=dict(size=12)))
+            fig.update_layout(yaxis=dict(tickfont=dict(size=11)), height=600)
             st.plotly_chart(_fig_style(fig), use_container_width=True)
 
-        with col_stat:
-            st.markdown("**Top 5 โรคที่พบบ่อยสุด**")
-            max_count = mentions_df["count"].max()
-            for _, row in mentions_df.head(5).iterrows():
-                pct = int(row["count"] / max_count * 100)
-                st.markdown(f"**{row['disease']}**")
-                st.progress(pct / 100, text=f"{int(row['count'])} รพ.")
-            st.caption(f"วิเคราะห์จาก {mentions_df['count'].sum():,} mentions")
+        with col_sym:
+            st.markdown("#### \U0001fa7a Top \u0e2d\u0e32\u0e01\u0e32\u0e23\u0e02\u0e2d\u0e07\u0e42\u0e23\u0e04\u0e17\u0e35\u0e48\u0e1e\u0e1a\u0e1a\u0e48\u0e2d\u0e22")
+            st.caption("\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e42\u0e23\u0e04\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e14\u0e39\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e2b\u0e25\u0e31\u0e01\u0e17\u0e35\u0e48\u0e1e\u0e1a\u0e1a\u0e48\u0e2d\u0e22\u0e43\u0e19\u0e17\u0e32\u0e07\u0e04\u0e25\u0e34\u0e19\u0e34\u0e01")
+            disease_options = [
+                r["disease"] for _, r in mentions_df.head(15).iterrows()
+                if r["disease"] in DISEASE_TOP_SYMPTOMS
+            ]
+            if not disease_options:
+                disease_options = list(DISEASE_TOP_SYMPTOMS.keys())[:5]
 
-    st.info("💡 ข้อมูลนี้มาจากฟิลด์ 'กลุ่มผู้ป่วยโรคสำคัญ' ที่แต่ละโรงพยาบาลรายงานเอง — สะท้อนโรคที่แต่ละ รพ. เห็นในทางปฏิบัติจริง ไม่ใช่ตัวเลขทางระบาดวิทยาทางการ")
+            selected = st.selectbox(
+                "\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e42\u0e23\u0e04",
+                options=disease_options,
+                format_func=lambda d: f"{DISEASE_THAI_MAP.get(d, d)} ({d})",
+                key="tab1_disease_select",
+            )
+
+            if selected and selected in DISEASE_TOP_SYMPTOMS:
+                th_name = DISEASE_THAI_MAP.get(selected, selected)
+                symptoms = DISEASE_TOP_SYMPTOMS[selected]
+                sym_df = pd.DataFrame({"\u0e2d\u0e32\u0e01\u0e32\u0e23": symptoms, "\u0e23\u0e30\u0e14\u0e31\u0e1a": [5, 4, 3, 2, 1]})
+                fig_sym = px.bar(
+                    sym_df, x="\u0e23\u0e30\u0e14\u0e31\u0e1a", y="\u0e2d\u0e32\u0e01\u0e32\u0e23", orientation="h",
+                    color="\u0e23\u0e30\u0e14\u0e31\u0e1a",
+                    color_continuous_scale=[[0, "#ffecd2"], [1, PINK]],
+                    title=f"\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e2b\u0e25\u0e31\u0e01\u0e02\u0e2d\u0e07{th_name}",
+                )
+                fig_sym.update_coloraxes(showscale=False)
+                fig_sym.update_layout(xaxis=dict(showticklabels=False, title=""), height=300)
+                st.plotly_chart(_fig_style(fig_sym), use_container_width=True)
+                row = mentions_df[mentions_df["disease"] == selected]
+                if not row.empty:
+                    cnt = int(row.iloc[0]["count"])
+                    rank_pos = mentions_df.reset_index(drop=True)[mentions_df.reset_index(drop=True)["disease"] == selected].index[0] + 1
+                    st.markdown(f"**{th_name}** \u0e1e\u0e1a\u0e43\u0e19 **{cnt} \u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25** \xb7 \u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a\u0e17\u0e35\u0e48 {rank_pos}")
+
+            st.divider()
+            st.markdown("**\u0e2a\u0e23\u0e38\u0e1b Top 10 \u0e42\u0e23\u0e04\u0e41\u0e25\u0e30\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e2a\u0e33\u0e04\u0e31\u0e0d**")
+            summary_rows = []
+            for _, r in mentions_df.head(10).iterrows():
+                th = DISEASE_THAI_MAP.get(r["disease"], r["disease"])
+                syms = DISEASE_TOP_SYMPTOMS.get(r["disease"])
+                sym_str = " \xb7 ".join(syms[:3]) if syms else "\u2014"
+                summary_rows.append({
+                    "\u0e42\u0e23\u0e04 (\u0e44\u0e17\u0e22)": th,
+                    "\u0e23\u0e1e.\u0e17\u0e35\u0e48\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19": f"{int(r['count'])}",
+                    "\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e2b\u0e25\u0e31\u0e01": sym_str,
+                })
+            st.dataframe(pd.DataFrame(summary_rows), use_container_width=True, hide_index=True)
+
+    st.info("\U0001f4a1 \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e32\u0e01\u0e1f\u0e34\u0e25\u0e14\u0e4c '\u0e01\u0e25\u0e38\u0e48\u0e21\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e42\u0e23\u0e04\u0e2a\u0e33\u0e04\u0e31\u0e0d' \u0e17\u0e35\u0e48\u0e41\u0e15\u0e48\u0e25\u0e30\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e40\u0e2d\u0e07 \u2014 \u0e2a\u0e30\u0e17\u0e49\u0e2d\u0e19\u0e42\u0e23\u0e04\u0e17\u0e35\u0e48 \u0e23\u0e1e. \u0e40\u0e2b\u0e47\u0e19\u0e08\u0e23\u0e34\u0e07\u0e43\u0e19\u0e17\u0e32\u0e07\u0e1b\u0e0f\u0e34\u0e1a\u0e31\u0e15\u0e34")
 
 
 # ==========================================================================
-# Tab 2 — App coverage
+# Tab 2 — Pivot Heatmap
 # ==========================================================================
 with tab2:
-    st.markdown("### 🧬 ความครอบคลุมของ Triage App")
-    st.caption("48 โรค · 13 สาขาแพทย์ · 86 ยาในบัญชียาหลัก — ออกแบบให้ครอบคลุมโรคที่พบบ่อยในประชาชน")
+    st.markdown("### \U0001f9ec \u0e04\u0e27\u0e32\u0e21\u0e04\u0e23\u0e2d\u0e1a\u0e04\u0e25\u0e38\u0e21\u0e02\u0e2d\u0e07 Triage App \xb7 \u0e42\u0e23\u0e04 \xd7 \u0e2a\u0e32\u0e02\u0e32\u0e41\u0e1e\u0e17\u0e22\u0e4c")
+    st.caption("48 \u0e42\u0e23\u0e04 \xb7 18 \u0e2a\u0e32\u0e02\u0e32\u0e41\u0e1e\u0e17\u0e22\u0e4c \u2014 \u0e2a\u0e35 = \u0e2a\u0e32\u0e02\u0e32\u0e2b\u0e25\u0e31\u0e01 (\u0e40\u0e02\u0e49\u0e21) / \u0e2a\u0e32\u0e02\u0e32\u0e23\u0e2d\u0e07 (\u0e2d\u0e48\u0e2d\u0e19) / \u0e44\u0e21\u0e48\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e02\u0e49\u0e2d\u0e07 (\u0e02\u0e32\u0e27)")
 
-    spec_df = _load_specialty_counts()
-    drug_df = _load_drug_tier_counts()
+    with st.spinner("\u0e01\u0e33\u0e25\u0e31\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07 pivot heatmap..."):
+        pivot = _load_disease_specialty_pivot()
 
-    col_l, col_r = st.columns([3, 2])
-
-    with col_l:
-        if not spec_df.empty:
-            spec_df["specialty_th"] = (
-                spec_df["primary_specialty"]
-                .str.replace(r"\s*\(.*?\)", "", regex=True).str.strip()
-            )
-            fig_spec = px.bar(
-                spec_df.sort_values("n_diseases"),
-                x="n_diseases", y="specialty_th", orientation="h",
-                color="n_diseases",
-                color_continuous_scale=[[0, "#ffecd2"], [1, PINK]],
-                title="จำนวนโรคต่อสาขาแพทย์ (48 โรค)",
-                labels={"n_diseases": "จำนวนโรค", "specialty_th": "สาขา"},
-            )
-            fig_spec.update_coloraxes(showscale=False)
-            st.plotly_chart(_fig_style(fig_spec), use_container_width=True)
-
-    with col_r:
-        if not drug_df.empty:
-            fig_drug = px.pie(
-                drug_df, names="tier_label", values="n_drugs",
-                title="86 ยา แบ่งตาม Prescription Tier",
-                color_discrete_sequence=[GREEN, TEAL, AMBER],
-                hole=0.45,
-            )
-            fig_drug.update_traces(textposition="inside", textinfo="percent+label")
-            st.plotly_chart(_fig_style(fig_drug), use_container_width=True)
-
-    # ICD-10 treemap
-    st.markdown("---")
-    st.markdown("**ICD-10 Chapter Distribution — 48 โรคใน App**")
-    try:
-        icd_df = pd.read_csv(DATA / "processed" / "disease_specialty_mapping.csv")
-        icd_counts = (
-            icd_df.groupby("icd10_chapter_name").size()
-            .reset_index(name="n").sort_values("n", ascending=False)
+    if pivot.empty:
+        st.warning("\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e42\u0e2b\u0e25\u0e14 disease_specialty_mapping.csv")
+    else:
+        fig_heat = px.imshow(
+            pivot,
+            color_continuous_scale=[
+                [0.0, "#f0f4f8"],
+                [0.5, "#90e0ef"],
+                [1.0, NAVY],
+            ],
+            aspect="auto",
+            title="48 \u0e42\u0e23\u0e04 \xd7 \u0e2a\u0e32\u0e02\u0e32\u0e41\u0e1e\u0e17\u0e22\u0e4c (\u0e2a\u0e32\u0e02\u0e32\u0e2b\u0e25\u0e31\u0e01 vs \u0e2a\u0e32\u0e02\u0e32\u0e23\u0e2d\u0e07)",
+            labels={"color": "\u0e23\u0e30\u0e14\u0e31\u0e1a", "x": "\u0e2a\u0e32\u0e02\u0e32\u0e41\u0e1e\u0e17\u0e22\u0e4c", "y": "\u0e42\u0e23\u0e04"},
+            zmin=0, zmax=2,
         )
-        fig_icd = px.treemap(
-            icd_counts, path=["icd10_chapter_name"], values="n",
-            color="n",
-            color_continuous_scale=[[0, "#dfe6e9"], [1, NAVY]],
-            title="48 โรค จัดกลุ่มตาม ICD-10 Chapter",
+        fig_heat.update_coloraxes(
+            colorbar=dict(
+                tickvals=[0, 1, 2],
+                ticktext=["\u0e44\u0e21\u0e48\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e02\u0e49\u0e2d\u0e07", "\u0e2a\u0e32\u0e02\u0e32\u0e23\u0e2d\u0e07", "\u0e2a\u0e32\u0e02\u0e32\u0e2b\u0e25\u0e31\u0e01"],
+                len=0.5,
+            )
         )
-        fig_icd.update_coloraxes(showscale=False)
-        fig_icd.update_traces(textinfo="label+value")
-        st.plotly_chart(_fig_style(fig_icd), use_container_width=True)
-    except Exception:
-        st.info("ไม่สามารถโหลด ICD-10 chapter data ได้")
+        fig_heat.update_xaxes(tickangle=-45, tickfont=dict(size=11))
+        fig_heat.update_yaxes(tickfont=dict(size=10))
+        fig_heat.update_layout(height=820, margin=dict(l=160, r=20, t=50, b=120))
+        st.plotly_chart(_fig_style(fig_heat), use_container_width=True)
+
+        st.markdown("---")
+        col_s1, col_s2 = st.columns(2)
+        with col_s1:
+            try:
+                spec_counts = (
+                    pd.read_csv(DATA / "processed" / "disease_specialty_mapping.csv")
+                    .groupby("primary_specialty").size()
+                    .reset_index(name="n_diseases")
+                    .sort_values("n_diseases", ascending=False)
+                )
+                spec_counts["\u0e2a\u0e32\u0e02\u0e32 (\u0e22\u0e48\u0e2d)"] = spec_counts["primary_specialty"].apply(
+                    lambda s: re.sub(r"\s*\(.*?\)", "", s).strip()
+                )
+                st.markdown("**\u0e08\u0e33\u0e19\u0e27\u0e19\u0e42\u0e23\u0e04\u0e15\u0e48\u0e2d\u0e2a\u0e32\u0e02\u0e32\u0e2b\u0e25\u0e31\u0e01**")
+                st.dataframe(
+                    spec_counts[["\u0e2a\u0e32\u0e02\u0e32 (\u0e22\u0e48\u0e2d)", "n_diseases"]].rename(columns={"n_diseases": "\u0e08\u0e33\u0e19\u0e27\u0e19\u0e42\u0e23\u0e04"}),
+                    use_container_width=True, hide_index=True,
+                )
+            except Exception:
+                pass
+        with col_s2:
+            st.markdown("**\u0e2a\u0e16\u0e34\u0e15\u0e34\u0e23\u0e27\u0e21**")
+            total_diseases = len(pivot)
+            total_specs = len(pivot.columns)
+            coverage = int((pivot > 0).any(axis=0).sum())
+            st.metric("\u0e42\u0e23\u0e04\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14", f"{total_diseases} \u0e42\u0e23\u0e04")
+            st.metric("\u0e2a\u0e32\u0e02\u0e32\u0e41\u0e1e\u0e17\u0e22\u0e4c\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14", f"{total_specs} \u0e2a\u0e32\u0e02\u0e32")
+            st.metric("\u0e2a\u0e32\u0e02\u0e32\u0e17\u0e35\u0e48\u0e04\u0e23\u0e2d\u0e1a\u0e04\u0e25\u0e38\u0e21", f"{coverage}/{total_specs}")
 
 
 # ==========================================================================
-# Tab 3 — Hospital map (treemap + bar by health region)
+# Tab 3 — Map
 # ==========================================================================
 with tab3:
-    st.markdown("### 📍 การกระจายตัวของโรงพยาบาลทั่วประเทศ")
-    st.caption("Source: hospitals_thailand.csv · 1,581 โรงพยาบาล · 77 จังหวัด · 13 เขตสุขภาพ")
+    st.markdown("### \U0001f4cd \u0e01\u0e32\u0e23\u0e01\u0e23\u0e30\u0e08\u0e32\u0e22\u0e15\u0e31\u0e27\u0e02\u0e2d\u0e07\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e17\u0e31\u0e48\u0e27\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28")
+    st.caption("Source: hospitals_thailand.csv \xb7 1,581 \u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25 \xb7 77 \u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14 \xb7 13 \u0e40\u0e02\u0e15\u0e2a\u0e38\u0e02\u0e20\u0e32\u0e1e")
 
-    hosp_df = _load_hospital_province()
+    hosp_df  = _load_hospital_province()
+    hosp_raw = _load_hospital_raw()
 
     if hosp_df.empty:
-        st.warning("ไม่พบข้อมูล hospitals_thailand.csv")
+        st.warning("\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 hospitals_thailand.csv")
     else:
-        col_tree, col_bar = st.columns([3, 2])
+        hosp_df["lat"] = hosp_df["province"].map(lambda p: PROVINCE_CENTROIDS.get(p, (None, None))[0])
+        hosp_df["lon"] = hosp_df["province"].map(lambda p: PROVINCE_CENTROIDS.get(p, (None, None))[1])
+        map_df = hosp_df.dropna(subset=["lat", "lon"]).copy()
 
-        with col_tree:
-            fig_tree = px.treemap(
-                hosp_df, path=["health_region", "province"], values="n_hospitals",
-                color="n_hospitals",
-                color_continuous_scale=[[0, "#c7ecf7"], [1, NAVY]],
-                title="รพ. จัดกลุ่มตาม เขตสุขภาพ → จังหวัด",
+        fig_map = go.Figure()
+        fig_map.add_trace(go.Scattergeo(
+            lat=map_df["lat"], lon=map_df["lon"],
+            mode="markers",
+            marker=dict(
+                size=map_df["n_hospitals"] ** 0.6 * 4,
+                color=map_df["n_hospitals"],
+                colorscale=[[0, "#c7ecf7"], [0.3, TEAL], [0.7, "#1a6985"], [1.0, NAVY]],
+                colorbar=dict(title="\u0e08\u0e33\u0e19\u0e27\u0e19 \u0e23\u0e1e.", len=0.5, x=1.02),
+                sizemode="diameter", opacity=0.75,
+                line=dict(width=0.5, color="white"),
+            ),
+            text=map_df.apply(
+                lambda r: f"<b>{r['province']}</b><br>{r['n_hospitals']} \u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25<br>\u0e40\u0e02\u0e15\u0e2a\u0e38\u0e02\u0e20\u0e32\u0e1e {r['health_region']}",
+                axis=1,
+            ),
+            hoverinfo="text",
+            name="\u0e04\u0e27\u0e32\u0e21\u0e2b\u0e19\u0e32\u0e41\u0e19\u0e48\u0e19 \u0e23\u0e1e. (\u0e23\u0e30\u0e14\u0e31\u0e1a\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14)",
+        ))
+
+        if not hosp_raw.empty:
+            hosp_pts = hosp_raw.copy()
+            hosp_pts["lat"] = hosp_pts["province"].map(lambda p: PROVINCE_CENTROIDS.get(p, (None, None))[0])
+            hosp_pts["lon"] = hosp_pts["province"].map(lambda p: PROVINCE_CENTROIDS.get(p, (None, None))[1])
+            hosp_pts = hosp_pts.dropna(subset=["lat", "lon"]).copy()
+
+            import hashlib as _hl
+            def _j(v, i, s=0.18):
+                h = int(_hl.md5(f"{v}{i}".encode()).hexdigest(), 16)
+                return (h % 1000 / 1000 - 0.5) * s
+
+            hosp_pts["lat_j"] = [hosp_pts.iloc[i]["lat"] + _j(hosp_pts.iloc[i]["province"], i) for i in range(len(hosp_pts))]
+            hosp_pts["lon_j"] = [hosp_pts.iloc[i]["lon"] + _j(hosp_pts.iloc[i]["province"], i + 9999) for i in range(len(hosp_pts))]
+            hosp_pts["beds_str"] = hosp_pts["beds"].apply(lambda b: f"{int(b):,} \u0e40\u0e15\u0e35\u0e22\u0e07" if pd.notna(b) and b > 0 else "\u2014")
+            hosp_pts["hover"] = hosp_pts.apply(
+                lambda r: f"<b>{r['hospital_th']}</b><br>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17: {r['hospital_type']}<br>\u0e40\u0e15\u0e35\u0e22\u0e07: {r['beds_str']}<br>\u0e2a\u0e31\u0e07\u0e01\u0e31\u0e14: {str(r['affiliation'])[:30]}",
+                axis=1,
             )
-            fig_tree.update_coloraxes(showscale=False)
-            fig_tree.update_traces(textinfo="label+value")
-            st.plotly_chart(_fig_style(fig_tree), use_container_width=True)
+            fig_map.add_trace(go.Scattergeo(
+                lat=hosp_pts["lat_j"], lon=hosp_pts["lon_j"],
+                mode="markers",
+                marker=dict(size=4, color=PINK, opacity=0.45, symbol="circle"),
+                text=hosp_pts["hover"],
+                hoverinfo="text",
+                name="\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e23\u0e32\u0e22\u0e41\u0e2b\u0e48\u0e07",
+            ))
 
-        with col_bar:
+        fig_map.update_layout(
+            title="\u0e01\u0e32\u0e23\u0e01\u0e23\u0e30\u0e08\u0e32\u0e22\u0e15\u0e31\u0e27\u0e02\u0e2d\u0e07\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25 77 \u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14",
+            geo=dict(
+                scope="asia",
+                center=dict(lat=13.0, lon=101.5),
+                projection_scale=4.8,
+                showland=True, landcolor="#f8f9fa",
+                showocean=True, oceancolor="#e8f4f8",
+                showcoastlines=True, coastlinecolor="#ccc",
+                showcountries=True, countrycolor="#ddd",
+                showlakes=False, bgcolor="rgba(0,0,0,0)",
+            ),
+            height=620,
+            legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(255,255,255,0.8)"),
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="Sarabun, sans-serif", size=12),
+            margin=dict(l=0, r=0, t=50, b=0),
+        )
+        st.plotly_chart(fig_map, use_container_width=True)
+        st.caption("\U0001f535 \u0e27\u0e07\u0e01\u0e25\u0e21\u0e43\u0e2b\u0e0d\u0e48 = \u0e04\u0e27\u0e32\u0e21\u0e2b\u0e19\u0e32\u0e41\u0e19\u0e48\u0e19 \u0e23\u0e1e. \u0e23\u0e30\u0e14\u0e31\u0e1a\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14 (\u0e2a\u0e35\u0e40\u0e02\u0e49\u0e21 = \u0e21\u0e32\u0e01\u0e01\u0e27\u0e48\u0e32) \xb7 \U0001f534 \u0e08\u0e38\u0e14\u0e40\u0e25\u0e47\u0e01 = \u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e23\u0e32\u0e22\u0e41\u0e2b\u0e48\u0e07 (hover \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e14\u0e39\u0e0a\u0e37\u0e48\u0e2d \u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17 \u0e08\u0e33\u0e19\u0e27\u0e19\u0e40\u0e15\u0e35\u0e22\u0e07)")
+
+        st.markdown("---")
+        col_tbl1, col_tbl2 = st.columns(2)
+        with col_tbl1:
+            st.markdown("**\u0e08\u0e33\u0e19\u0e27\u0e19 \u0e23\u0e1e. \u0e15\u0e48\u0e2d\u0e40\u0e02\u0e15\u0e2a\u0e38\u0e02\u0e20\u0e32\u0e1e**")
             region_summary = (
-                hosp_df.groupby("health_region")["n_hospitals"]
-                .sum().reset_index()
-                .sort_values("n_hospitals", ascending=True)
+                hosp_df.groupby("health_region")["n_hospitals"].sum().reset_index()
+                .sort_values("n_hospitals", ascending=False)
+                .rename(columns={"health_region": "\u0e40\u0e02\u0e15\u0e2a\u0e38\u0e02\u0e20\u0e32\u0e1e", "n_hospitals": "\u0e08\u0e33\u0e19\u0e27\u0e19 \u0e23\u0e1e."})
             )
-            fig_reg = px.bar(
-                region_summary,
-                x="n_hospitals", y="health_region", orientation="h",
-                color="n_hospitals",
-                color_continuous_scale=[[0, "#dfe6e9"], [1, TEAL]],
-                title="จำนวน รพ. ต่อเขตสุขภาพ",
-                labels={"n_hospitals": "จำนวน รพ.", "health_region": "เขตสุขภาพ"},
-            )
-            fig_reg.update_coloraxes(showscale=False)
-            st.plotly_chart(_fig_style(fig_reg), use_container_width=True)
-
-        st.markdown("**Top 10 จังหวัดที่มี รพ.มากที่สุด**")
-        top10 = hosp_df.nlargest(10, "n_hospitals")[["province", "health_region", "n_hospitals"]].copy()
-        top10.columns = ["จังหวัด", "เขตสุขภาพ", "จำนวน รพ."]
-        st.dataframe(top10, use_container_width=True, hide_index=True)
+            st.dataframe(region_summary, use_container_width=True, hide_index=True)
+        with col_tbl2:
+            st.markdown("**Top 10 \u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14\u0e17\u0e35\u0e48\u0e21\u0e35 \u0e23\u0e1e. \u0e21\u0e32\u0e01\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14**")
+            top10 = hosp_df.nlargest(10, "n_hospitals")[["province", "health_region", "n_hospitals"]].copy()
+            top10.columns = ["\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14", "\u0e40\u0e02\u0e15\u0e2a\u0e38\u0e02\u0e20\u0e32\u0e1e", "\u0e08\u0e33\u0e19\u0e27\u0e19 \u0e23\u0e1e."]
+            st.dataframe(top10, use_container_width=True, hide_index=True)
 
 
 # ==========================================================================
-# Tab 4 — MongoDB User Analytics
+# Tab 4 — User Analytics
 # ==========================================================================
 with tab4:
-    st.markdown("### 📊 Real-Time User Analytics")
-    st.caption("ข้อมูลจาก MongoDB Atlas · collection `ai_sessions` · อัปเดตทุก 5 นาที · บันทึกทุกครั้งที่ผู้ใช้วินิจฉัยใน AI Mode")
+    st.markdown("### \U0001f4ca Real-Time User Analytics")
+    st.caption("\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e32\u0e01 MongoDB Atlas \xb7 collection `ai_sessions` \xb7 \u0e2d\u0e31\u0e1b\u0e40\u0e14\u0e15\u0e17\u0e38\u0e01 5 \u0e19\u0e32\u0e17\u0e35")
 
-    with st.spinner("กำลังโหลดข้อมูลจาก MongoDB..."):
+    with st.spinner("\u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e32\u0e01 MongoDB..."):
         analytics = _load_ai_sessions_analytics()
 
     status = analytics.get("status")
 
     if status == "unavailable":
-        st.warning("⚠️ ไม่สามารถเชื่อมต่อ MongoDB ได้ — ตรวจสอบ Streamlit Secrets และ Network Access")
-        st.info("เมื่อ app มีผู้ใช้จริง · ข้อมูล session จะปรากฏที่นี่โดยอัตโนมัติ")
+        st.warning("\u26a0\ufe0f \u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e15\u0e48\u0e2d MongoDB \u0e44\u0e14\u0e49 \u2014 \u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a Streamlit Secrets \u0e41\u0e25\u0e30 Network Access")
+        st.info("\u0e40\u0e21\u0e37\u0e48\u0e2d app \u0e21\u0e35\u0e1c\u0e39\u0e49\u0e43\u0e0a\u0e49\u0e08\u0e23\u0e34\u0e07 \xb7 \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 session \u0e08\u0e30\u0e1b\u0e23\u0e32\u0e01\u0e0f\u0e17\u0e35\u0e48\u0e19\u0e35\u0e48\u0e42\u0e14\u0e22\u0e2d\u0e31\u0e15\u0e42\u0e19\u0e21\u0e31\u0e15\u0e34")
     elif status == "empty":
-        st.info("ℹ️ ยังไม่มีข้อมูล session ใน MongoDB · ลองใช้ AI Mode แล้วกลับมาดูที่นี่ครับ")
+        st.info("\u2139\ufe0f \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 session \u0e43\u0e19 MongoDB \xb7 \u0e25\u0e2d\u0e07\u0e43\u0e0a\u0e49 AI Mode \u0e41\u0e25\u0e49\u0e27\u0e01\u0e25\u0e31\u0e1a\u0e21\u0e32\u0e14\u0e39\u0e17\u0e35\u0e48\u0e19\u0e35\u0e48\u0e04\u0e23\u0e31\u0e1a")
     elif status == "error":
-        st.error(f"เกิดข้อผิดพลาด: {analytics.get('msg', 'unknown')}")
+        st.error(f"\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: {analytics.get('msg', 'unknown')}")
     else:
         total        = analytics["total"]
         top_diseases = analytics["top_diseases"]
@@ -405,20 +605,30 @@ with tab4:
         conf_dist    = analytics["confidence_dist"]
         daily        = analytics["daily_trend"]
 
-        # KPI row
+        def _kpi_card(col, icon, label, value, sub):
+            col.markdown(
+                f'<div style="background:rgba(27,154,170,0.08);border-radius:10px;padding:14px 16px;text-align:center;">' +
+                f'<div style="font-size:22px">{icon}</div>' +
+                f'<div style="font-size:12px;color:#888;margin:4px 0">{label}</div>' +
+                f'<div style="font-size:1.4rem;font-weight:700;color:#0a2342">{value}</div>' +
+                f'<div style="font-size:11px;color:#555;margin-top:4px;line-height:1.4">{sub}</div>' +
+                '</div>',
+                unsafe_allow_html=True,
+            )
+
         k1, k2, k3, k4 = st.columns(4)
-        k1.metric("🔍 Sessions ทั้งหมด", f"{total:,}")
-        if not top_diseases.empty:
-            k2.metric("🏆 โรคที่ค้นบ่อยสุด", top_diseases.iloc[0]["disease"])
-        if not top_symptoms.empty:
-            k3.metric("🩺 อาการที่พบบ่อยสุด", top_symptoms.iloc[0]["symptom"])
+        _kpi_card(k1, "\U0001f50d", "Sessions \u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14", f"{total:,}", "\u0e19\u0e31\u0e1a\u0e15\u0e31\u0e49\u0e07\u0e41\u0e15\u0e48\u0e40\u0e1b\u0e34\u0e14\u0e15\u0e31\u0e27")
+        top_dis_val = top_diseases.iloc[0]["disease"] if not top_diseases.empty else "\u2014"
+        _kpi_card(k2, "\U0001f3c6", "\u0e42\u0e23\u0e04\u0e17\u0e35\u0e48\u0e04\u0e49\u0e19\u0e1a\u0e48\u0e2d\u0e22\u0e2a\u0e38\u0e14", top_dis_val, "\u0e08\u0e32\u0e01 AI Mode")
+        top_sym_val = top_symptoms.iloc[0]["symptom"] if not top_symptoms.empty else "\u2014"
+        _kpi_card(k3, "\U0001fa7a", "\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e1e\u0e1a\u0e1a\u0e48\u0e2d\u0e22\u0e2a\u0e38\u0e14", top_sym_val, "\u0e23\u0e27\u0e21\u0e17\u0e38\u0e01 session")
         if not conf_dist.empty:
             dom = conf_dist.sort_values("n", ascending=False).iloc[0]
-            k4.metric("📈 Confidence ที่พบบ่อย", dom["label"])
+            conf_pct = int(dom["n"] / conf_dist["n"].sum() * 100)
+            _kpi_card(k4, "\U0001f4c8", "Confidence \u0e17\u0e35\u0e48\u0e1e\u0e1a\u0e1a\u0e48\u0e2d\u0e22", dom["label"], f"{conf_pct}% \u0e02\u0e2d\u0e07\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14")
 
         st.markdown("---")
         row1_l, row1_r = st.columns(2)
-
         with row1_l:
             if not top_diseases.empty:
                 fig_td = px.bar(
@@ -426,31 +636,24 @@ with tab4:
                     x="n", y="disease", orientation="h",
                     color="n",
                     color_continuous_scale=[[0, "#ffecd2"], [1, PINK]],
-                    title="🏆 Top โรคที่ User ค้นหาบ่อยที่สุด",
-                    labels={"n": "จำนวน sessions", "disease": "โรค"},
+                    title="\U0001f3c6 Top \u0e42\u0e23\u0e04\u0e17\u0e35\u0e48 User \u0e04\u0e49\u0e19\u0e2b\u0e32\u0e1a\u0e48\u0e2d\u0e22\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14",
+                    labels={"n": "\u0e08\u0e33\u0e19\u0e27\u0e19 sessions", "disease": "\u0e42\u0e23\u0e04"},
                 )
                 fig_td.update_coloraxes(showscale=False)
                 st.plotly_chart(_fig_style(fig_td), use_container_width=True)
-
         with row1_r:
             if not conf_dist.empty:
-                conf_colors = {
-                    "มั่นใจสูง":      GREEN,
-                    "มั่นใจปานกลาง": TEAL,
-                    "มั่นใจต่ำ":      AMBER,
-                    "มั่นใจต่ำมาก":  PINK,
-                }
-                fig_conf = px.pie(
-                    conf_dist, names="label", values="n",
-                    title="📈 Confidence Level Distribution",
-                    color="label", color_discrete_map=conf_colors,
-                    hole=0.4,
-                )
+                conf_colors = {"\u0e21\u0e31\u0e48\u0e19\u0e43\u0e08\u0e2a\u0e39\u0e07": GREEN,
+                               "\u0e21\u0e31\u0e48\u0e19\u0e43\u0e08\u0e1b\u0e32\u0e19\u0e01\u0e25\u0e32\u0e07": TEAL,
+                               "\u0e21\u0e31\u0e48\u0e19\u0e43\u0e08\u0e15\u0e48\u0e33": AMBER,
+                               "\u0e21\u0e31\u0e48\u0e19\u0e43\u0e08\u0e15\u0e48\u0e33\u0e21\u0e32\u0e01": PINK}
+                fig_conf = px.pie(conf_dist, names="label", values="n",
+                    title="\U0001f4c8 Confidence Level Distribution",
+                    color="label", color_discrete_map=conf_colors, hole=0.4)
                 fig_conf.update_traces(textposition="inside", textinfo="percent+label")
                 st.plotly_chart(_fig_style(fig_conf), use_container_width=True)
 
         row2_l, row2_r = st.columns(2)
-
         with row2_l:
             if not top_symptoms.empty:
                 fig_sym = px.bar(
@@ -458,24 +661,20 @@ with tab4:
                     x="n", y="symptom", orientation="h",
                     color="n",
                     color_continuous_scale=[[0, "#c7ecf7"], [1, NAVY]],
-                    title="🩺 Top อาการที่ User รายงานบ่อยสุด",
-                    labels={"n": "จำนวนครั้ง", "symptom": "อาการ (symptom_en)"},
+                    title="\U0001fa7a Top \u0e2d\u0e32\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48 User \u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e1a\u0e48\u0e2d\u0e22\u0e2a\u0e38\u0e14",
+                    labels={"n": "\u0e08\u0e33\u0e19\u0e27\u0e19\u0e04\u0e23\u0e31\u0e49\u0e07", "symptom": "\u0e2d\u0e32\u0e01\u0e32\u0e23 (symptom_en)"},
                 )
                 fig_sym.update_coloraxes(showscale=False)
                 st.plotly_chart(_fig_style(fig_sym), use_container_width=True)
-
         with row2_r:
             if not daily.empty and len(daily) > 1:
-                fig_trend = px.line(
-                    daily, x="date", y="sessions",
-                    title="📅 จำนวน Sessions ต่อวัน",
-                    labels={"date": "วันที่", "sessions": "จำนวน sessions"},
-                    color_discrete_sequence=[TEAL],
-                    markers=True,
-                )
+                fig_trend = px.line(daily, x="date", y="sessions",
+                    title="\U0001f4c5 \u0e08\u0e33\u0e19\u0e27\u0e19 Sessions \u0e15\u0e48\u0e2d\u0e27\u0e31\u0e19",
+                    labels={"date": "\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48", "sessions": "\u0e08\u0e33\u0e19\u0e27\u0e19 sessions"},
+                    color_discrete_sequence=[TEAL], markers=True)
                 fig_trend.update_traces(line_width=2.5)
                 st.plotly_chart(_fig_style(fig_trend), use_container_width=True)
             elif not daily.empty:
-                st.info("ต้องการข้อมูลมากกว่า 1 วันเพื่อแสดง trend · ยังคงสะสมข้อมูลอยู่")
+                st.info("\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e21\u0e32\u0e01\u0e01\u0e27\u0e48\u0e32 1 \u0e27\u0e31\u0e19\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e41\u0e2a\u0e14\u0e07 trend")
 
-        st.caption("🔄 ข้อมูลนี้ดึงจาก MongoDB Atlas (Cloud) · refresh อัตโนมัติทุก 5 นาที · สะท้อนพฤติกรรม user จริงของ app")
+        st.caption("\U0001f504 \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e19\u0e35\u0e49\u0e14\u0e36\u0e07\u0e08\u0e32\u0e01 MongoDB Atlas (Cloud) \xb7 refresh \u0e2d\u0e31\u0e15\u0e42\u0e19\u0e21\u0e31\u0e15\u0e34\u0e17\u0e38\u0e01 5 \u0e19\u0e32\u0e17\u0e35 \xb7 \u0e2a\u0e30\u0e17\u0e49\u0e2d\u0e19\u0e1e\u0e24\u0e15\u0e34\u0e01\u0e23\u0e23\u0e21 user \u0e08\u0e23\u0e34\u0e07\u0e02\u0e2d\u0e07 app")
