@@ -497,22 +497,81 @@ with tab3:
         else:
             hosp_pts = None
 
-        # Province layer: choropleth_mapbox (no token needed) or geo fallback
+        # Province layer — auto-detect GeoJSON name format, use numeric IDs for robust matching
         geojson = _load_thailand_geojson()
+        _PROV_TH_EN = {
+            "กระบี่": "Krabi", "กรุงเทพมหานคร": "Bangkok", "กาญจนบุรี": "Kanchanaburi",
+            "กาฬสินธุ์": "Kalasin", "กำแพงเพชร": "Kamphaeng Phet", "ขอนแก่น": "Khon Kaen",
+            "จันทบุรี": "Chanthaburi", "ฉะเชิงเทรา": "Chachoengsao", "ชลบุรี": "Chon Buri",
+            "ชัยนาท": "Chai Nat", "ชัยภูมิ": "Chaiyaphum", "ชุมพร": "Chumphon",
+            "ตรัง": "Trang", "ตราด": "Trat", "ตาก": "Tak",
+            "นครนายก": "Nakhon Nayok", "นครปฐม": "Nakhon Pathom", "นครพนม": "Nakhon Phanom",
+            "นครราชสีมา": "Nakhon Ratchasima", "นครศรีธรรมราช": "Nakhon Si Thammarat",
+            "นครสวรรค์": "Nakhon Sawan", "นนทบุรี": "Nonthaburi", "นราธิวาส": "Narathiwat",
+            "น่าน": "Nan", "บึงกาฬ": "Bueng Kan", "บุรีรัมย์": "Buri Ram",
+            "ปทุมธานี": "Pathum Thani", "ประจวบคีรีขันธ์": "Prachuap Khiri Khan",
+            "ปราจีนบุรี": "Prachin Buri", "ปัตตานี": "Pattani",
+            "พระนครศรีอยุธยา": "Phra Nakhon Si Ayutthaya", "พะเยา": "Phayao",
+            "พังงา": "Phang Nga", "พัทลุง": "Phatthalung", "พิจิตร": "Phichit",
+            "พิษณุโลก": "Phitsanulok", "ภูเก็ต": "Phuket",
+            "มหาสารคาม": "Maha Sarakham", "มุกดาหาร": "Mukdahan", "ยะลา": "Yala",
+            "ยโสธร": "Yasothon", "ระนอง": "Ranong", "ระยอง": "Rayong",
+            "ราชบุรี": "Ratchaburi", "ร้อยเอ็ด": "Roi Et", "ลพบุรี": "Lop Buri",
+            "ลำปาง": "Lampang", "ลำพูน": "Lamphun", "ศรีสะเกษ": "Si Sa Ket",
+            "สกลนคร": "Sakon Nakhon", "สงขลา": "Songkhla", "สตูล": "Satun",
+            "สมุทรปราการ": "Samut Prakan", "สมุทรสงคราม": "Samut Songkhram",
+            "สมุทรสาคร": "Samut Sakhon", "สระบุรี": "Saraburi", "สระแก้ว": "Sa Kaeo",
+            "สิงห์บุรี": "Sing Buri", "สุพรรณบุรี": "Suphan Buri",
+            "สุราษฎร์ธานี": "Surat Thani", "สุรินทร์": "Surin", "สุโขทัย": "Sukhothai",
+            "หนองคาย": "Nong Khai", "หนองบัวลำภู": "Nong Bua Lam Phu",
+            "อำนาจเจริญ": "Amnat Charoen", "อุดรธานี": "Udon Thani",
+            "อุตรดิตถ์": "Uttaradit", "อุทัยธานี": "Uthai Thani",
+            "อุบลราชธานี": "Ubon Ratchathani", "อ่างทอง": "Ang Thong",
+            "เชียงราย": "Chiang Rai", "เชียงใหม่": "Chiang Mai",
+            "เพชรบุรี": "Phetchaburi", "เพชรบูรณ์": "Phetchabun",
+            "เลย": "Loei", "แพร่": "Phrae", "แม่ฮ่องสอน": "Mae Hong Son",
+        }
         if geojson is not None:
-            fig_map = px.choropleth_mapbox(
-                map_df,
+            # Stamp numeric IDs onto features so we can match by int (no string encoding issues)
+            for _idx, _ft in enumerate(geojson["features"]):
+                _ft["id"] = _idx
+            _geo_names = [_ft["properties"].get("name", "") for _ft in geojson["features"]]
+            _name_to_id = {n: i for i, n in enumerate(_geo_names)}
+            # Try Thai-name direct match first
+            _prov_to_fid = {p: _name_to_id[p] for p in map_df["province"] if p in _name_to_id}
+            if len(_prov_to_fid) < 10:
+                # GeoJSON likely uses English names — fall back to TH→EN mapping
+                _en_lower = {n.lower(): i for i, n in enumerate(_geo_names)}
+                for _th, _en in _PROV_TH_EN.items():
+                    _fid = _en_lower.get(_en.lower())
+                    if _fid is not None:
+                        _prov_to_fid[_th] = _fid
+            _plot_df = map_df.copy()
+            _plot_df["_fid"] = _plot_df["province"].map(_prov_to_fid)
+            _plot_df = _plot_df.dropna(subset=["_fid"])
+            _plot_df["_fid"] = _plot_df["_fid"].astype(int)
+
+        if geojson is not None and len(_plot_df) > 0:
+            _hover_text = _plot_df.apply(
+                lambda r: f"<b>{r['province']}</b><br>{r['n_hospitals']} โรงพยาบาล<br>เขตสุขภาพ {r['health_region']}",
+                axis=1,
+            ).tolist()
+            fig_map = go.Figure(go.Choroplethmapbox(
                 geojson=geojson,
-                locations="province",
-                featureidkey="properties.name",
-                color="n_hospitals",
-                color_continuous_scale=[[0, "#fff9c4"], [0.5, "#ffb300"], [1, "#e65100"]],
-                mapbox_style="carto-positron",
-                zoom=4.5,
-                center={"lat": 13.0, "lon": 101.5},
-                opacity=0.65,
-                labels={"n_hospitals": "จำนวน รพ.", "province": "จังหวัด", "health_region": "เขต"},
-            )
+                locations=_plot_df["_fid"].tolist(),
+                z=_plot_df["n_hospitals"].tolist(),
+                featureidkey="id",
+                colorscale=[[0, "#fff9c4"], [0.5, "#ffb300"], [1, "#e65100"]],
+                zmin=0,
+                zmax=int(map_df["n_hospitals"].max()),
+                colorbar=dict(title="จำนวน รพ.", len=0.45, x=1.01),
+                marker_opacity=0.65,
+                marker_line_width=0.5,
+                marker_line_color="white",
+                text=_hover_text,
+                hoverinfo="text",
+                name="จำนวน รพ. (ระดับจังหวัด)",
+            ))
             if hosp_pts is not None:
                 fig_map.add_trace(go.Scattermapbox(
                     lat=hosp_pts["lat_j"], lon=hosp_pts["lon_j"],
@@ -532,7 +591,7 @@ with tab3:
                 mapbox=dict(style="carto-positron", zoom=4.5, center=dict(lat=13.0, lon=101.5)),
             )
         else:
-            # Fallback: geo-based scatter bubble map
+            # GeoJSON unavailable or no matches — geo scatter bubble fallback
             fig_map = go.Figure()
             fig_map.add_trace(go.Scattergeo(
                 lat=map_df["lat"], lon=map_df["lon"],
@@ -549,30 +608,21 @@ with tab3:
                     lambda r: f"<b>{r['province']}</b><br>{r['n_hospitals']} โรงพยาบาล<br>เขตสุขภาพ {r['health_region']}",
                     axis=1,
                 ),
-                hoverinfo="text",
-                name="ความหนาแน่น รพ. (ระดับจังหวัด)",
+                hoverinfo="text", name="ความหนาแน่น รพ.",
             ))
             if hosp_pts is not None:
                 fig_map.add_trace(go.Scattergeo(
                     lat=hosp_pts["lat_j"], lon=hosp_pts["lon_j"],
                     mode="markers",
                     marker=dict(size=4, color=PINK, opacity=0.45, symbol="circle"),
-                    text=hosp_pts["hover"],
-                    hoverinfo="text",
-                    name="โรงพยาบาลรายแห่ง",
+                    text=hosp_pts["hover"], hoverinfo="text", name="โรงพยาบาลรายแห่ง",
                 ))
             fig_map.update_layout(
                 title="การกระจายตัวของโรงพยาบาล 77 จังหวัด",
-                geo=dict(
-                    scope="asia",
-                    center=dict(lat=13.0, lon=101.5),
-                    projection_scale=4.8,
-                    showland=True, landcolor="#f8f9fa",
-                    showocean=True, oceancolor="#e8f4f8",
-                    showcoastlines=True, coastlinecolor="#ccc",
-                    showcountries=True, countrycolor="#ddd",
-                    showlakes=False, bgcolor="rgba(0,0,0,0)",
-                ),
+                geo=dict(scope="asia", center=dict(lat=13.0, lon=101.5), projection_scale=4.8,
+                         showland=True, landcolor="#f8f9fa", showocean=True, oceancolor="#e8f4f8",
+                         showcoastlines=True, coastlinecolor="#ccc", showcountries=True,
+                         countrycolor="#ddd", showlakes=False, bgcolor="rgba(0,0,0,0)"),
                 height=620,
                 legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(255,255,255,0.8)"),
                 paper_bgcolor="rgba(0,0,0,0)",
