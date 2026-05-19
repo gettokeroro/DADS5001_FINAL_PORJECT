@@ -32,6 +32,7 @@ st.markdown("""<style>
 [data-testid="stMetricDelta"] > div {font-size:10.5px !important;white-space:normal !important;overflow:visible !important;line-height:1.3 !important;}
 [data-testid="stMetricValue"] {font-size:1.35rem !important;}
 [data-testid="stMetricLabel"] {font-size:13px !important;white-space:normal !important;overflow:visible !important;}
+div.stPlotlyChart {border:1px solid #e2e8f0;border-radius:12px;padding:8px;background:white;}
 </style>""", unsafe_allow_html=True)
 
 DATA = Path(__file__).resolve().parent.parent / "data"
@@ -333,7 +334,7 @@ st.divider()
 
 tab1, tab2, tab3, tab4 = st.tabs([
     "\U0001f3e5 \u0e42\u0e23\u0e04\u0e43\u0e19 \u0e23\u0e1e.\u0e44\u0e17\u0e22",
-    "\U0001f9ec \u0e04\u0e27\u0e32\u0e21\u0e04\u0e23\u0e2d\u0e1a\u0e04\u0e25\u0e38\u0e21 App",
+    "\U0001f4ca \u0e20\u0e32\u0e1e\u0e23\u0e27\u0e21\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25",
     "\U0001f4cd \u0e41\u0e1c\u0e19\u0e17\u0e35\u0e48\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25",
     "\U0001f4ca User Analytics",
 ])
@@ -394,7 +395,7 @@ with tab1:
 
 
 # ==========================================================================
-# Tab 2 — Pivot Heatmap
+# Tab 2 — ภาพรวมข้อมูล
 # ==========================================================================
 with tab2:
     # ── KPI row ────────────────────────────────────────────────────────────
@@ -410,30 +411,35 @@ with tab2:
 
     st.divider()
 
-    # ── Row A: heatmap  |  top-symptom bar ────────────────────────────────
+    # ── Row A: Treemap ICD-10  |  อาการที่พบบ่อย ──────────────────────────
     col_a1, col_a2 = st.columns([3, 2])
 
     with col_a1:
-        st.markdown("#### โรค × สาขาแพทย์")
-        st.caption("สีเข้ม = สาขาหลัก · สีอ่อน = สาขารอง · ขาว = ไม่เกี่ยวข้อง")
-        with st.spinner("กำลังสร้าง heatmap..."):
-            pivot = _load_disease_specialty_pivot()
-        if not pivot.empty:
-            fig_h = px.imshow(
-                pivot,
-                color_continuous_scale=[[0.0,"#f0f4f8"],[0.5,"#90e0ef"],[1.0,NAVY]],
-                aspect="auto",
-                labels={"color":"ระดับ","x":"สาขา","y":"โรค"},
-                zmin=0, zmax=2,
+        st.markdown("#### 48 โรคตามกลุ่ม ICD-10")
+        st.caption("disease_specialty_mapping.csv · แต่ละสี = กลุ่ม ICD-10 · คลิกเพื่อ zoom in/out")
+        try:
+            _ds = pd.read_csv(DATA / "processed" / "disease_specialty_mapping.csv")
+            _ds["icd10_chapter_name"] = _ds["icd10_chapter_name"].str.replace(
+                r"โรคระบบกล้ามเนื้อ กระดูก.*", "โรคระบบกล้ามเนื้อ กระดูก", regex=True
             )
-            fig_h.update_coloraxes(colorbar=dict(
-                tickvals=[0,1,2], ticktext=["ไม่เกี่ยวข้อง","สาขารอง","สาขาหลัก"], len=0.4,
-            ))
-            fig_h.update_xaxes(tickangle=-40, tickfont=dict(size=10))
-            fig_h.update_yaxes(tickfont=dict(size=9))
-            fig_h.update_layout(height=560, margin=dict(l=140,r=20,t=30,b=100))
-            _fig_style(fig_h)
-            st.plotly_chart(fig_h, use_container_width=True)
+            _ds["_val"] = 1
+            fig_tree = px.treemap(
+                _ds,
+                path=["icd10_chapter_name", "disease_th"],
+                values="_val",
+                color="icd10_chapter_name",
+                color_discrete_sequence=px.colors.qualitative.Pastel,
+            )
+            fig_tree.update_traces(
+                textinfo="label",
+                marker=dict(line=dict(width=2, color="white")),
+                hovertemplate="<b>%{label}</b><br>กลุ่ม: %{parent}<extra></extra>",
+            )
+            fig_tree.update_layout(height=520, margin=dict(l=0, r=0, t=10, b=0))
+            _fig_style(fig_tree)
+            st.plotly_chart(fig_tree, use_container_width=True)
+        except Exception as _e:
+            st.warning(f"โหลด disease specialty data ไม่ได้: {_e}")
 
     with col_a2:
         st.markdown("#### อาการที่ปรากฏในหลายโรค")
@@ -463,17 +469,17 @@ with tab2:
                 _sym_cnt.sort_values("n_diseases"),
                 x="n_diseases", y="label", orientation="h",
                 color="n_diseases",
-                color_continuous_scale=[[0,"#c7ecf7"],[1,PINK]],
+                color_continuous_scale=[[0, "#c7ecf7"], [1, PINK]],
                 text="n_diseases",
-                labels={"n_diseases":"จำนวนโรค","label":""},
+                labels={"n_diseases": "จำนวนโรค", "label": ""},
             )
             fig_sym.update_traces(texttemplate="%{text} โรค", textposition="outside")
             fig_sym.update_coloraxes(showscale=False)
             fig_sym.update_layout(
-                height=560,
+                height=520,
                 yaxis=dict(tickfont=dict(size=11)),
                 xaxis=dict(title="จำนวนโรคที่มีอาการนี้"),
-                margin=dict(l=10,r=80,t=30,b=30),
+                margin=dict(l=10, r=80, t=30, b=30),
             )
             _fig_style(fig_sym)
             st.plotly_chart(fig_sym, use_container_width=True)
@@ -482,48 +488,44 @@ with tab2:
 
     st.divider()
 
-    # ── Row B: hospital by region  |  AI top diseases ─────────────────────
+    # ── Row B: Donut สาขาแพทย์  |  AI top diseases ────────────────────────
     col_b1, col_b2 = st.columns(2)
 
     with col_b1:
-        st.markdown("#### โรงพยาบาลตามเขตสุขภาพ")
-        st.caption("hospitals_thailand.csv · 13 เขตสุขภาพ")
-        _REGION_LABEL = {
-            1:"เขต 1 (ภาคเหนือตอนบน)", 2:"เขต 2 (พิษณุโลก)", 3:"เขต 3 (นครสวรรค์)",
-            4:"เขต 4 (สระบุรี)", 5:"เขต 5 (ราชบุรี)", 6:"เขต 6 (ระยอง)",
-            7:"เขต 7 (ขอนแก่น)", 8:"เขต 8 (อุดรธานี)", 9:"เขต 9 (นครราชสีมา)",
-            10:"เขต 10 (อุบลราชธานี)", 11:"เขต 11 (สุราษฎร์ธานี)", 12:"เขต 12 (สงขลา)",
-            13:"เขต 13 (กรุงเทพมหานคร)",
-        }
+        st.markdown("#### การกระจายโรคตามสาขาแพทย์")
+        st.caption("primary specialty · 48 โรค · 18 สาขา")
         try:
-            _hdf = pd.read_csv(DATA / "processed" / "hospitals_thailand.csv")
-            _reg = (
-                _hdf.groupby("health_region")["hospital_th"].count()
-                .reset_index(name="n_hospitals")
-                .sort_values("n_hospitals", ascending=True)
+            _ds2 = pd.read_csv(DATA / "processed" / "disease_specialty_mapping.csv")
+            def _short_spec(s):
+                import re as _re
+                m = _re.search(r"\(([^)]+)\)", str(s))
+                return m.group(1) if m else str(s).split()[0]
+            _spec_cnt = (
+                _ds2.groupby("primary_specialty")["disease_th"].count()
+                .reset_index(name="n")
+                .sort_values("n", ascending=False)
             )
-            _reg["label"] = _reg["health_region"].map(_REGION_LABEL).fillna(
-                _reg["health_region"].astype(str)
+            _spec_cnt["label"] = _spec_cnt["primary_specialty"].apply(_short_spec)
+            fig_donut = px.pie(
+                _spec_cnt,
+                names="label", values="n",
+                hole=0.45,
+                color_discrete_sequence=px.colors.qualitative.Pastel,
             )
-            fig_reg = px.bar(
-                _reg, x="n_hospitals", y="label", orientation="h",
-                color="n_hospitals",
-                color_continuous_scale=[[0,"#fff9c4"],[0.5,"#ffb300"],[1,NAVY]],
-                text="n_hospitals",
-                labels={"n_hospitals":"จำนวน รพ.","label":""},
+            fig_donut.update_traces(
+                textposition="outside",
+                textinfo="label+value",
+                hovertemplate="<b>%{label}</b><br>%{value} โรค (%{percent})<extra></extra>",
             )
-            fig_reg.update_traces(texttemplate="%{text:,}", textposition="outside")
-            fig_reg.update_coloraxes(showscale=False)
-            fig_reg.update_layout(
+            fig_donut.update_layout(
                 height=460,
-                yaxis=dict(tickfont=dict(size=10)),
-                xaxis=dict(title="จำนวนโรงพยาบาล"),
-                margin=dict(l=10,r=60,t=30,b=30),
+                margin=dict(l=20, r=20, t=20, b=20),
+                showlegend=False,
             )
-            _fig_style(fig_reg)
-            st.plotly_chart(fig_reg, use_container_width=True)
+            _fig_style(fig_donut)
+            st.plotly_chart(fig_donut, use_container_width=True)
         except Exception as _e:
-            st.warning(f"โหลดข้อมูล hospital ไม่ได้: {_e}")
+            st.warning(f"โหลด specialty data ไม่ได้: {_e}")
 
     with col_b2:
         st.markdown("#### โรคที่ User ถามจริงจาก AI")
@@ -540,9 +542,9 @@ with tab2:
                     _top_d2.sort_values("n"),
                     x="n", y="disease_th", orientation="h",
                     color="n",
-                    color_continuous_scale=[[0,"#c7ecf7"],[1,TEAL]],
+                    color_continuous_scale=[[0, "#c7ecf7"], [1, TEAL]],
                     text="n",
-                    labels={"n":"จำนวน sessions","disease_th":""},
+                    labels={"n": "จำนวน sessions", "disease_th": ""},
                 )
                 fig_ai.update_traces(texttemplate="%{text:,}", textposition="outside")
                 fig_ai.update_coloraxes(showscale=False)
@@ -550,13 +552,12 @@ with tab2:
                     height=460,
                     yaxis=dict(tickfont=dict(size=11)),
                     xaxis=dict(title="จำนวน sessions"),
-                    margin=dict(l=10,r=60,t=30,b=30),
+                    margin=dict(l=10, r=60, t=30, b=30),
                 )
                 _fig_style(fig_ai)
                 st.plotly_chart(fig_ai, use_container_width=True)
             else:
                 st.info("ยังไม่มีข้อมูล disease counts")
-
 
 
 # Tab 3 — Map
