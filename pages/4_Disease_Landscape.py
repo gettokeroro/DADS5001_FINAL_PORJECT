@@ -84,7 +84,7 @@ DISEASE_TOP_SYMPTOMS = {
     "Stroke":    ["แขนขาอ่อนแรงซีกเดียว", "พูดไม่ชัด", "เดินเซ", "ปวดศีรษะรุนแรง", "หมดสติ"],
     "STEMI":     ["เจ็บหน้าอก", "เหนื่อยหอบ", "เหงื่อออกมาก", "คลื่นไส้", "ใจสั่น"],
     "COPD":      ["ไอเรื้อรัง", "เหนื่อยหอบ", "มีเสมหะ", "แน่นหน้าอก", "เหนื่อยง่าย"],
-    "TB":        ["ไอเรื้อรัง", "ไข้ต่ำආ", "น้ำหนักลด", "เหงื่อออกกลางคืน", "อ่อนเพลีย"],
+    "TB":        ["ไอเรื้อรัง", "ไข้ต่ำๆ", "น้ำหนักลด", "เหงื่อออกกลางคืน", "อ่อนเพลีย"],
     "DM":        ["ปัสสาวะบ่อย", "กระหายน้ำมาก", "หิวบ่อย", "น้ำหนักลด", "อ่อนเพลีย"],
     "CKD":       ["บวมขา", "ความดันสูง", "ปัสสาวะน้อย", "อ่อนเพลีย", "คลื่นไส้"],
     "DHF":       ["ไข้สูงเฉียบพลัน", "ปวดศีรษะ", "ปวดกล้ามเนื้อ", "มีผื่น", "คลื่นไส้"],
@@ -132,12 +132,12 @@ PROVINCE_CENTROIDS = {
     "พังงา": (8.451, 98.526),
     "พัทลุง": (7.617, 100.075),
     "พิจิตร": (16.441, 100.349),
-    "พิษณโลก": (16.829, 100.265),
+    "พิษณุโลก": (16.829, 100.265),
     "เพชรบุรี": (13.112, 99.939),
     "เพชรบูรณ์": (16.419, 101.160),
     "แพร่": (18.145, 100.140),
     "ภูเก็ต": (7.890, 98.398),
-    "มาหาสารคาม": (16.185, 103.301),
+    "มหาสารคาม": (16.185, 103.301),
     "มุกดาหาร": (16.543, 104.724),
     "แม่ฮ่องสอน": (19.301, 97.966),
     "ยโสธร": (15.792, 104.145),
@@ -162,7 +162,7 @@ PROVINCE_CENTROIDS = {
     "สิงห์บุรี": (14.891, 100.397),
     "สุโขทัย": (17.007, 99.826),
     "สุพรรณบุรี": (14.472, 100.128),
-    "สุราษฎ์ธานี": (9.140, 99.330),
+    "สุราษฎร์ธานี": (9.140, 99.330),
     "สุรินทร์": (14.882, 103.494),
     "หนองคาย": (17.877, 102.743),
     "หนองบัวลำภู": (17.204, 102.443),
@@ -255,6 +255,19 @@ def _load_hospital_raw():
         return pd.DataFrame()
 
 
+@st.cache_data(ttl=86400, show_spinner=False)
+def _load_thailand_geojson():
+    """Fetch Thailand province GeoJSON (cached 24 h). Runs on Streamlit Cloud."""
+    import urllib.request as _urlreq, json as _json
+    url = "https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json"
+    try:
+        req = _urlreq.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with _urlreq.urlopen(req, timeout=15) as resp:
+            return _json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return None
+
+
 @st.cache_data(ttl=300, show_spinner=False)
 def _load_ai_sessions_analytics():
     try:
@@ -285,10 +298,7 @@ def _load_ai_sessions_analytics():
             df["confidence_level"].value_counts()
             .reset_index().rename(columns={"confidence_level": "level", "count": "n"})
         )
-        lbl = {"high": "\xe0\xb8\xa1\xe0\xb8\xb1\xe0\xb9\x88\xe0\xb9\x83\xe0\xb8\x88\xe0\xb8\xaa\xe0\xb8\xb9\xe0\xb8\x87",
-               "medium": "\xe0\xb8\xa1\xe0\xb8\xb1\xe0\xb9\x88\xe0\xb9\x83\xe0\xb8\x88\xe0\xb8\x9b\xe0\xb8\xb2\xe0\xb8\x99\xe0\xb8\x81\xe0\xb8\xa5\xe0\xb8\xb2\xe0\xb8\x87",
-               "low": "\xe0\xb8\xa1\xe0\xb8\xb1\xe0\xb9\x88\xe0\xb9\x83\xe0\xb8\x88\xe0\xb8\x95\xe0\xb9\x88\xe0\xb8\xb3",
-               "very_low": "\xe0\xb8\xa1\xe0\xb8\xb1\xe0\xb9\x88\xe0\xb9\x83\xe0\xb8\x88\xe0\xb8\x95\xe0\xb9\x88\xe0\xb8\xb3\xe0\xb8\xa1\xe0\xb8\xb2\xe0\xb8\x81"}
+        lbl = {"high": "มั่นใจสูง", "medium": "มั่นใจปานกลาง", "low": "มั่นใจต่ำ", "very_low": "มั่นใจต่ำมาก"}
         conf_counts["label"] = conf_counts["level"].map(lbl).fillna(conf_counts["level"])
         df["date"] = pd.to_datetime(df["timestamp"]).dt.date
         daily = df.groupby("date").size().reset_index(name="sessions")
@@ -317,6 +327,7 @@ with st.expander("\U0001f4cc \u0e2a\u0e16\u0e34\u0e15\u0e34\u0e42\u0e23\u0e04\u0
     c3.metric("\u2764\ufe0f \u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e04\u0e27\u0e32\u0e21\u0e14\u0e31\u0e19\u0e42\u0e25\u0e2b\u0e34\u0e15\u0e2a\u0e39\u0e07", "~13.7 \u0e25\u0e49\u0e32\u0e19\u0e04\u0e19", "\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e02\u0e36\u0e49\u0e19\u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07\u0e17\u0e38\u0e01\u0e1b\u0e35")
     c4.metric("\U0001f3e5 \u0e20\u0e32\u0e23\u0e30\u0e42\u0e23\u0e04 NCDs \u0e23\u0e27\u0e21", "~14 \u0e25\u0e49\u0e32\u0e19\u0e04\u0e19", "\u0e40\u0e1a\u0e32\u0e2b\u0e27\u0e32\u0e19 \xb7 \u0e04\u0e27\u0e32\u0e21\u0e14\u0e31\u0e19 \xb7 \u0e2b\u0e31\u0e27\u0e43\u0e08 \xb7 \u0e44\u0e15")
     st.caption("Source: \u0e01\u0e23\u0e21\u0e04\u0e27\u0e1a\u0e04\u0e38\u0e21\u0e42\u0e23\u0e04 (DDC) \xb7 WHO Thailand 2025 \xb7 IDF Diabetes Atlas 2024 \xb7 \u0e2a\u0e2a\u0e2a. 2568")
+    st.info("\u2139\ufe0f \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 2 \u0e0a\u0e38\u0e14\u0e02\u0e49\u0e32\u0e07\u0e15\u0e49\u0e19\u0e21\u0e32\u0e08\u0e32\u0e01\u0e04\u0e19\u0e25\u0e30\u0e41\u0e2b\u0e25\u0e48\u0e07: \u0e15\u0e31\u0e27\u0e40\u0e25\u0e02 DDC/WHO = \u0e2a\u0e16\u0e34\u0e15\u0e34\u0e23\u0e30\u0e14\u0e31\u0e1a\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28 (\u0e20\u0e32\u0e23\u0e30\u0e42\u0e23\u0e04 NCD) \xb7 \u0e01\u0e23\u0e32\u0e1f\u0e14\u0e49\u0e32\u0e19\u0e25\u0e48\u0e32\u0e07 = \u0e01\u0e25\u0e38\u0e48\u0e21\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e17\u0e35\u0e48 \u0e23\u0e1e. \u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e40\u0e2d\u0e07 (ha_aod \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e23\u0e34\u0e07)")
 
 st.divider()
 
@@ -340,71 +351,38 @@ with tab1:
     if mentions_df.empty:
         st.warning("\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 \u2014 \u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e44\u0e1f\u0e25\u0e4c ha_aod_001-2.csv")
     else:
-        col_chart, col_sym = st.columns([3, 2])
+        topn = st.slider("\u0e41\u0e2a\u0e14\u0e07 Top N \u0e42\u0e23\u0e04", 5, 25, 10, key="tab1_topn")
+        chart_df = mentions_df.head(topn).sort_values("count")
+        fig = px.bar(
+            chart_df,
+            x="count", y="label", orientation="h",
+            color="count",
+            color_continuous_scale=[[0, "#c7ecf7"], [1, TEAL]],
+            text="count",
+            title=f"Top {topn} \u0e42\u0e23\u0e04\u0e17\u0e35\u0e48 \u0e23\u0e1e.\u0e44\u0e17\u0e22\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e43\u0e19\u0e01\u0e25\u0e38\u0e48\u0e21\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e2a\u0e33\u0e04\u0e31\u0e0d",
+            labels={"count": "\u0e08\u0e33\u0e19\u0e27\u0e19\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e17\u0e35\u0e48\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19", "label": ""},
+        )
+        fig.update_traces(texttemplate="%{text:,}", textposition="outside")
+        fig.update_coloraxes(showscale=False)
+        fig.update_layout(yaxis=dict(tickfont=dict(size=11), title=""), height=600)
+        _fig_style(fig)
+        fig.update_layout(margin=dict(r=130))
+        st.plotly_chart(fig, use_container_width=True)
 
-        with col_chart:
-            fig = px.bar(
-                mentions_df.sort_values("count"),
-                x="count", y="label", orientation="h",
-                color="count",
-                color_continuous_scale=[[0, "#c7ecf7"], [1, TEAL]],
-                text="count",
-                title="Top 25 \u0e42\u0e23\u0e04\u0e17\u0e35\u0e48\u0e23\u0e1e.\u0e44\u0e17\u0e22\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e43\u0e19\u0e01\u0e25\u0e38\u0e48\u0e21\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e2a\u0e33\u0e04\u0e31\u0e0d",
-                labels={"count": "\u0e08\u0e33\u0e19\u0e27\u0e19\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e17\u0e35\u0e48\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19", "label": "\u0e42\u0e23\u0e04"},
-            )
-            fig.update_traces(texttemplate="%{text:,}", textposition="outside")
-            fig.update_coloraxes(showscale=False)
-            fig.update_layout(yaxis=dict(tickfont=dict(size=11)), height=600)
-            st.plotly_chart(_fig_style(fig), use_container_width=True)
-
-        with col_sym:
-            st.markdown("#### \U0001fa7a Top \u0e2d\u0e32\u0e01\u0e32\u0e23\u0e02\u0e2d\u0e07\u0e42\u0e23\u0e04\u0e17\u0e35\u0e48\u0e1e\u0e1a\u0e1a\u0e48\u0e2d\u0e22")
-            st.caption("\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e42\u0e23\u0e04\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e14\u0e39\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e2b\u0e25\u0e31\u0e01\u0e17\u0e35\u0e48\u0e1e\u0e1a\u0e1a\u0e48\u0e2d\u0e22\u0e43\u0e19\u0e17\u0e32\u0e07\u0e04\u0e25\u0e34\u0e19\u0e34\u0e01")
-            disease_options = [
-                r["disease"] for _, r in mentions_df.head(15).iterrows()
-                if r["disease"] in DISEASE_TOP_SYMPTOMS
-            ]
-            if not disease_options:
-                disease_options = list(DISEASE_TOP_SYMPTOMS.keys())[:5]
-
-            selected = st.selectbox(
-                "\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e42\u0e23\u0e04",
-                options=disease_options,
-                format_func=lambda d: f"{DISEASE_THAI_MAP.get(d, d)} ({d})",
-                key="tab1_disease_select",
-            )
-
-            if selected and selected in DISEASE_TOP_SYMPTOMS:
-                th_name = DISEASE_THAI_MAP.get(selected, selected)
-                symptoms = DISEASE_TOP_SYMPTOMS[selected]
-                sym_df = pd.DataFrame({"\u0e2d\u0e32\u0e01\u0e32\u0e23": symptoms, "\u0e23\u0e30\u0e14\u0e31\u0e1a": [5, 4, 3, 2, 1]})
-                fig_sym = px.bar(
-                    sym_df, x="\u0e23\u0e30\u0e14\u0e31\u0e1a", y="\u0e2d\u0e32\u0e01\u0e32\u0e23", orientation="h",
-                    color="\u0e23\u0e30\u0e14\u0e31\u0e1a",
-                    color_continuous_scale=[[0, "#ffecd2"], [1, PINK]],
-                    title=f"\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e2b\u0e25\u0e31\u0e01\u0e02\u0e2d\u0e07{th_name}",
-                )
-                fig_sym.update_coloraxes(showscale=False)
-                fig_sym.update_layout(xaxis=dict(showticklabels=False, title=""), height=300)
-                st.plotly_chart(_fig_style(fig_sym), use_container_width=True)
-                row = mentions_df[mentions_df["disease"] == selected]
-                if not row.empty:
-                    cnt = int(row.iloc[0]["count"])
-                    rank_pos = mentions_df.reset_index(drop=True)[mentions_df.reset_index(drop=True)["disease"] == selected].index[0] + 1
-                    st.markdown(f"**{th_name}** \u0e1e\u0e1a\u0e43\u0e19 **{cnt} \u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25** \xb7 \u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a\u0e17\u0e35\u0e48 {rank_pos}")
-
-            st.divider()
-            st.markdown("**\u0e2a\u0e23\u0e38\u0e1b Top 10 \u0e42\u0e23\u0e04\u0e41\u0e25\u0e30\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e2a\u0e33\u0e04\u0e31\u0e0d**")
-            summary_rows = []
-            for _, r in mentions_df.head(10).iterrows():
-                th = DISEASE_THAI_MAP.get(r["disease"], r["disease"])
-                syms = DISEASE_TOP_SYMPTOMS.get(r["disease"])
-                sym_str = " \xb7 ".join(syms[:3]) if syms else "\u2014"
-                summary_rows.append({
-                    "\u0e42\u0e23\u0e04 (\u0e44\u0e17\u0e22)": th,
-                    "\u0e23\u0e1e.\u0e17\u0e35\u0e48\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19": f"{int(r['count'])}",
-                    "\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e2b\u0e25\u0e31\u0e01": sym_str,
-                })
+        st.divider()
+        st.markdown("**\u0e2a\u0e23\u0e38\u0e1b Top \u0e42\u0e23\u0e04\u0e41\u0e25\u0e30\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e2a\u0e33\u0e04\u0e31\u0e0d**")
+        summary_rows = []
+        for _, r in mentions_df.head(topn).iterrows():
+            th = DISEASE_THAI_MAP.get(r["disease"], r["disease"])
+            syms = DISEASE_TOP_SYMPTOMS.get(r["disease"])
+            sym_str = " \xb7 ".join(syms[:3]) if syms else "\u2014"
+            summary_rows.append({
+                "\u0e42\u0e23\u0e04 (\u0e44\u0e17\u0e22)": th,
+                "\u0e23\u0e1e.\u0e17\u0e35\u0e48\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19": f"{int(r['count'])}",
+                "\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e2b\u0e25\u0e31\u0e01": sym_str,
+            })
+        _, col_tbl, _ = st.columns([1, 3, 1])
+        with col_tbl:
             st.dataframe(pd.DataFrame(summary_rows), use_container_width=True, hide_index=True)
 
     st.info("\U0001f4a1 \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e32\u0e01\u0e1f\u0e34\u0e25\u0e14\u0e4c '\u0e01\u0e25\u0e38\u0e48\u0e21\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e42\u0e23\u0e04\u0e2a\u0e33\u0e04\u0e31\u0e0d' \u0e17\u0e35\u0e48\u0e41\u0e15\u0e48\u0e25\u0e30\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e40\u0e2d\u0e07 \u2014 \u0e2a\u0e30\u0e17\u0e49\u0e2d\u0e19\u0e42\u0e23\u0e04\u0e17\u0e35\u0e48 \u0e23\u0e1e. \u0e40\u0e2b\u0e47\u0e19\u0e08\u0e23\u0e34\u0e07\u0e43\u0e19\u0e17\u0e32\u0e07\u0e1b\u0e0f\u0e34\u0e1a\u0e31\u0e15\u0e34")
@@ -495,24 +473,48 @@ with tab3:
         map_df = hosp_df.dropna(subset=["lat", "lon"]).copy()
 
         fig_map = go.Figure()
-        fig_map.add_trace(go.Scattergeo(
-            lat=map_df["lat"], lon=map_df["lon"],
-            mode="markers",
-            marker=dict(
-                size=map_df["n_hospitals"] ** 0.6 * 4,
-                color=map_df["n_hospitals"],
-                colorscale=[[0, "#c7ecf7"], [0.3, TEAL], [0.7, "#1a6985"], [1.0, NAVY]],
-                colorbar=dict(title="\u0e08\u0e33\u0e19\u0e27\u0e19 \u0e23\u0e1e.", len=0.5, x=1.02),
-                sizemode="diameter", opacity=0.75,
-                line=dict(width=0.5, color="white"),
-            ),
-            text=map_df.apply(
+
+        # Province layer: polygon choropleth (fallback to bubbles)
+        geojson = _load_thailand_geojson()
+        if geojson is not None:
+            hover_prov = map_df.apply(
                 lambda r: f"<b>{r['province']}</b><br>{r['n_hospitals']} \u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25<br>\u0e40\u0e02\u0e15\u0e2a\u0e38\u0e02\u0e20\u0e32\u0e1e {r['health_region']}",
                 axis=1,
-            ),
-            hoverinfo="text",
-            name="\u0e04\u0e27\u0e32\u0e21\u0e2b\u0e19\u0e32\u0e41\u0e19\u0e48\u0e19 \u0e23\u0e1e. (\u0e23\u0e30\u0e14\u0e31\u0e1a\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14)",
-        ))
+            ).tolist()
+            fig_map.add_trace(go.Choropleth(
+                geojson=geojson,
+                locations=map_df["province"],
+                featureidkey="properties.name",
+                z=map_df["n_hospitals"],
+                colorscale=[[0, "#fff9c4"], [0.5, "#ffb300"], [1, "#e65100"]],
+                zmin=0,
+                zmax=max(int(map_df["n_hospitals"].max()), 1),
+                colorbar=dict(title="\u0e08\u0e33\u0e19\u0e27\u0e19 \u0e23\u0e1e.", len=0.5, x=1.02),
+                marker_line_color="white",
+                marker_line_width=0.5,
+                name="\u0e04\u0e27\u0e32\u0e21\u0e2b\u0e19\u0e32\u0e41\u0e19\u0e48\u0e19 \u0e23\u0e1e. (\u0e23\u0e30\u0e14\u0e31\u0e1a\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14)",
+                text=hover_prov,
+                hoverinfo="text",
+            ))
+        else:
+            fig_map.add_trace(go.Scattergeo(
+                lat=map_df["lat"], lon=map_df["lon"],
+                mode="markers",
+                marker=dict(
+                    size=map_df["n_hospitals"] ** 0.6 * 4,
+                    color=map_df["n_hospitals"],
+                    colorscale=[[0, "#fff9c4"], [0.5, "#ffb300"], [1, "#e65100"]],
+                    colorbar=dict(title="\u0e08\u0e33\u0e19\u0e27\u0e19 \u0e23\u0e1e.", len=0.5, x=1.02),
+                    sizemode="diameter", opacity=0.75,
+                    line=dict(width=0.5, color="white"),
+                ),
+                text=map_df.apply(
+                    lambda r: f"<b>{r['province']}</b><br>{r['n_hospitals']} \u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25<br>\u0e40\u0e02\u0e15\u0e2a\u0e38\u0e02\u0e20\u0e32\u0e1e {r['health_region']}",
+                    axis=1,
+                ),
+                hoverinfo="text",
+                name="\u0e04\u0e27\u0e32\u0e21\u0e2b\u0e19\u0e32\u0e41\u0e19\u0e48\u0e19 \u0e23\u0e1e. (\u0e23\u0e30\u0e14\u0e31\u0e1a\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14)",
+            ))
 
         if not hosp_raw.empty:
             hosp_pts = hosp_raw.copy()
@@ -560,7 +562,7 @@ with tab3:
             margin=dict(l=0, r=0, t=50, b=0),
         )
         st.plotly_chart(fig_map, use_container_width=True)
-        st.caption("\U0001f535 \u0e27\u0e07\u0e01\u0e25\u0e21\u0e43\u0e2b\u0e0d\u0e48 = \u0e04\u0e27\u0e32\u0e21\u0e2b\u0e19\u0e32\u0e41\u0e19\u0e48\u0e19 \u0e23\u0e1e. \u0e23\u0e30\u0e14\u0e31\u0e1a\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14 (\u0e2a\u0e35\u0e40\u0e02\u0e49\u0e21 = \u0e21\u0e32\u0e01\u0e01\u0e27\u0e48\u0e32) \xb7 \U0001f534 \u0e08\u0e38\u0e14\u0e40\u0e25\u0e47\u0e01 = \u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e23\u0e32\u0e22\u0e41\u0e2b\u0e48\u0e07 (hover \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e14\u0e39\u0e0a\u0e37\u0e48\u0e2d \u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17 \u0e08\u0e33\u0e19\u0e27\u0e19\u0e40\u0e15\u0e35\u0e22\u0e07)")
+        st.caption("\U0001f7e1 \u0e2a\u0e35\u0e40\u0e02\u0e49\u0e21 (\u0e2a\u0e49\u0e21/\u0e2a\u0e35\u0e40\u0e02\u0e49\u0e21) = \u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14\u0e17\u0e35\u0e48\u0e21\u0e35 \u0e23\u0e1e. \u0e21\u0e32\u0e01 \xb7 \u0e2a\u0e35\u0e2d\u0e48\u0e2d\u0e19 (\u0e40\u0e2b\u0e25\u0e37\u0e2d\u0e07\u0e2d\u0e48\u0e2d\u0e19) = \u0e19\u0e49\u0e2d\u0e22 \xb7 \U0001f534 \u0e08\u0e38\u0e14\u0e40\u0e25\u0e47\u0e01 = \u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e23\u0e32\u0e22\u0e41\u0e2b\u0e48\u0e07 (hover \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e14\u0e39\u0e0a\u0e37\u0e48\u0e2d \u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17 \u0e08\u0e33\u0e19\u0e27\u0e19\u0e40\u0e15\u0e35\u0e22\u0e07)")
 
         st.markdown("---")
         col_tbl1, col_tbl2 = st.columns(2)
