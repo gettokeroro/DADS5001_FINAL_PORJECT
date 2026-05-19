@@ -546,6 +546,13 @@ with tab3:
                     _fid = _en_lower.get(_en.lower())
                     if _fid is not None:
                         _prov_to_fid[_th] = _fid
+                # Fuzzy fallback for Bangkok (กรุงเทพมหานคร) - GeoJSON may use various English names
+                if "กรุงเทพมหานคร" not in _prov_to_fid:
+                    _bkk_kw = ["bangkok", "krung thep", "krungthep", "metropolis"]
+                    for _gn_lo, _gf in _en_lower.items():
+                        if any(kw in _gn_lo for kw in _bkk_kw):
+                            _prov_to_fid["กรุงเทพมหานคร"] = _gf
+                            break
             _plot_df = map_df.copy()
             _plot_df["_fid"] = _plot_df["province"].map(_prov_to_fid)
             _plot_df = _plot_df.dropna(subset=["_fid"])
