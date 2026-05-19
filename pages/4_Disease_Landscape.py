@@ -488,76 +488,215 @@ with tab2:
 
     st.divider()
 
-    # ── Row B: Donut สาขาแพทย์  |  AI top diseases ────────────────────────
-    col_b1, col_b2 = st.columns(2)
+    # ── Row B: Treemap ICD→โรค→อาการ  |  Donut สาขาแพทย์ ──────────────
+    col_b1, col_b2 = st.columns([3, 2])
 
     with col_b1:
+        st.markdown("#### ICD-10 → โรค → อาการหลัก")
+        st.caption("คลิกเพื่อ zoom · ขนาด = ความถี่อาการในโรคนั้น")
+        try:
+            import re as _re
+            _ds3 = pd.read_csv(DATA / "processed" / "disease_specialty_mapping.csv")
+            _ds3["icd10_chapter_name"] = _ds3["icd10_chapter_name"].str.replace(
+                r"โรคระบบกล้ามเนื้อ กระดูก.*", "โรคระบบกล้ามเนื้อ กระดูก", regex=True
+            )
+            _sym3 = pd.read_csv(DATA / "processed" / "disease_symptom_long.csv")
+            _BRIDGE = {
+                "(vertigo) Paroymsal  Positional Vertigo": "Benign Paroxysmal Positional Vertigo (BPPV)",
+                "AIDS": "HIV/AIDS", "Arthritis": "Arthritis (general)",
+                "Chicken pox": "Chicken pox (Varicella)", "Dengue": "Dengue fever",
+                "Diabetes ": "Diabetes mellitus",
+                "Dimorphic hemmorhoids(piles)": "Hemorrhoids (Piles)",
+                "Heart attack": "Acute myocardial infarction",
+                "Hypertension ": "Hypertension", "Malaria": "Malaria",
+                "Osteoarthristis": "Osteoarthritis",
+                "Paralysis (brain hemorrhage)": "Paralysis (brain hemorrhage)",
+                "Peptic ulcer diseae": "Peptic ulcer disease",
+                "Typhoid": "Typhoid fever",
+                "Urinary tract infection": "Urinary tract infection (UTI)",
+                "hepatitis A": "Hepatitis A",
+            }
+            _SYM_TH2 = {
+                "fatigue": "อ่อนเพลีย", "lethargy": "อ่อนเพลีย", "malaise": "อ่อนเพลีย",
+                "high_fever": "ไข้สูง", "mild_fever": "ไข้ต่ำๆ",
+                "chills": "หนาวสั่น", "shivering": "หนาวสั่น",
+                "abdominal_pain": "ปวดท้อง", "stomach_pain": "ปวดท้อง", "belly_pain": "ปวดท้อง",
+                "nausea": "คลื่นไส้", "vomiting": "อาเจียน",
+                "phlegm": "มีเสมหะ", "mucoid_sputum": "มีเสมหะ", "rusty_sputum": "มีเสมหะ",
+                "muscle_weakness": "กล้ามเนื้ออ่อนแรง", "muscle_wasting": "กล้ามเนื้ออ่อนแรง",
+                "weakness_in_limbs": "แขนขาอ่อนแรง",
+                "swollen_extremeties": "บวมแขนขา", "swollen_legs": "บวมขา",
+                "swelling_joints": "ข้อบวม",
+                "skin_rash": "ผื่นผิวหนัง",
+                "nodal_skin_eruptions": "ผื่นตุ่มนูน",
+                "red_spots_over_body": "จุดแดงตามตัว",
+                "yellowish_skin": "ผิวเหลือง",
+                "itching": "คัน", "skin_peeling": "ผิวลอก",
+                "blackheads": "สิวหัวดำ", "pus_filled_pimples": "สิวหัวหนอง",
+                "silver_like_dusting": "ผิวเป็นฝ้า", "blister": "ตุ่มน้ำพอง",
+                "dischromic _patches": "ผิวด่าง", "scurring": "สะเก็ด",
+                "yellow_crust_ooze": "สะเก็ดเหลือง", "red_sore_around_nose": "แผลแดงรอบจมูก",
+                "yellowing_of_eyes": "ตาเหลือง",
+                "blurred_and_distorted_vision": "ตามัว",
+                "visual_disturbances": "มองเห็นผิดปกติ",
+                "redness_of_eyes": "ตาแดง", "watering_from_eyes": "น้ำตาไหล",
+                "pain_behind_the_eyes": "ปวดหลังตา",
+                "dizziness": "เวียนศีรษะ", "spinning_movements": "บ้านหมุน",
+                "loss_of_balance": "เสียการทรงตัว", "unsteadiness": "เดินเซ",
+                "loss_of_concentration": "ขาดสมาธิ", "lack_of_concentration": "ขาดสมาธิ",
+                "slurred_speech": "พูดไม่ชัด",
+                "weakness_of_one_body_side": "อ่อนแรงซีกเดียว",
+                "altered_sensorium": "ความรู้สึกตัวเปลี่ยน", "coma": "หมดสติ",
+                "stiff_neck": "คอแข็ง", "movement_stiffness": "ข้อตึง",
+                "loss_of_smell": "ได้กลิ่นลดลง",
+                "cough": "ไอ", "breathlessness": "หายใจลำบาก",
+                "congestion": "คัดจมูก", "runny_nose": "น้ำมูกไหล",
+                "continuous_sneezing": "จาม", "sinus_pressure": "ปวดไซนัส",
+                "throat_irritation": "คอระคาย", "patches_in_throat": "ตุ่มในลำคอ",
+                "blood_in_sputum": "ไอเป็นเลือด",
+                "indigestion": "อาหารไม่ย่อย", "acidity": "กรดไหลย้อน",
+                "constipation": "ท้องผูก", "diarrhoea": "ท้องเสีย",
+                "passage_of_gases": "ท้องอืด", "swelling_of_stomach": "ท้องบวม",
+                "distention_of_abdomen": "ท้องโป่ง",
+                "stomach_bleeding": "เลือดออกในกระเพาะ",
+                "bloody_stool": "ถ่ายเป็นเลือด",
+                "pain_during_bowel_movements": "ปวดขณะถ่าย",
+                "pain_in_anal_region": "ปวดทวาร", "irritation_in_anus": "คันทวาร",
+                "internal_itching": "คันภายใน", "acute_liver_failure": "ตับวาย",
+                "chest_pain": "เจ็บหน้าอก", "fast_heart_rate": "หัวใจเต้นเร็ว",
+                "palpitations": "ใจสั่น", "swollen_blood_vessels": "หลอดเลือดโป่ง",
+                "prominent_veins_on_calf": "เส้นเลือดขาโป่ง",
+                "cold_hands_and_feets": "มือเท้าเย็น", "bruising": "รอยช้ำ",
+                "weight_loss": "น้ำหนักลด", "weight_gain": "น้ำหนักเพิ่ม",
+                "obesity": "อ้วน", "excessive_hunger": "หิวมาก",
+                "increased_appetite": "อยากอาหารมาก", "loss_of_appetite": "เบื่ออาหาร",
+                "dehydration": "ขาดน้ำ", "enlarged_thyroid": "ต่อมไทรอยด์โต",
+                "irregular_sugar_level": "น้ำตาลผิดปกติ",
+                "fluid_overload.1": "บวมน้ำ", "puffy_face_and_eyes": "หน้าตาบวม",
+                "sunken_eyes": "ตาโหล",
+                "headache": "ปวดศีรษะ", "back_pain": "ปวดหลัง",
+                "neck_pain": "ปวดคอ", "joint_pain": "ปวดข้อ",
+                "muscle_pain": "ปวดกล้ามเนื้อ", "knee_pain": "ปวดเข่า",
+                "hip_joint_pain": "ปวดสะโพก", "cramps": "เป็นตะคริว",
+                "painful_walking": "เดินเจ็บ",
+                "swelled_lymph_nodes": "ต่อมน้ำเหลืองโต",
+                "anxiety": "วิตกกังวล", "depression": "ซึมเศร้า",
+                "irritability": "หงุดหงิด", "mood_swings": "อารมณ์แปรปรวน",
+                "restlessness": "กระสับกระส่าย",
+                "brittle_nails": "เล็บเปราะ", "inflammatory_nails": "เล็บอักเสบ",
+                "small_dents_in_nails": "เล็บเป็นหลุม",
+                "sweating": "เหงื่อออก", "drying_and_tingling_lips": "ปากแห้งชา",
+                "ulcers_on_tongue": "แผลในปาก",
+                "toxic_look_(typhos)": "หน้าตาซีดหมอง",
+                "history_of_alcohol_consumption": "ดื่มแอลกอฮอล์",
+                "extra_marital_contacts": "มีคู่นอนหลายคน",
+                "receiving_blood_transfusion": "รับเลือด",
+                "receiving_unsterile_injections": "ฉีดยาไม่ปลอดเชื้อ",
+                "family_history": "ประวัติครอบครัว",
+                "polyuria": "ปัสสาวะบ่อย",
+                "burning_micturition": "แสบเวลาปัสสาวะ",
+                "continuous_feel_of_urine": "ปวดปัสสาวะตลอดเวลา",
+                "bladder_discomfort": "ไม่สบายกระเพาะปัสสาวะ",
+                "dark_urine": "ปัสสาวะสีเข้ม",
+                "yellow_urine": "ปัสสาวะสีเหลือง",
+                "foul_smell_of urine": "ปัสสาวะมีกลิ่น",
+                "spotting_ urination": "ปัสสาวะกะปริด",
+                "abnormal_menstruation": "ประจำเดือนผิดปกติ",
+            }
+            # Bridge + map + merge
+            _sym3["disease_en_clean"] = _sym3["disease"].map(_BRIDGE).fillna(_sym3["disease"].str.strip())
+            _sym3["symptom_th"] = _sym3["symptom"].map(_SYM_TH2).fillna(_sym3["symptom"])
+            # Deduplicate: same disease + same Thai label → keep max freq
+            _sym3 = (
+                _sym3.groupby(["disease_en_clean", "symptom_th"])["freq"]
+                .max().reset_index()
+            )
+            # Keep top 6 symptoms per disease by freq
+            _sym3 = (
+                _sym3.sort_values("freq", ascending=False)
+                .groupby("disease_en_clean").head(6)
+                .reset_index(drop=True)
+            )
+            # Merge with ICD chapter
+            _sym3 = _sym3.merge(
+                _ds3[["disease_en_clean", "disease_th", "icd10_chapter_name"]],
+                on="disease_en_clean", how="left"
+            )
+            _sym3 = _sym3.dropna(subset=["disease_th"])
+            fig_tree2 = px.treemap(
+                _sym3,
+                path=["icd10_chapter_name", "disease_th", "symptom_th"],
+                values="freq",
+                color="icd10_chapter_name",
+                color_discrete_sequence=px.colors.qualitative.Pastel,
+            )
+            fig_tree2.update_traces(
+                textinfo="label",
+                marker=dict(line=dict(width=1, color="white")),
+                hovertemplate="<b>%{label}</b><br>%{parent}<br>freq: %{value:.2f}<extra></extra>",
+            )
+            fig_tree2.update_layout(height=520, margin=dict(l=0, r=0, t=10, b=0))
+            _fig_style(fig_tree2)
+            st.plotly_chart(fig_tree2, use_container_width=True)
+        except Exception as _e:
+            st.warning(f"โหลด treemap อาการไม่ได้: {_e}")
+
+    with col_b2:
         st.markdown("#### การกระจายโรคตามสาขาแพทย์")
         st.caption("primary specialty · 48 โรค · 18 สาขา")
+        _SPEC_TH = {
+            "Hepatology": "ตับ/GI",
+            "GP": "แพทย์ทั่วไป",
+            "ER": "ฉุกเฉิน",
+            "Dermatology": "ผิวหนัง",
+            "Pulmonology": "ปอด",
+            "Endocrinology": "ต่อมไร้ท่อ",
+            "ID": "โรคติดเชื้อ",
+            "ENT": "หู คอ จมูก",
+            "Internal Medicine": "อายุรกรรม",
+            "GI": "ทางเดินอาหาร",
+            "Orthopedics": "กระดูก/ข้อ",
+            "Allergy/Immunology": "ภูมิแพ้",
+            "Cardiology": "หัวใจ",
+            "Neurology": "ระบบประสาท",
+            "General Surgery": "ศัลยกรรม",
+            "Vascular Surgery": "หลอดเลือด",
+            "Rheumatology": "รูมาโต",
+            "Ophthalmology": "ตา",
+        }
         try:
-            _ds2 = pd.read_csv(DATA / "processed" / "disease_specialty_mapping.csv")
-            def _short_spec(s):
+            _ds4 = pd.read_csv(DATA / "processed" / "disease_specialty_mapping.csv")
+            def _short_spec2(s):
                 import re as _re
                 m = _re.search(r"\(([^)]+)\)", str(s))
                 return m.group(1) if m else str(s).split()[0]
-            _spec_cnt = (
-                _ds2.groupby("primary_specialty")["disease_th"].count()
+            _spec_cnt2 = (
+                _ds4.groupby("primary_specialty")["disease_th"].count()
                 .reset_index(name="n")
                 .sort_values("n", ascending=False)
             )
-            _spec_cnt["label"] = _spec_cnt["primary_specialty"].apply(_short_spec)
-            fig_donut = px.pie(
-                _spec_cnt,
+            _spec_cnt2["label_en"] = _spec_cnt2["primary_specialty"].apply(_short_spec2)
+            _spec_cnt2["label"] = _spec_cnt2["label_en"].map(_SPEC_TH).fillna(_spec_cnt2["label_en"])
+            fig_donut2 = px.pie(
+                _spec_cnt2,
                 names="label", values="n",
                 hole=0.45,
                 color_discrete_sequence=px.colors.qualitative.Pastel,
             )
-            fig_donut.update_traces(
+            fig_donut2.update_traces(
                 textposition="outside",
                 textinfo="label+value",
                 hovertemplate="<b>%{label}</b><br>%{value} โรค (%{percent})<extra></extra>",
             )
-            fig_donut.update_layout(
-                height=460,
+            fig_donut2.update_layout(
+                height=520,
                 margin=dict(l=20, r=20, t=20, b=20),
                 showlegend=False,
             )
-            _fig_style(fig_donut)
-            st.plotly_chart(fig_donut, use_container_width=True)
+            _fig_style(fig_donut2)
+            st.plotly_chart(fig_donut2, use_container_width=True)
         except Exception as _e:
             st.warning(f"โหลด specialty data ไม่ได้: {_e}")
-
-    with col_b2:
-        st.markdown("#### โรคที่ User ถามจริงจาก AI")
-        st.caption("จาก MongoDB ai_sessions · real usage")
-        _ai = _load_ai_sessions_analytics()
-        if _ai.get("status") in ("unavailable", "empty"):
-            st.info("ยังไม่มีข้อมูล AI sessions")
-        else:
-            _top_d = _ai.get("disease_counts", pd.DataFrame())
-            if not _top_d.empty:
-                _top_d2 = _top_d.head(12).copy()
-                _top_d2["disease_th"] = _top_d2["disease"].map(DISEASE_THAI_MAP).fillna(_top_d2["disease"])
-                fig_ai = px.bar(
-                    _top_d2.sort_values("n"),
-                    x="n", y="disease_th", orientation="h",
-                    color="n",
-                    color_continuous_scale=[[0, "#c7ecf7"], [1, TEAL]],
-                    text="n",
-                    labels={"n": "จำนวน sessions", "disease_th": ""},
-                )
-                fig_ai.update_traces(texttemplate="%{text:,}", textposition="outside")
-                fig_ai.update_coloraxes(showscale=False)
-                fig_ai.update_layout(
-                    height=460,
-                    yaxis=dict(tickfont=dict(size=11)),
-                    xaxis=dict(title="จำนวน sessions"),
-                    margin=dict(l=10, r=60, t=30, b=30),
-                )
-                _fig_style(fig_ai)
-                st.plotly_chart(fig_ai, use_container_width=True)
-            else:
-                st.info("ยังไม่มีข้อมูล disease counts")
 
 
 # Tab 3 — Map
