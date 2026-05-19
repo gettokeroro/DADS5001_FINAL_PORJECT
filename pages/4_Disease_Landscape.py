@@ -352,21 +352,26 @@ with tab1:
         st.warning("\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 \u2014 \u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e44\u0e1f\u0e25\u0e4c ha_aod_001-2.csv")
     else:
         topn = st.slider("\u0e41\u0e2a\u0e14\u0e07 Top N \u0e42\u0e23\u0e04", 5, 25, 10, key="tab1_topn")
-        chart_df = mentions_df.head(topn).sort_values("count")
+        chart_df = mentions_df.head(topn).sort_values("count", ascending=False).copy()
+        chart_df["label_short"] = chart_df["disease_th"].fillna(chart_df["disease"])
         fig = px.bar(
             chart_df,
-            x="count", y="label", orientation="h",
+            x="label_short", y="count",
             color="count",
             color_continuous_scale=[[0, "#c7ecf7"], [1, TEAL]],
             text="count",
-            title=f"Top {topn} \u0e42\u0e23\u0e04\u0e17\u0e35\u0e48 \u0e23\u0e1e.\u0e44\u0e17\u0e22\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e43\u0e19\u0e01\u0e25\u0e38\u0e48\u0e21\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e2a\u0e33\u0e04\u0e31\u0e0d",
-            labels={"count": "\u0e08\u0e33\u0e19\u0e27\u0e19\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e17\u0e35\u0e48\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19", "label": ""},
+            title=f"Top {topn} โรคที่ รพ.ไทยรายงานในกลุ่มผู้ป่วยสำคัญ",
+            labels={"count": "จำนวนโรงพยาบาลที่รายงาน", "label_short": ""},
         )
         fig.update_traces(texttemplate="%{text:,}", textposition="outside")
         fig.update_coloraxes(showscale=False)
-        fig.update_layout(yaxis=dict(tickfont=dict(size=11), title=""), height=600)
+        fig.update_layout(
+            xaxis=dict(tickfont=dict(size=10), title="", tickangle=-35),
+            yaxis=dict(title="จำนวน รพ."),
+            height=520,
+        )
         _fig_style(fig)
-        fig.update_layout(margin=dict(r=130))
+        fig.update_layout(margin=dict(t=60, b=110))
         st.plotly_chart(fig, use_container_width=True)
 
         st.divider()
@@ -472,31 +477,63 @@ with tab3:
         hosp_df["lon"] = hosp_df["province"].map(lambda p: PROVINCE_CENTROIDS.get(p, (None, None))[1])
         map_df = hosp_df.dropna(subset=["lat", "lon"]).copy()
 
-        fig_map = go.Figure()
+        # Precompute hospital points with jitter (shared by both map paths)
+        if not hosp_raw.empty:
+            hosp_pts = hosp_raw.copy()
+            hosp_pts["lat"] = hosp_pts["province"].map(lambda p: PROVINCE_CENTROIDS.get(p, (None, None))[0])
+            hosp_pts["lon"] = hosp_pts["province"].map(lambda p: PROVINCE_CENTROIDS.get(p, (None, None))[1])
+            hosp_pts = hosp_pts.dropna(subset=["lat", "lon"]).copy()
+            import hashlib as _hl
+            def _j(v, i, s=0.18):
+                h = int(_hl.md5(f"{v}{i}".encode()).hexdigest(), 16)
+                return (h % 1000 / 1000 - 0.5) * s
+            hosp_pts["lat_j"] = [hosp_pts.iloc[i]["lat"] + _j(hosp_pts.iloc[i]["province"], i) for i in range(len(hosp_pts))]
+            hosp_pts["lon_j"] = [hosp_pts.iloc[i]["lon"] + _j(hosp_pts.iloc[i]["province"], i + 9999) for i in range(len(hosp_pts))]
+            hosp_pts["beds_str"] = hosp_pts["beds"].apply(lambda b: f"{int(b):,} เตียง" if pd.notna(b) and b > 0 else "—")
+            hosp_pts["hover"] = hosp_pts.apply(
+                lambda r: f"<b>{r['hospital_th']}</b><br>ประเภท: {r['hospital_type']}<br>เตียง: {r['beds_str']}<br>สังกัด: {str(r['affiliation'])[:30]}",
+                axis=1,
+            )
+        else:
+            hosp_pts = None
 
-        # Province layer: polygon choropleth (fallback to bubbles)
+        # Province layer: choropleth_mapbox (no token needed) or geo fallback
         geojson = _load_thailand_geojson()
         if geojson is not None:
-            hover_prov = map_df.apply(
-                lambda r: f"<b>{r['province']}</b><br>{r['n_hospitals']} \u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25<br>\u0e40\u0e02\u0e15\u0e2a\u0e38\u0e02\u0e20\u0e32\u0e1e {r['health_region']}",
-                axis=1,
-            ).tolist()
-            fig_map.add_trace(go.Choropleth(
+            fig_map = px.choropleth_mapbox(
+                map_df,
                 geojson=geojson,
-                locations=map_df["province"],
+                locations="province",
                 featureidkey="properties.name",
-                z=map_df["n_hospitals"],
-                colorscale=[[0, "#fff9c4"], [0.5, "#ffb300"], [1, "#e65100"]],
-                zmin=0,
-                zmax=max(int(map_df["n_hospitals"].max()), 1),
-                colorbar=dict(title="\u0e08\u0e33\u0e19\u0e27\u0e19 \u0e23\u0e1e.", len=0.5, x=1.02),
-                marker_line_color="white",
-                marker_line_width=0.5,
-                name="\u0e04\u0e27\u0e32\u0e21\u0e2b\u0e19\u0e32\u0e41\u0e19\u0e48\u0e19 \u0e23\u0e1e. (\u0e23\u0e30\u0e14\u0e31\u0e1a\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14)",
-                text=hover_prov,
-                hoverinfo="text",
-            ))
+                color="n_hospitals",
+                color_continuous_scale=[[0, "#fff9c4"], [0.5, "#ffb300"], [1, "#e65100"]],
+                mapbox_style="carto-positron",
+                zoom=4.5,
+                center={"lat": 13.0, "lon": 101.5},
+                opacity=0.65,
+                labels={"n_hospitals": "จำนวน รพ.", "province": "จังหวัด", "health_region": "เขต"},
+            )
+            if hosp_pts is not None:
+                fig_map.add_trace(go.Scattermapbox(
+                    lat=hosp_pts["lat_j"], lon=hosp_pts["lon_j"],
+                    mode="markers",
+                    marker=dict(size=5, color=PINK, opacity=0.5),
+                    text=hosp_pts["hover"],
+                    hoverinfo="text",
+                    name="โรงพยาบาลรายแห่ง",
+                ))
+            fig_map.update_layout(
+                title="การกระจายตัวของโรงพยาบาล 77 จังหวัด",
+                height=620,
+                legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(255,255,255,0.8)"),
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Sarabun, sans-serif", size=12),
+                margin=dict(l=0, r=0, t=50, b=0),
+                mapbox=dict(style="carto-positron", zoom=4.5, center=dict(lat=13.0, lon=101.5)),
+            )
         else:
+            # Fallback: geo-based scatter bubble map
+            fig_map = go.Figure()
             fig_map.add_trace(go.Scattergeo(
                 lat=map_df["lat"], lon=map_df["lon"],
                 mode="markers",
@@ -504,63 +541,44 @@ with tab3:
                     size=map_df["n_hospitals"] ** 0.6 * 4,
                     color=map_df["n_hospitals"],
                     colorscale=[[0, "#fff9c4"], [0.5, "#ffb300"], [1, "#e65100"]],
-                    colorbar=dict(title="\u0e08\u0e33\u0e19\u0e27\u0e19 \u0e23\u0e1e.", len=0.5, x=1.02),
+                    colorbar=dict(title="จำนวน รพ.", len=0.5, x=1.02),
                     sizemode="diameter", opacity=0.75,
                     line=dict(width=0.5, color="white"),
                 ),
                 text=map_df.apply(
-                    lambda r: f"<b>{r['province']}</b><br>{r['n_hospitals']} \u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25<br>\u0e40\u0e02\u0e15\u0e2a\u0e38\u0e02\u0e20\u0e32\u0e1e {r['health_region']}",
+                    lambda r: f"<b>{r['province']}</b><br>{r['n_hospitals']} โรงพยาบาล<br>เขตสุขภาพ {r['health_region']}",
                     axis=1,
                 ),
                 hoverinfo="text",
-                name="\u0e04\u0e27\u0e32\u0e21\u0e2b\u0e19\u0e32\u0e41\u0e19\u0e48\u0e19 \u0e23\u0e1e. (\u0e23\u0e30\u0e14\u0e31\u0e1a\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14)",
+                name="ความหนาแน่น รพ. (ระดับจังหวัด)",
             ))
-
-        if not hosp_raw.empty:
-            hosp_pts = hosp_raw.copy()
-            hosp_pts["lat"] = hosp_pts["province"].map(lambda p: PROVINCE_CENTROIDS.get(p, (None, None))[0])
-            hosp_pts["lon"] = hosp_pts["province"].map(lambda p: PROVINCE_CENTROIDS.get(p, (None, None))[1])
-            hosp_pts = hosp_pts.dropna(subset=["lat", "lon"]).copy()
-
-            import hashlib as _hl
-            def _j(v, i, s=0.18):
-                h = int(_hl.md5(f"{v}{i}".encode()).hexdigest(), 16)
-                return (h % 1000 / 1000 - 0.5) * s
-
-            hosp_pts["lat_j"] = [hosp_pts.iloc[i]["lat"] + _j(hosp_pts.iloc[i]["province"], i) for i in range(len(hosp_pts))]
-            hosp_pts["lon_j"] = [hosp_pts.iloc[i]["lon"] + _j(hosp_pts.iloc[i]["province"], i + 9999) for i in range(len(hosp_pts))]
-            hosp_pts["beds_str"] = hosp_pts["beds"].apply(lambda b: f"{int(b):,} \u0e40\u0e15\u0e35\u0e22\u0e07" if pd.notna(b) and b > 0 else "\u2014")
-            hosp_pts["hover"] = hosp_pts.apply(
-                lambda r: f"<b>{r['hospital_th']}</b><br>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17: {r['hospital_type']}<br>\u0e40\u0e15\u0e35\u0e22\u0e07: {r['beds_str']}<br>\u0e2a\u0e31\u0e07\u0e01\u0e31\u0e14: {str(r['affiliation'])[:30]}",
-                axis=1,
+            if hosp_pts is not None:
+                fig_map.add_trace(go.Scattergeo(
+                    lat=hosp_pts["lat_j"], lon=hosp_pts["lon_j"],
+                    mode="markers",
+                    marker=dict(size=4, color=PINK, opacity=0.45, symbol="circle"),
+                    text=hosp_pts["hover"],
+                    hoverinfo="text",
+                    name="โรงพยาบาลรายแห่ง",
+                ))
+            fig_map.update_layout(
+                title="การกระจายตัวของโรงพยาบาล 77 จังหวัด",
+                geo=dict(
+                    scope="asia",
+                    center=dict(lat=13.0, lon=101.5),
+                    projection_scale=4.8,
+                    showland=True, landcolor="#f8f9fa",
+                    showocean=True, oceancolor="#e8f4f8",
+                    showcoastlines=True, coastlinecolor="#ccc",
+                    showcountries=True, countrycolor="#ddd",
+                    showlakes=False, bgcolor="rgba(0,0,0,0)",
+                ),
+                height=620,
+                legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(255,255,255,0.8)"),
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Sarabun, sans-serif", size=12),
+                margin=dict(l=0, r=0, t=50, b=0),
             )
-            fig_map.add_trace(go.Scattergeo(
-                lat=hosp_pts["lat_j"], lon=hosp_pts["lon_j"],
-                mode="markers",
-                marker=dict(size=4, color=PINK, opacity=0.45, symbol="circle"),
-                text=hosp_pts["hover"],
-                hoverinfo="text",
-                name="\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e23\u0e32\u0e22\u0e41\u0e2b\u0e48\u0e07",
-            ))
-
-        fig_map.update_layout(
-            title="\u0e01\u0e32\u0e23\u0e01\u0e23\u0e30\u0e08\u0e32\u0e22\u0e15\u0e31\u0e27\u0e02\u0e2d\u0e07\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25 77 \u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14",
-            geo=dict(
-                scope="asia",
-                center=dict(lat=13.0, lon=101.5),
-                projection_scale=4.8,
-                showland=True, landcolor="#f8f9fa",
-                showocean=True, oceancolor="#e8f4f8",
-                showcoastlines=True, coastlinecolor="#ccc",
-                showcountries=True, countrycolor="#ddd",
-                showlakes=False, bgcolor="rgba(0,0,0,0)",
-            ),
-            height=620,
-            legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(255,255,255,0.8)"),
-            paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="Sarabun, sans-serif", size=12),
-            margin=dict(l=0, r=0, t=50, b=0),
-        )
         st.plotly_chart(fig_map, use_container_width=True)
         st.caption("\U0001f7e1 \u0e2a\u0e35\u0e40\u0e02\u0e49\u0e21 (\u0e2a\u0e49\u0e21/\u0e2a\u0e35\u0e40\u0e02\u0e49\u0e21) = \u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14\u0e17\u0e35\u0e48\u0e21\u0e35 \u0e23\u0e1e. \u0e21\u0e32\u0e01 \xb7 \u0e2a\u0e35\u0e2d\u0e48\u0e2d\u0e19 (\u0e40\u0e2b\u0e25\u0e37\u0e2d\u0e07\u0e2d\u0e48\u0e2d\u0e19) = \u0e19\u0e49\u0e2d\u0e22 \xb7 \U0001f534 \u0e08\u0e38\u0e14\u0e40\u0e25\u0e47\u0e01 = \u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e23\u0e32\u0e22\u0e41\u0e2b\u0e48\u0e07 (hover \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e14\u0e39\u0e0a\u0e37\u0e48\u0e2d \u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17 \u0e08\u0e33\u0e19\u0e27\u0e19\u0e40\u0e15\u0e35\u0e22\u0e07)")
 
