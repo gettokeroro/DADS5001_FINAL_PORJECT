@@ -310,15 +310,15 @@
       <h3>Stack หลัก (บังคับโดยโจทย์)</h3>
       <div class="item"><input type="checkbox" id="p3-1" checked><label for="p3-1">Frontend: Streamlit (multi-pages) <span class="pill must">บังคับ</span></label></div>
       <div class="item"><input type="checkbox" id="p3-2" checked><label for="p3-2">Analytics: DuckDB + pandas <span class="pill must">บังคับ</span><span class="hint">DuckDB อ่าน CSV ตรง · join ข้าม dataset เร็ว · in-process ไม่ต้อง spin server</span></label></div>
-      <div class="item"><input type="checkbox" id="p3-3" checked><label for="p3-3">External database (อย่างน้อย 1) <span class="pill must">บังคับ</span><span class="hint">เลือก: Supabase Postgres (ฟรี + remote), MotherDuck (DuckDB cloud), หรือ Firebase</span></label></div>
+      <div class="item"><input type="checkbox" id="p3-3" checked><label for="p3-3">External database (อย่างน้อย 1) <span class="pill must">บังคับ</span><span class="pill locked">✅ 2 clouds</span><span class="hint">เลือก Snowflake (cloud #1 · TRAIN_MATRIX + DISEASE_DRUG + HOSPITALS) + MongoDB Atlas (cloud #2 · symptom_dict + disease_prevalence + ai_sessions log) — ข้อ 3 spec DONE 2026-05-17</span></label></div>
       <div class="item"><input type="checkbox" id="p3-4" checked><label for="p3-4">Streamlit cache: cache_data + cache_resource + session_state <span class="pill must">บังคับ</span><span class="hint">cache_data → CSV/DataFrame · cache_resource → DB connection/LLM client · session_state → user state ระหว่าง page</span></label></div>
     </div>
 
     <div class="group">
       <h3>Decision: External DB จะเก็บอะไร</h3>
-      <div class="item"><input type="checkbox" id="p3-5"><label for="p3-5">เลือก: Supabase (Recommended) / MotherDuck / Firebase / SQLite-on-disk<span class="hint">Supabase ดี: free tier เพียงพอ · ใช้ Postgres · มี SQL editor</span></label></div>
-      <div class="item"><input type="checkbox" id="p3-6"><label for="p3-6">Schema: เก็บ user query log (anonymized)<span class="hint">ใช้ทำ visualization "อาการที่คนถามเยอะที่สุด" — feature ของ project</span></label></div>
-      <div class="item"><input type="checkbox" id="p3-7"><label for="p3-7">Schema: feedback (rating ของ user หลังใช้งาน)<span class="hint">ใช้คำนวณ accuracy + เป็นตัวเปรียบเทียบ Non-AI vs AI</span></label></div>
+      <div class="item"><input type="checkbox" id="p3-5" checked><label for="p3-5">เลือก: <b>Snowflake</b> (analytical · TRAIN_MATRIX/DRUG/HOSPITALS) + <b>MongoDB Atlas</b> (document · symptom_dict/prevalence/logs) <span class="pill locked">✅ DONE</span><span class="hint">Snowflake free trial 30 วัน (หมด 2026-06-15) · MongoDB M0 free ตลอดชีพ · fallback CSV กันแอปพัง</span></label></div>
+      <div class="item"><input type="checkbox" id="p3-6" checked><label for="p3-6">Schema: เก็บ AI session log (anonymized) ใน MongoDB <code>ai_sessions</code> <span class="pill locked">✅ live</span><span class="hint">บันทึก timestamp · symptoms · top_disease · confidence_level · แสดง toast "✅ บันทึกลง MongoDB Atlas แล้วค่ะ" ทุก diagnose</span></label></div>
+      <div class="item"><input type="checkbox" id="p3-7"><label for="p3-7">Schema: feedback (rating ของ user หลังใช้งาน)<span class="hint">ใช้คำนวณ accuracy + เป็นตัวเปรียบเทียบ Non-AI vs AI — optional</span></label></div>
     </div>
 
     <div class="group">
