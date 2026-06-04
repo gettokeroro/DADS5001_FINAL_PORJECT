@@ -1,7 +1,7 @@
 # Project Memory — DADS5001 Final
 > Memory file สำหรับทีม (Kade + พี่เก็ตโตะ) · update เมื่อมีงานใหม่ · ไฟล์นี้ commit ขึ้น git ได้
 
-อัปเดตล่าสุด: **2026-05-09 (Kade)**
+อัปเดตล่าสุด: **2026-06-03 (Kade)**
 
 ---
 
@@ -18,7 +18,7 @@
 | 1 — Population prevalence weighting | ✅ done | data/processed/disease_prevalence.csv |
 | 1.5 — Interactive co-symptom follow-up | ✅ done | scoring.py + AI Mode page |
 | 2 — Confidence + UI warnings | ✅ done | high/med/low badges |
-| 3 — Casual Thai dict expansion | ✅ done | Batch 1 (top 30) + Batch 2 (91 rows) — 121/121 user-facing 100% |
+| 3 — Casual Thai dict expansion | ✅ done | Batch 1 (top 30) + Batch 2 (91 rows) — 121/121 user-facing 100% + Batch 3 ภาษาถิ่น (อีสาน/เหนือ/ใต้) |
 | 4 — Add diseases (Influenza, Electrolyte ฯลฯ) | ⬜ ค้าง | |
 | 5 — Honest fallback responses | ⬜ ค้าง | |
 | 6 — Drug + Hospital data | 🟡 in progress | อ่านด้านล่าง |
@@ -140,6 +140,28 @@
 - User feedback หลัง deploy — รวบรวม slang ที่ user พิมพ์แล้วไม่ match
 - AI Mode prompt — อัปเดต few-shot ตัวอย่างให้ใช้ slang เหล่านี้ด้วย (optional)
 
+### ✅ Batch 3 · ภาษาถิ่น อีสาน/เหนือ/ใต้ (2026-06-03 by Kade + Claude)
+
+**เหตุผล:** พี่เก็ตอยากให้ระบบรับภาษาพูด/ภาษาท้องถิ่น (อีสาน เหนือ ใต้) ไม่ใช่แค่ไทยกลาง
+
+**ไฟล์ที่แก้:** `data/processed/symptom_dictionary_th.csv`
+**Backup:** `data/processed/symptom_dictionary_th.bak3.csv` (snapshot ก่อนเพิ่ม dialect)
+
+**Schema เปลี่ยน:** เพิ่มคอลัมน์ `symptom_dialect` (หลัง `symptom_th_alt`) → 7 columns
+- ครบ 121/121 user-facing · ~3–4 คำถิ่น/row · รวม 3 ภาคในคอลัมน์เดียว (จับ keyword แบบเดียวกับ symptom_th_alt)
+- ตัวอย่าง: ฮาก(อาเจียน) · เมาหัว(เวียนหัว) · บ่มีแฮง(อ่อนเพลีย) · เจ็บต๊อง(ปวดท้อง) · คอพอก(ไทรอยด์โต) · เว้าบ่ชัด/อู้บ่ชัด(พูดไม่ชัด)
+
+**โค้ดที่แก้ 3 จุด (มี guard เผื่อ schema เก่าไม่พัง):**
+- `utils/symptom_tree.py` → `match_freetext()` เพิ่ม `symptom_dialect` ใน cols
+- `pages/1_Non_AI_Mode.py` → เพิ่ม dialect ใน search mask
+- `utils/ai_engine.py` → `_build_dictionary_table()` ใส่ `symptom_dialect` ใน prompt ให้ Gemma เห็นคำถิ่น
+
+**Smoke test:** พิมพ์คำถิ่น 16 คำ → match ถูก 16/16 · แก้ collision คำใต้ "ราก"(อาเจียน) vs "ขี้ราก"(ท้องเสีย) โดยถอด "ราก" เดี่ยวออกจากอาเจียน (เหลือ ฮาก/แหวะ/ขย้อน)
+
+**ยังเหลือ / ต้องรีวิว:**
+- 17 อาการ low-confidence (อาการคลินิก/หายากที่ไม่มีคำถิ่นจริง ใช้คำกลางบรรยายแทน) — รอคนเจ้าของสำเนียงรีวิว
+- ส่วน B (ภาษาธรรมชาติ — ประโยคยาวผ่าน Gemma extract+match) ยังไม่ทำ เป็นสเต็ปถัดไป
+
 ## 🎨 Phase 7 — UI / Styling sync
 
 ### ✅ Batch 1 · CSS injection across pages (2026-05-05 by Kade)
@@ -195,7 +217,7 @@
 - `data/processed/disease_specialty_mapping.csv` — Task 1 base
 - `data/processed/disease_symptom_long.csv` — itachi long form
 - `data/processed/specialty_hospital_hint.csv` — Phase 6 skeleton (12 specialty)
-- `data/processed/symptom_dictionary_th.csv` — Task 3 base
+- `data/processed/symptom_dictionary_th.csv` — Task 3 base + Batch 3 dialect (เพิ่มคอลัมน์ `symptom_dialect`)
 - `data/processed/symptom_specificity.csv` — Task 4
 
 ## 🧪 ไฟล์ demo / standalone scripts (root)

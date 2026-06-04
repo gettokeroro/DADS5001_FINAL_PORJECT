@@ -144,12 +144,19 @@ JSON schema:
 
 def _build_dictionary_table(dictionary_df: pd.DataFrame, max_items: int = 150) -> str:
     df = dictionary_df.head(max_items)
-    lines = ["symptom_en | symptom_th | symptom_th_alt"]
+    has_dialect = "symptom_dialect" in df.columns
+    header = "symptom_en | symptom_th | symptom_th_alt"
+    if has_dialect:
+        header += " | symptom_dialect (อีสาน/เหนือ/ใต้)"
+    lines = [header]
     for _, row in df.iterrows():
         en = row["symptom_en"]
         th = row.get("symptom_th", "")
         alt = row.get("symptom_th_alt", "") or ""
-        lines.append(f"{en} | {th} | {alt}")
+        line = f"{en} | {th} | {alt}"
+        if has_dialect:
+            line += f" | {row.get('symptom_dialect', '') or ''}"
+        lines.append(line)
     return "\n".join(lines)
 
 

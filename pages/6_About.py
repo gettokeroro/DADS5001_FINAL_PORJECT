@@ -8,8 +8,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from utils.data_loader import init_session_state, render_disclaimer_sidebar
+from utils.styling import inject_global_css
 
 st.set_page_config(page_title="About", page_icon="ℹ️", layout="wide")
+inject_global_css()
 init_session_state()
 render_disclaimer_sidebar()
 
@@ -34,11 +36,13 @@ st.markdown(
     **In-scope:**
     - แนะนำ specialty (แผนก) จากอาการ
     - ระดับเร่งด่วน 1–5 (อิง ED Triage MOPH)
+    - ยาอ้างอิงตามโรค + บัญชียาหลักแห่งชาติ (ED category ก–จ2)
+    - โรงพยาบาลใกล้เคียงตามจังหวัด
     - Cost transparency (lite)
 
     **Out-of-scope (ห้ามทำ):**
     - ❌ วินิจฉัยโรคแน่นอน
-    - ❌ แนะนำยา
+    - ❌ สั่งจ่าย/เปลี่ยนยาเอง (ยาที่แสดงเป็นข้อมูลอ้างอิงเท่านั้น)
     - ❌ ทดแทนแพทย์
     """
 )
@@ -59,7 +63,7 @@ with c1:
         - **Input:** checkbox 121 อาการ จัดกลุ่มตาม body system
         - **Output:** Top-3 disease + specialty + urgency 1-5
         - **Scoring:** TF-IDF บนตาราง disease × symptom freq matrix
-        - **Backbone data:** itachi9604 (Kaggle) — 4920 rows × 41 disease × 132 symptom
+        - **Backbone data:** itachi9604 (Kaggle) — augment เป็น 48 disease × 131 symptom
         """
     )
 with c2:
@@ -84,7 +88,7 @@ st.markdown("## Data sources")
 st.markdown(
     """
     ### Symptom-Disease backbone
-    - **[itachi9604/disease-symptom-description-dataset](https://www.kaggle.com/datasets/itachi9604/disease-symptom-description-dataset)** — Kaggle · 41 diseases × 132 symptoms (binary)
+    - **[itachi9604/disease-symptom-description-dataset](https://www.kaggle.com/datasets/itachi9604/disease-symptom-description-dataset)** — Kaggle · augment เป็น 48 diseases × 131 symptoms (binary)
 
     ### Thai standards
     - **ICD-10-TM** (กรมการแพทย์ MOPH) — Thai modification ontology
@@ -99,9 +103,14 @@ st.markdown(
     - ประชากรตามอายุ สิทธิหลักประกันสุขภาพ 2565
     - ข้อมูลทั่วไปของโรงพยาบาล 2566
 
+    ### ยา & โรงพยาบาล
+    - **บัญชียาหลักแห่งชาติ พ.ศ. 2556** (National List of Essential Medicines) — ED category ก–จ2 + หมายเหตุการเบิกจ่าย
+    - `data/processed/disease_drug_mapping_v2_ed.csv` — mapping ยา–โรค (87 ยา)
+    - `data/processed/hospitals_thailand.csv` — รายชื่อโรงพยาบาล 1,581 แห่งทั่วประเทศ
+
     ### Constructed ourselves
-    - `data/processed/disease_specialty_mapping.csv` — 41 × 10
-    - `data/processed/symptom_dictionary_th.csv` — 132 × 6
+    - `data/processed/disease_specialty_mapping.csv` — 48 × 13
+    - `data/processed/symptom_dictionary_th.csv` — 132 × 7 (เพิ่มคอลัมน์ symptom_dialect รองรับภาษาถิ่น อีสาน/เหนือ/ใต้)
     - `data/processed/symptom_specificity.csv` — 132 × 5
     """
 )
@@ -137,8 +146,8 @@ st.markdown(
     """
     - **Frontend / App:** Streamlit (multi-pages)
     - **Analytics:** DuckDB + pandas
-    - **External DB:** Supabase (planned)
-    - **AI:** LLM provider TBD (Gemini Flash / Claude Haiku / Gemma local)
+    - **External DB:** Snowflake (AWS ap-southeast-1) + MongoDB Atlas (M0)
+    - **AI:** Gemini Flash / Gemma (น้องอุ่นใน)
     - **Visualization:** Plotly + matplotlib + seaborn
     - **Hosting:** Streamlit Community Cloud
     - **Repo:** [github.com/gettokeroro/DADS5001_FINAL_PORJECT](https://github.com/gettokeroro/DADS5001_FINAL_PORJECT)

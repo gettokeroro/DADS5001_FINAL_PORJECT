@@ -71,7 +71,7 @@ from utils.symptom_tree import (
 # ---------------------------------------------------------------------------
 # Page config
 # ---------------------------------------------------------------------------
-st.set_page_config(page_title="AI Mode — น้องอุ่นใน", page_icon="🏥", layout="wide")
+st.set_page_config(page_title="AI Mode — น้องพิกซี่", page_icon="🏥", layout="wide")
 inject_global_css()
 inject_ai_mode_css()
 init_session_state()
@@ -185,8 +185,8 @@ if st.session_state.ai8_step == "q1":
     st.markdown(_progress_dots("q1"), unsafe_allow_html=True)
 
     render_nurse_mascot(
-        "สวัสดีค่ะ หนูชื่อ น้องอุ่นใน 😊",
-        sub="วันนี้พี่มีอาการอะไรมาคะ? เลือกที่ตรงกับที่พี่เป็นได้เลยนะคะ",
+        "สวัสดีค่ะ หนูชื่อ น้องพิกซี่ 🌸",
+        sub="วันนี้รู้สึกไม่สบายตรงไหนบ้างคะ? เลือกอาการที่ตรงได้เลยนะคะ 💕",
     )
 
     options = get_q1_options()
@@ -203,9 +203,9 @@ if st.session_state.ai8_step == "q1":
                 st.rerun()
 
     st.markdown("---")
-    st.caption("หรือถ้าพี่มีอาการอื่นที่ไม่ตรงกับด้านบน พิมพ์ในช่องด้านล่างได้เลยค่ะ")
-    with st.expander("✏️ พิมพ์อาการเอง"):
-        ft_in = st.text_input("พิมพ์อาการ (ภาษาไทยหรืออังกฤษ)", key="q1_freetext_in")
+    st.caption("หรือถ้ามีอาการอื่นที่ไม่ตรงกับรายการ พิมพ์บอกหนูได้เลยนะคะ 💬")
+    with st.expander("✏️ บอกอาการด้วยคำของตัวเองได้เลยค่ะ"):
+        ft_in = st.text_input("พิมพ์อาการที่รู้สึก (ภาษาไทยหรืออังกฤษ)", key="q1_freetext_in")
         if st.button("ตรวจสอบ", key="q1_freetext_check"):
             ft_in = ft_in.strip()
             if ft_in:
@@ -243,12 +243,12 @@ elif st.session_state.ai8_step == "q2":
         )
 
     opts = get_q2_options(cc["id"], vis_dict)
-    st.markdown("##### เลือกอาการที่พี่รู้สึก:")
+    st.markdown("##### มีอาการเหล่านี้ด้วยไหมคะ?")
 
     for opt in opts:
         if opt.symptom_en == FREETEXT_CODE:
             continue  # shown separately below
-        icon = "✅" if opt.symptom_en in st.session_state.ai8_picked else "⬜"
+        icon = "[✓]" if opt.symptom_en in st.session_state.ai8_picked else "[ ]"
         if st.button(f"{icon} {opt.label_th}", key=f"q2_{opt.symptom_en}", use_container_width=True):
             picked = st.session_state.ai8_picked
             if opt.symptom_en not in picked:
@@ -260,8 +260,8 @@ elif st.session_state.ai8_step == "q2":
             st.rerun()
 
     # Freetext option
-    with st.expander("✏️ อื่นๆ พิมพ์เอง"):
-        ft_in = st.text_input("พิมพ์อาการ", key="q2_freetext_in")
+    with st.expander("✏️ มีอาการอื่น? พิมพ์บอกหนูได้เลยค่ะ"):
+        ft_in = st.text_input("พิมพ์อาการที่รู้สึก", key="q2_freetext_in")
         if st.button("ตรวจสอบ", key="q2_freetext_check"):
             ft_in = ft_in.strip()
             if ft_in:
@@ -286,7 +286,7 @@ elif st.session_state.ai8_step == "q2":
             st.rerun()
     with col_b:
         picked_count = len(st.session_state.ai8_picked)
-        btn_label = f"ขอคำวินิจฉัยเลย ({picked_count} อาการ)" if picked_count else "ข้ามไปวินิจฉัย"
+        btn_label = f"🔍 ขอคำวินิจฉัย ({picked_count} อาการ)" if picked_count else "ขอคำวินิจฉัยเลยค่ะ"
         if st.button(btn_label, key="q2_skip", use_container_width=True):
             if picked_count == 0:
                 # Add chief complaint seed symptoms
@@ -329,7 +329,7 @@ elif st.session_state.ai8_step == "q3plus":
                 st.session_state.ai8_step = "result"
                 st.rerun()
         else:
-            icon = "✅" if opt.symptom_en in picked else "⬜"
+            icon = "[✓]" if opt.symptom_en in picked else "[ ]"
             if st.button(
                 f"{icon} {opt.label_th}",
                 key=f"q3_{opt.symptom_en}_{q_count}",
@@ -345,8 +345,8 @@ elif st.session_state.ai8_step == "q3plus":
                 st.rerun()
 
     # Freetext option
-    with st.expander("✏️ อื่นๆ พิมพ์เอง"):
-        ft_in = st.text_input("พิมพ์อาการ", key=f"q3_freetext_in_{q_count}")
+    with st.expander("✏️ มีอาการอื่น? พิมพ์บอกหนูได้เลยค่ะ"):
+        ft_in = st.text_input("พิมพ์อาการที่รู้สึก", key=f"q3_freetext_in_{q_count}")
         if st.button("ตรวจสอบ", key=f"q3_freetext_check_{q_count}"):
             ft_in = ft_in.strip()
             if ft_in:
@@ -370,7 +370,7 @@ elif st.session_state.ai8_step == "q3plus":
             st.rerun()
     with col_b:
         if st.button(
-            f"🏥 ขอคำวินิจฉัย ({len(picked)} อาการ)",
+            f"🔍 ขอคำวินิจฉัย ({len(picked)} อาการ)",
             key=f"q3_diagnose_{q_count}",
             use_container_width=True,
         ):
@@ -472,12 +472,12 @@ elif st.session_state.ai8_step == "result":
     # Confidence banners
     if conf["level"] == "very_low":
         st.warning(
-            "⚠️ **ระบบไม่สามารถสรุปได้ชัดเจน** — อาการน้อยเกินไป "
-            "ผลด้านล่างใช้เป็น reference เท่านั้น · กรุณาปรึกษาแพทย์"
+            "⚠️ ข้อมูลอาการที่ได้รับยังน้อยอยู่ค่ะ ผลด้านล่างใช้เป็นแนวทางประกอบเท่านั้น "
+            "— แนะนำปรึกษาแพทย์ด้วยนะคะ"
         )
     elif conf["level"] == "low":
         st.info(
-            "ℹ️ **ผลใช้เป็น reference ประกอบการตัดสินใจ** — ปรึกษาแพทย์เพื่อความแน่ใจ"
+            "💙 ผลด้านล่างใช้เป็นแนวทางประกอบการตัดสินใจนะคะ — แนะนำปรึกษาแพทย์เพื่อความแน่ใจค่ะ"
         )
 
     # ── Two-column layout: disease cards (left) + doctor mascot (right) ──────
@@ -485,16 +485,21 @@ elif st.session_state.ai8_step == "result":
 
     # ── RIGHT: Doctor mascot ─────────────────────────────────────────────────
     with col_mascot:
-        _conf_emoji = {"high": "🟢", "medium": "🟡", "low": "🔴", "very_low": "🔴"}
-        _emoji = _conf_emoji.get(conf["level"], "🔵")
+        _conf_user_msg = {
+            "high":     "ผลที่ได้น่าเชื่อถือสูงค่ะ",
+            "medium":   "ผลใช้เป็นแนวทางได้ค่ะ",
+            "low":      "ลองบอกอาการเพิ่มได้นะคะ",
+            "very_low": "ลองบอกอาการเพิ่มได้นะคะ",
+        }
+        _user_msg = _conf_user_msg.get(conf["level"], "")
         st.markdown(
             f"""<div class="mascot-col-box">
                   <div style="line-height:0">{_DOCTOR_SVG}</div>
                   <div class="mascot-col-name">คุณหมอใจดี</div>
                   <div class="mascot-col-line">"ไม่ต้องกังวลนะคะ มาฟังกัน"</div>
                   <div class="mascot-col-line" style="margin-top:4px">
-                    ความมั่นใจ {_emoji} {conf['label']}<br>
-                    <span style="font-size:11px">{conf['reason']}</span>
+                    ความมั่นใจ: {conf['label']}<br>
+                    <span style="font-size:11px">{_user_msg}</span>
                   </div>
                 </div>""",
             unsafe_allow_html=True,
@@ -508,11 +513,11 @@ elif st.session_state.ai8_step == "result":
             )
 
             URGENCY_LABEL = {
-                1: "🟥 ระดับ 1 — ฉุกเฉินทันที",
-                2: "🟧 ระดับ 2 — รีบเข้า รพ.",
-                3: "🟨 ระดับ 3 — ภายใน 24 ชม.",
-                4: "🟦 ระดับ 4 — นัดตามคิว",
-                5: "🟩 ระดับ 5 — ไม่เร่งด่วน",
+                1: "🚨 ระดับ 1 — ฉุกเฉินวิกฤต ต้องรักษาทันที",
+                2: "⚠️ ระดับ 2 — เร่งด่วนมาก รีบไปห้องฉุกเฉิน",
+                3: "⏰ ระดับ 3 — ควรพบแพทย์ภายใน 24 ชั่วโมง",
+                4: "📅 ระดับ 4 — ไม่เร่งด่วน นัดหมายแพทย์ได้",
+                5: "✅ ระดับ 5 — ดูแลเบื้องต้นได้เอง ไม่เร่งด่วน",
             }
 
             # Normalize top-3 scores to proportional % (TF-IDF scores are unbounded)
@@ -571,7 +576,7 @@ elif st.session_state.ai8_step == "result":
         if st.button("← ถามใหม่", use_container_width=True):
             _reset()
     with col_b:
-        with st.expander("🔧 Debug"):
+        with st.expander("🔬 ข้อมูลเทคนิค (สำหรับอาจารย์/ผู้พัฒนา)"):
             if st.session_state.ai8_ranked is not None:
                 cols_show = [c for c in
                              ["disease", "primary_score", "n_matched", "coverage"]

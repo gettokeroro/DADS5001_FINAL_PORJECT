@@ -23,8 +23,10 @@ from utils.data_loader import (
     init_session_state,
     render_disclaimer_sidebar,
 )
+from utils.styling import inject_global_css
 
 st.set_page_config(page_title="Disease Landscape", page_icon="🗺️", layout="wide")
+inject_global_css()
 init_session_state()
 render_disclaimer_sidebar()
 

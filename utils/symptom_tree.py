@@ -241,7 +241,7 @@ def match_freetext(
     if "is_user_facing" in df.columns:
         df = df[df["is_user_facing"] == True]
 
-    cols = [c for c in ["symptom_th", "symptom_th_alt", "symptom_en", "ui_label"]
+    cols = [c for c in ["symptom_th", "symptom_th_alt", "symptom_dialect", "symptom_en", "ui_label"]
             if c in df.columns]
 
     # Two-pass: exact/substring first, then prefix-overlap fallback (Thai word stems)

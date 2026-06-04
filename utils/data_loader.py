@@ -532,7 +532,7 @@ def drug_payment_badge(ed_category) -> dict:
     }
     if cat in tier_map:
         return {
-            "emoji": "🟢",
+            "emoji": "✅",
             "label": "เบิกได้ทุกสิทธิ",
             "sub_label": tier_map[cat],
             "kind": "success",
@@ -598,7 +598,7 @@ def hospital_insurance_badge(affiliation) -> dict:
     ]
     if any(k in aff for k in state_keywords):
         return {
-            "emoji": "🏛️",
+            "emoji": "🏥",
             "label": "บัตรทอง · ประกันสังคม · ข้าราชการ",
             "kind": "success",
         }

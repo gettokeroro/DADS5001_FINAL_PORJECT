@@ -81,8 +81,8 @@ def _on_symptom_toggle(symptom_en: str, widget_key: str):
 # ---------------------------------------------------------------------------
 # Header
 # ---------------------------------------------------------------------------
-st.title("🩺 Non-AI Mode")
-st.markdown("##### ติ๊กอาการที่คุณมี → ระบบใช้ TF-IDF / Bayes แนะนำ Top-3 แผนก")
+st.title("🏥 Non-AI Mode")
+st.markdown("##### เลือกอาการที่คุณมี → ระบบวิเคราะห์และแนะนำแผนกที่ควรพบแพทย์")
 
 st.divider()
 
@@ -130,12 +130,16 @@ _matched_symptoms: set[str] = set()
 _matches: pd.DataFrame = pd.DataFrame()
 if _search_term and _search_term.strip():
     _q = _search_term.strip().lower()
-    _matches = sym_visible[
+    _mask = (
         sym_visible["symptom_th"].fillna("").str.lower().str.contains(_q, na=False, regex=False) |
         sym_visible["symptom_th_alt"].fillna("").str.lower().str.contains(_q, na=False, regex=False) |
         sym_visible["symptom_en"].fillna("").str.lower().str.contains(_q, na=False, regex=False) |
         sym_visible["ui_label"].fillna("").str.lower().str.contains(_q, na=False, regex=False)
-    ].sort_values("symptom_th")
+    )
+    # ภาษาถิ่น (อีสาน/เหนือ/ใต้) — เพิ่ม Phase A · guard เผื่อ schema เก่าไม่มีคอลัมน์
+    if "symptom_dialect" in sym_visible.columns:
+        _mask = _mask | sym_visible["symptom_dialect"].fillna("").str.lower().str.contains(_q, na=False, regex=False)
+    _matches = sym_visible[_mask].sort_values("symptom_th")
     _matched_symptoms = set(_matches["symptom_en"].tolist())
 
 # ---------------------------------------------------------------------------
@@ -229,7 +233,7 @@ st.divider()
 st.markdown("### 2️⃣ อาการที่คุณติ๊ก")
 
 if not selected:
-    st.info("👆 ติ๊กอาการอย่างน้อย 1 ข้อด้านบน เพื่อเริ่มวิเคราะห์")
+    st.info("👆 เลือกอาการอย่างน้อย 1 ข้อจากด้านบน เพื่อเริ่มวิเคราะห์")
 else:
     sel_df = sym_dict[sym_dict["symptom_en"].isin(selected)][
         ["symptom_th", "ui_label", "body_system"]
@@ -268,9 +272,9 @@ with c1:
         "วิธี scoring",
         options=["tfidf", "bayes", "both"],
         format_func={
-            "tfidf": "TF-IDF — ถ่วงน้ำหนักด้วยความเฉพาะของอาการ (recommended)",
-            "bayes": "Naive Bayes — คำนวณ P(โรค|อาการ)",
-            "both": "เปรียบเทียบทั้งสอง",
+            "tfidf": "แบบที่ 1 — ถ่วงน้ำหนักอาการตามความเฉพาะเจาะจง (TF-IDF · แนะนำ)",
+            "bayes": "แบบที่ 2 — คำนวณความน่าจะเป็นของแต่ละโรค (Naive Bayes)",
+            "both": "แบบที่ 3 — เปรียบเทียบทั้ง 2 วิธี (TF-IDF vs Naive Bayes)",
         }.get,
         key="scoring_method",
         help="TF-IDF ใช้ specificity (อาการหายาก = น้ำหนักสูง) · "
@@ -278,8 +282,8 @@ with c1:
     )
 with c2:
     top_k = st.number_input(
-        "Top-K", min_value=1, max_value=10, value=3,
-        help="แสดงกี่อันดับแรก",
+        "แสดงผลกี่อันดับแรก", min_value=1, max_value=10, value=3,
+        help="เลือก 1–10 · ค่าเริ่มต้น = 3 อันดับแรก",
     )
 
 # ---------------------------------------------------------------------------
@@ -319,8 +323,9 @@ _conf = classify_confidence(_full_for_conf, n_user_symptoms=len(selected))
 _color_map = {"high": "success", "medium": "warning", "low": "error", "very_low": "warning"}
 _st_func = getattr(st, _color_map.get(_conf["level"], "info"))
 _st_func(
-    f"{_conf['emoji']} **{_conf['label']}** — {_conf['reason']}"
+    f"**{_conf['label']}** — {_conf['reason']}"
 )
+st.caption("สีเขียว = มั่นใจสูง · สีเหลือง = ใช้เป็นแนวทาง · สีแดง = ข้อมูลน้อย ลองเลือกอาการเพิ่ม")
 
 # Phase 5: Honest fallback banner เมื่อ very_low/low — แสดงก่อน Top-3
 if _conf["level"] == "very_low":
@@ -354,7 +359,7 @@ _all_provinces = (
 if "hosp_p_submitted" not in st.session_state:
     st.session_state["hosp_p_submitted"] = []
 
-st.markdown("#### 🏥 เลือกจังหวัดเพื่อดู รพ.แนะนำใต้แต่ละโรค")
+st.markdown("#### 🏥 เลือกจังหวัด เพื่อดูโรงพยาบาลแนะนำสำหรับแต่ละโรค")
 _pc1, _pc2 = st.columns([4, 1])
 with _pc1:
     st.multiselect(
@@ -367,7 +372,7 @@ with _pc1:
 with _pc2:
     st.write("")
     if st.button(
-        "🔍 ค้นหา รพ.",
+        "🔍 ค้นหาโรงพยาบาล",
         use_container_width=True,
         type="primary",
         key="hosp_search_btn",
@@ -379,16 +384,16 @@ with _pc2:
 _submitted_provinces = st.session_state.get("hosp_p_submitted", [])
 if not _submitted_provinces:
     st.info(
-        "👆 กรุณาเลือก **1 จังหวัดขึ้นไป** ในช่องด้านบน แล้วกดปุ่ม "
-        "**🔍 ค้นหา รพ.** เพื่อให้ระบบแสดงรายชื่อโรงพยาบาลใต้แต่ละโรค"
+        "👆 เลือก **1 จังหวัดขึ้นไป** จากช่องด้านบน แล้วกด "
+        "**🔍 ค้นหาโรงพยาบาล** เพื่อดูรายชื่อโรงพยาบาลที่แนะนำในแต่ละโรค"
     )
 
 URGENCY_LABEL = {
-    1: ("🟥 1 — Resuscitation (ฉุกเฉินทันที)", "error"),
-    2: ("🟧 2 — Emergent (รีบเข้า รพ.)", "warning"),
-    3: ("🟨 3 — Urgent (ภายใน 24 ชม.)", "warning"),
-    4: ("🟦 4 — Less urgent (ตามนัด)", "info"),
-    5: ("🟩 5 — Non-urgent (ไม่เร่งด่วน)", "success"),
+    1: ("🚨 ระดับ 1 — ฉุกเฉินวิกฤต ต้องรักษาทันที", "error"),
+    2: ("⚠️ ระดับ 2 — เร่งด่วนมาก รีบไปห้องฉุกเฉิน", "warning"),
+    3: ("⏰ ระดับ 3 — ควรพบแพทย์ภายใน 24 ชั่วโมง", "warning"),
+    4: ("📅 ระดับ 4 — ไม่เร่งด่วน นัดหมายแพทย์ได้", "info"),
+    5: ("✅ ระดับ 5 — ดูแลเบื้องต้นได้เอง ไม่เร่งด่วน", "success"),
 }
 
 for i, row in result.iterrows():
@@ -472,7 +477,7 @@ for i, row in result.iterrows():
 # ---------------------------------------------------------------------------
 # Detail table
 # ---------------------------------------------------------------------------
-with st.expander("ตารางผลลัพธ์เต็ม"):
+with st.expander("📋 ดูผลลัพธ์ทั้งหมดในรูปแบบตาราง (Full Results Table)"):
     show_cols = [
         "rank", "disease_th", "primary_specialty",
         "urgency_level", "icd10_code",
@@ -487,16 +492,32 @@ with st.expander("ตารางผลลัพธ์เต็ม"):
             "bayes_posterior", "avg_rank",
         ]
 
+    col_rename = {
+        "rank": "อันดับ (Rank)",
+        "disease_th": "โรค (Disease)",
+        "disease": "โรค (Disease)",
+        "primary_specialty": "แผนกหลัก (Specialty)",
+        "urgency_level": "ระดับเร่งด่วน (Urgency)",
+        "icd10_code": "รหัส ICD-10",
+        "primary_score": "คะแนน (Score)",
+        "coverage": "ครอบคลุมอาการ % (Coverage)",
+        "tfidf_score": "TF-IDF Score",
+        "bayes_posterior": "Bayes Posterior",
+        "avg_rank": "อันดับเฉลี่ย (Avg Rank)",
+    }
     avail = [c for c in show_cols if c in result.columns]
-    st.dataframe(result[avail], use_container_width=True, hide_index=True)
+    st.dataframe(
+        result[avail].rename(columns=col_rename),
+        use_container_width=True, hide_index=True,
+    )
 
 # ---------------------------------------------------------------------------
 # Scoring matrix — DuckDB intermediate result (all 41 diseases scored)
 # ---------------------------------------------------------------------------
-with st.expander("ดู scoring matrix (intermediate result จาก DuckDB)"):
+with st.expander("🔬 ผลการคำนวณทั้ง 48 โรค โดย DuckDB (Scoring Matrix — สำหรับอาจารย์/ผู้สนใจด้านเทคนิค)"):
     st.caption(
-        "DataFrame ที่ DuckDB คืนกลับมาก่อน sort + truncate ด้วย Top-K · "
-        "เห็นทั้ง 41 โรคพร้อมคะแนนเต็ม"
+        "ตารางนี้แสดงผลการประมวลผลจาก DuckDB ก่อนที่ระบบจะคัดเลือกเฉพาะ Top-K อันดับ "
+        "(intermediate result before sort & truncate) — แสดงให้เห็น engine ทำงานจริง"
     )
     if method == "tfidf":
         full = score_tfidf(selected, arts)

@@ -9,8 +9,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from utils.data_loader import init_session_state, render_disclaimer_sidebar
+from utils.styling import inject_global_css
 
 st.set_page_config(page_title="คู่มือ / แหล่งข้อมูล", page_icon="📖", layout="wide")
+inject_global_css()
 init_session_state()
 render_disclaimer_sidebar()
 
@@ -22,7 +24,7 @@ st.caption("Symptom-to-Specialty Triage · DADS5001 Final Project")
 
 _c1, _c2, _c3 = st.columns(3)
 _c1.metric("โรคในฐานข้อมูล", "48 โรค")
-_c2.metric("อาการที่รองรับ", "132 อาการ")
+_c2.metric("อาการที่รองรับ", "131 อาการ")
 _c3.metric("สาขาแพทย์", "13 สาขา")
 
 st.divider()
@@ -44,7 +46,7 @@ _mermaid_html = (
     '    A["มีอาการ"] --> B{"เลือก Mode"}\n' +
     '    B --> C["Non-AI Mode"]\n' +
     '    B --> D["AI Mode (น้องอุ่นใน)"]\n' +
-    '    C --> E["เลือก checkbox\\n132 อาการ"]\n' +
+    '    C --> E["เลือก checkbox\\n131 อาการ"]\n' +
     '    D --> F["พิมพ์/เลือก\\nอาการภาษาไทย"]\n' +
     '    E --> G["วิเคราะห์"]\n' +
     '    F --> G\n' +
@@ -82,7 +84,8 @@ _steps_nonai = [
     (
         "2.",
         "**เลือกอาการ** จาก checkbox ที่จัดกลุ่มตาม body system "
-        "— ใช้ช่องค้นหาพิมพ์ชื่ออาการภาษาไทยเพื่อกรอง "
+        "— ใช้ช่องค้นหาพิมพ์ชื่ออาการภาษาไทย (รองรับภาษาถิ่น อีสาน/เหนือ/ใต้ "
+        "เช่น 'ฮาก' 'เมาหัว' 'บ่มีแฮง') เพื่อกรอง "
         "· เลือกได้หลายอาการพร้อมกัน · ยิ่งเลือกครบ ผลลัพธ์ยิ่งแม่นยำ",
     ),
     ("3.", "**เลือกจังหวัด** (ไม่บังคับ) เพื่อกรองโรงพยาบาลในพื้นที่ที่สะดวก"),
@@ -189,7 +192,7 @@ with st.expander("Symptom-Disease Backbone Dataset"):
     st.markdown(
         "- **[itachi9604/disease-symptom-description-dataset]"
         "(https://www.kaggle.com/datasets/itachi9604/disease-symptom-description-dataset)** (Kaggle)\n"
-        "  - 48 โรค × 132 อาการ (binary matrix) หลัง augment เพิ่ม 7 โรคพบบ่อยในไทย\n"
+        "  - 48 โรค × 131 อาการ (binary matrix) หลัง augment เพิ่ม 7 โรคพบบ่อยในไทย\n"
         "  - รองรับ TF-IDF scoring + Naive Bayes classifier"
     )
 
@@ -262,7 +265,7 @@ _HTML_MANUAL = """<!DOCTYPE html>
 <p>Symptom-to-Specialty Triage · DADS5001 Final Project</p>
 <div class="stats">
   <div class="stat-box"><div class="stat-num">48</div><div class="stat-label">โรคในฐานข้อมูล</div></div>
-  <div class="stat-box"><div class="stat-num">132</div><div class="stat-label">อาการที่รองรับ</div></div>
+  <div class="stat-box"><div class="stat-num">131</div><div class="stat-label">อาการที่รองรับ</div></div>
   <div class="stat-box"><div class="stat-num">13</div><div class="stat-label">สาขาแพทย์</div></div>
 </div>
 
@@ -284,7 +287,7 @@ _HTML_MANUAL = """<!DOCTYPE html>
 
 <h2>ส่วนที่ 2 · Non-AI Mode</h2>
 <div class="step"><strong>1.</strong> เปิดหน้า Non-AI Mode จาก sidebar ด้านซ้าย</div>
-<div class="step"><strong>2.</strong> เลือกอาการจาก checkbox ที่จัดกลุ่มตาม body system — ใช้ช่องค้นหาพิมพ์ชื่ออาการภาษาไทย · เลือกได้หลายอาการพร้อมกัน · ยิ่งเลือกครบ ผลลัพธ์ยิ่งแม่นยำ</div>
+<div class="step"><strong>2.</strong> เลือกอาการจาก checkbox ที่จัดกลุ่มตาม body system — ใช้ช่องค้นหาพิมพ์ชื่ออาการภาษาไทย (รองรับภาษาถิ่น อีสาน/เหนือ/ใต้ เช่น "ฮาก" "เมาหัว" "บ่มีแฮง") · เลือกได้หลายอาการพร้อมกัน · ยิ่งเลือกครบ ผลลัพธ์ยิ่งแม่นยำ</div>
 <div class="step"><strong>3.</strong> เลือกจังหวัด (ไม่บังคับ) เพื่อกรองโรงพยาบาลในพื้นที่ที่สะดวก</div>
 <div class="step"><strong>4.</strong> กดปุ่มวิเคราะห์อาการ</div>
 <div class="step"><strong>5.</strong> อ่านผลลัพธ์: Confidence badge (สูง / กลาง / ต่ำ / ต่ำมาก) · Top-3 โรค · สาขาแพทย์ · ระดับเร่งด่วน 1–5 · expander ยา + รพ.</div>
@@ -311,7 +314,7 @@ _HTML_MANUAL = """<!DOCTYPE html>
 </ul>
 
 <h2>ส่วนที่ 5 · แหล่งข้อมูล</h2>
-<div class="source"><strong>itachi9604/disease-symptom-description-dataset</strong> (Kaggle) — 48 โรค × 132 อาการ (binary matrix)</div>
+<div class="source"><strong>itachi9604/disease-symptom-description-dataset</strong> (Kaggle) — 48 โรค × 131 อาการ (binary matrix)</div>
 <div class="source"><strong>ICD-10-TM</strong> (กรมการแพทย์ กระทรวงสาธารณสุข) — Thai Modification ของ International Classification of Diseases</div>
 <div class="source"><strong>ED Triage MOPH</strong> — แนวทาง 5-level Triage มาตรฐานห้องฉุกเฉินไทย</div>
 <div class="source"><strong>data.go.th</strong> — สถิติสาธารณสุขไทย 7 ชุดข้อมูล พ.ศ. 2559–2567</div>
