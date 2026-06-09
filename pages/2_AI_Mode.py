@@ -106,6 +106,7 @@ DEFAULTS: dict = {
     "ai8_ranked":          None,
     "ai8_confidence":      None,
     "ai8_prov_key":        "ai8_provinces",  # key for province multiselect widget
+    "ai8_sidebar_synced":  False,  # one-shot rerun flag so sidebar AI-Calls metric refreshes
 }
 for k, v in DEFAULTS.items():
     if k not in st.session_state:
@@ -212,7 +213,8 @@ if st.session_state.ai8_step == "q1":
                 match = match_freetext(ft_in, vis_dict)
                 if match:
                     st.success(f"✅ พบ: {match.label_th} ({match.symptom_en})")
-                    st.session_state.ai8_picked.append(match.symptom_en)
+                    if match.symptom_en not in st.session_state.ai8_picked:
+                        st.session_state.ai8_picked.append(match.symptom_en)
                     st.session_state.ai8_seen.add(match.symptom_en)
                     st.session_state.ai8_freetext_prev = "q1"
                     st.session_state.ai8_step = "q3plus"
@@ -248,8 +250,9 @@ elif st.session_state.ai8_step == "q2":
     for opt in opts:
         if opt.symptom_en == FREETEXT_CODE:
             continue  # shown separately below
-        icon = "[✓]" if opt.symptom_en in st.session_state.ai8_picked else "[ ]"
-        if st.button(f"{icon} {opt.label_th}", key=f"q2_{opt.symptom_en}", use_container_width=True):
+        _sel = opt.symptom_en in st.session_state.ai8_picked
+        _label = f"✓ {opt.label_th}" if _sel else opt.label_th
+        if st.button(_label, key=f"q2_{opt.symptom_en}", use_container_width=True):
             picked = st.session_state.ai8_picked
             if opt.symptom_en not in picked:
                 picked.append(opt.symptom_en)
@@ -329,9 +332,10 @@ elif st.session_state.ai8_step == "q3plus":
                 st.session_state.ai8_step = "result"
                 st.rerun()
         else:
-            icon = "[✓]" if opt.symptom_en in picked else "[ ]"
+            _sel = opt.symptom_en in picked
+            _label = f"✓ {opt.label_th}" if _sel else opt.label_th
             if st.button(
-                f"{icon} {opt.label_th}",
+                _label,
                 key=f"q3_{opt.symptom_en}_{q_count}",
                 use_container_width=True,
                 help=opt.sublabel or "",
@@ -449,6 +453,14 @@ elif st.session_state.ai8_step == "result":
                 st.toast("🗄️ บันทึกลง MongoDB Atlas แล้วค่ะ", icon="✅")
         except Exception:
             pass  # never crash the diagnosis page on logging failure
+
+        # Sidebar "AI Calls" metric is drawn at top of script BEFORE this block
+        # increments the counter. Rerun once so the sidebar redraws with the new
+        # count. ai8_ranked is now cached, so this block won't recompute or
+        # re-increment — guard flag prevents any rerun loop.
+        if not st.session_state.get("ai8_sidebar_synced"):
+            st.session_state.ai8_sidebar_synced = True
+            st.rerun()
 
     # Pull from cache
     ranked     = st.session_state.ai8_ranked
