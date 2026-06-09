@@ -113,9 +113,18 @@ for k, v in DEFAULTS.items():
         st.session_state[k] = v
 
 
-def _reset():
+def _reset(keep_counter: bool = False):
+    """Reset session state.
+
+    keep_counter=False → full reset (sidebar '🔄 เริ่มใหม่'): AI Calls back to 0.
+    keep_counter=True  → new question flow only ('← ถามใหม่'): AI Calls persists
+                          across the session, only the Q→diagnosis flow restarts.
+    """
+    saved = st.session_state.get("ai8_call_counter", 0)
     for k, v in DEFAULTS.items():
         st.session_state[k] = v
+    if keep_counter:
+        st.session_state["ai8_call_counter"] = saved
     st.rerun()
 
 
@@ -412,13 +421,9 @@ elif st.session_state.ai8_step == "result":
 
     # ── Scoring + card narrations (run once, cache in session_state) ─────────
     if st.session_state.ai8_ranked is None:
-        allowed, _ = check_rate_limit(
-            st.session_state, max_calls=MAX_CALLS, counter_key="ai8_call_counter"
-        )
-        if not allowed:
-            st.error(f"Rate limit ถึงแล้ว ({MAX_CALLS} calls/session) · กด 🔄 เริ่มใหม่ด้านซ้าย")
-            st.stop()
-
+        # NOTE: scoring below (predict / score_tfidf) is local TF-IDF — NOT an AI
+        # call, so it must NOT consume the rate-limit budget. Only narrate_cards
+        # (Gemma) counts. One diagnosis = 1 AI Call.
         with st.spinner("🏥 กำลังวิเคราะห์อาการ..."):
             ranked  = predict(picked, arts, method="tfidf", top_k=3)
             full_sc = score_tfidf(picked, arts)
@@ -586,7 +591,7 @@ elif st.session_state.ai8_step == "result":
     col_a, col_b = st.columns([1, 2])
     with col_a:
         if st.button("← ถามใหม่", use_container_width=True):
-            _reset()
+            _reset(keep_counter=True)  # คง AI Calls ไว้ · reset เฉพาะ '🔄 เริ่มใหม่'
     with col_b:
         with st.expander("🔬 ข้อมูลเทคนิค (สำหรับอาจารย์/ผู้พัฒนา)"):
             if st.session_state.ai8_ranked is not None:
