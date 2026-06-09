@@ -75,6 +75,16 @@ CHIEF_BY_ID = {c["id"]: c for c in CHIEF_COMPLAINTS}
 SKIP_CODE = "__skip__"
 FREETEXT_CODE = "__freetext__"
 
+# Tokens that signal the symptom is ABSENT or RESOLVING → never assert a symptom.
+# Covers "ไม่ปวดหัว", "หายไอ", "ผื่นน้อยลง", "ดีขึ้นแล้ว", "อาการลดลง", etc.
+_NEGATION_TOKENS = (
+    "ไม่", "ไม่ได้", "หาย", "เลิก", "ดีขึ้น", "น้อยลง", "ลดลง", "ทุเลา", "บรรเทา",
+)
+# Value-flip qualifiers. When these are the EXTRA text around a *contained* alias
+# (alias ⊂ user input), the user means a DIFFERENT concept, so reject that match.
+# Kills ความดันต่ำ→ความดัน, น้ำตาลต่ำ→น้ำตา, ปัสสาวะปกติ→ปัสสาวะมีเลือดปน, etc.
+_VALUE_FLIP_TOKENS = ("ต่ำ", "สูง", "ปกติ", "ตก")
+
 
 # -----------------------------------------------------------------------------
 # Output type — shared by all get_*_options() functions
@@ -237,17 +247,18 @@ def match_freetext(
     if not q:
         return None
 
+    # --- Guard 1: negation / resolution -------------------------------------
+    # If the user is DENYING a symptom or saying it RESOLVED / is improving,
+    # never assert that symptom. (e.g. "ไม่ปวดหัว", "หายไอ", "ผื่นน้อยลง")
+    if any(neg in q for neg in _NEGATION_TOKENS):
+        return None
+
     df = dictionary_df
     if "is_user_facing" in df.columns:
         df = df[df["is_user_facing"] == True]
 
     cols = [c for c in ["symptom_th", "symptom_th_alt", "symptom_dialect", "symptom_en", "ui_label"]
             if c in df.columns]
-
-    # Two-pass: exact/substring first, then prefix-overlap fallback (Thai word stems)
-    _MIN_PFX = 4  # minimum prefix length for Thai stem matching (≈ 1-2 Thai chars)
-
-    prefix_candidate: Optional[TreeOption] = None  # best prefix match (used if no exact)
 
     for _, row in df.iterrows():
         sym_en = str(row.get("symptom_en") or "")
@@ -256,7 +267,7 @@ def match_freetext(
             cell = str(row.get(col) or "").lower()
             if not cell:
                 continue
-            # 1) Direct substring match
+            # 1) Direct: full user query appears verbatim in the cell (precise)
             if q in cell:
                 return TreeOption(
                     symptom_en=sym_en,
@@ -264,30 +275,34 @@ def match_freetext(
                     sublabel=f"matched in `{col}`",
                     meta={"matched_column": col, "matched_text": q},
                 )
-            # 2) Comma-separated alts — bidirectional check
             pieces = [p.strip().lower() for p in cell.split(",")] if "," in cell else [cell]
             for piece in pieces:
                 if not piece:
                     continue
-                if q in piece or piece in q:
+                # 2a) User query is a substring of an alias (precise enough)
+                if q in piece:
                     return TreeOption(
                         symptom_en=sym_en,
                         label_th=label_th,
                         sublabel=f"matched in `{col}` (alt)",
                         meta={"matched_column": col, "matched_alt": piece},
                     )
-                # 3) Prefix-overlap (Thai word sharing first stem, e.g. หายใจ-)
-                if prefix_candidate is None and len(q) >= _MIN_PFX and len(piece) >= _MIN_PFX:
-                    q_pfx = q[:_MIN_PFX]
-                    if piece.startswith(q_pfx) or q.startswith(piece[:_MIN_PFX]):
-                        prefix_candidate = TreeOption(
-                            symptom_en=sym_en,
-                            label_th=label_th,
-                            sublabel=f"matched in `{col}` (prefix)",
-                            meta={"matched_column": col, "matched_prefix": q_pfx},
-                        )
+                # 2b) Alias is a substring of the user query (LOOSE direction) —
+                #     accept ONLY if the leftover text does not flip the meaning.
+                #     Guard 2: kills ความดันต่ำ→ความดัน, น้ำตาลต่ำ→น้ำตา,
+                #     ปัสสาวะปกติ→ปัสสาวะมีเลือดปน, while keeping ปวดหัวมาก→ปวดหัว.
+                if piece in q:
+                    residual = q.replace(piece, "")
+                    if any(v in residual for v in _VALUE_FLIP_TOKENS):
+                        continue
+                    return TreeOption(
+                        symptom_en=sym_en,
+                        label_th=label_th,
+                        sublabel=f"matched in `{col}` (contained)",
+                        meta={"matched_column": col, "matched_alt": piece},
+                    )
 
-    return prefix_candidate  # None if no match at all
+    return None  # no confident match (noisy prefix-overlap heuristic removed)
 
 
 # -----------------------------------------------------------------------------
