@@ -123,7 +123,7 @@ with st.expander("📋 สถานะปัจจุบันของแต่
     status = {
         "🏠 Home": "✅ พร้อมใช้",
         "🩺 Non-AI Mode": "✅ พร้อมใช้ (TF-IDF + Bayes)",
-        "🤖 AI Mode": "✅ พร้อมใช้ (น้องอุ่นใจ · Gemini/Gemma)",
+        "🤖 AI Mode": "✅ พร้อมใช้ (น้องอุ่นใน · Gemini/Gemma)",
         "📊 Disease Landscape": "✅ พร้อมใช้",
         "📖 คู่มือ แหล่งข้อมูล": "✅ พร้อมใช้",
         "ℹ️ About": "✅ พร้อมใช้",

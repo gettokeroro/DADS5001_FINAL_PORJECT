@@ -71,7 +71,7 @@ from utils.symptom_tree import (
 # ---------------------------------------------------------------------------
 # Page config
 # ---------------------------------------------------------------------------
-st.set_page_config(page_title="AI Mode — น้องพิกซี่", page_icon="🏥", layout="wide")
+st.set_page_config(page_title="AI Mode — น้องอุ่นใน", page_icon="🏥", layout="wide")
 inject_global_css()
 inject_ai_mode_css()
 init_session_state()
@@ -186,7 +186,7 @@ if st.session_state.ai8_step == "q1":
     st.markdown(_progress_dots("q1"), unsafe_allow_html=True)
 
     render_nurse_mascot(
-        "สวัสดีค่ะ หนูชื่อ น้องพิกซี่ 🌸",
+        "สวัสดีค่ะ หนูชื่อ น้องอุ่นใน 🌸",
         sub="วันนี้รู้สึกไม่สบายตรงไหนบ้างคะ? เลือกอาการที่ตรงได้เลยนะคะ 💕",
     )
 
